@@ -1,0 +1,28 @@
+<view class="page">
+  <view class="manage-head"><view class="tip">这里的菜都属于你们，可以随时编辑或下架。</view><view class="category-link" bindtap="categories">分类管理 ›</view></view>
+
+  <block wx:if="{{loading}}">
+    <view class="loading">正在整理菜单…</view>
+  </block>
+
+  <block wx:else>
+    <view
+      wx:for="{{dishes}}"
+      wx:key="id"
+      class="card row-item {{!item.enabled ? 'disabled' : ''}}"
+      bindtap="edit"
+      data-id="{{item.id}}"
+    >
+      <image wx:if="{{item.imageUrl}}" src="{{item.imageUrl}}" mode="aspectFill"/>
+      <view wx:else class="thumb image-placeholder">🍽️</view>
+      <view class="info">
+        <view>{{item.name}}</view>
+        <text>{{item.categoryName}} · 点过 {{item.orderedCount||0}} 次</text>
+      </view>
+      <button wx:if="{{item.enabled && item.coupleId}}" class="down" catchtap="disable" data-id="{{item.id}}">下架</button>
+      <text wx:elif="{{!item.enabled}}" class="muted">已下架</text>
+    </view>
+  </block>
+
+  <view class="fab" bindtap="add">＋ 新增菜品</view>
+</view>

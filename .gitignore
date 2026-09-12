@@ -1,0 +1,10 @@
+.DS_Store
+project.private.config.json
+node_modules/
+server/node_modules/
+.env
+server/.env
+server/logs/
+npm-debug.log*
+coverage/
+dist/

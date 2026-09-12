@@ -1,0 +1,1 @@
+const map={pending:'等你接单',accepted:'收到啦',preparing:'准备中',ready:'开饭啦',completed:'吃完啦',cancelled:'已取消'};Component({properties:{status:String},data:{},observers:{status(v){this.setData({label:map[v]||v})}}})

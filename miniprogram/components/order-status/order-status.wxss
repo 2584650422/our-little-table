@@ -1,0 +1,1 @@
+.status{font-size:22rpx;color:#A96379;background:#FFF0F4;border-radius:999rpx;padding:8rpx 16rpx}.ready,.completed{color:#568C75;background:#EDF8F3}.cancelled{color:#999;background:#f4f4f4}

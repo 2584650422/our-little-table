@@ -1,0 +1,1 @@
+Component({properties:{dish:{type:Object,value:{}}},methods:{detail(){this.triggerEvent('detail',{id:this.data.dish.id})},favorite(){this.triggerEvent('favorite',{id:this.data.dish.id,value:!this.data.dish.isFavorite})},add(){this.triggerEvent('add',{dish:this.data.dish})}}})

@@ -1,0 +1,34 @@
+<view class="menu-page">
+  <view class="toolbar">
+    <view class="search"><text>⌕</text><input placeholder="搜索菜名" value="{{keyword}}" bindinput="input" confirm-type="search" bindconfirm="search"/><text class="search-action" bindtap="search">搜索</text></view>
+    <view class="manage" bindtap="manage">管理</view>
+  </view>
+  <view class="menu-body">
+    <scroll-view scroll-y class="category-rail">
+      <view class="category {{categoryId===''?'active':''}}" bindtap="chooseCategory" data-id=""><text class="category-icon">🍽️</text><text>全部</text></view>
+      <view wx:for="{{categories}}" wx:key="id" class="category {{categoryId==item.id?'active':''}}" bindtap="chooseCategory" data-id="{{item.id}}"><text class="category-icon">{{item.icon}}</text><text class="category-name">{{item.name}}</text><text wx:if="{{item.cartCount}}" class="category-count">{{item.cartCount}}</text></view>
+      <view class="category category-manage" bindtap="manageCategories"><text class="category-icon">⚙</text><text>分类管理</text></view>
+    </scroll-view>
+    <scroll-view scroll-y class="dish-list">
+      <view class="list-title">{{activeCategoryName}}</view>
+      <view wx:if="{{loading}}" class="loading">正在端上菜单…</view>
+      <view wx:elif="{{error}}" class="error"><view>{{error}}</view><button class="btn secondary" bindtap="load">重新试试</button></view>
+      <block wx:else>
+        <view wx:for="{{dishes}}" wx:key="id" class="dish-row" bindtap="detail" data-id="{{item.id}}">
+          <image wx:if="{{item.imageUrl}}" class="dish-image" src="{{item.imageUrl}}" mode="aspectFill"/>
+          <view wx:else class="dish-image image-placeholder">🍚</view>
+          <view class="dish-info">
+            <view class="dish-name">{{item.name}}</view>
+            <view class="dish-description">{{item.description||'家常味道，想吃就点它'}}</view>
+            <view class="dish-meta"><text>{{item.orderedCount?'点过 '+item.orderedCount+' 次':'还没点过'}}</text><text wx:if="{{item.calorieKcal}}"> · 约 {{item.calorieKcal}} kcal</text></view>
+          </view>
+          <view class="favorite {{item.isFavorite?'on':''}}" catchtap="favorite" data-id="{{item.id}}">{{item.isFavorite?'♥':'♡'}}</view>
+          <view class="add" catchtap="add" data-id="{{item.id}}">＋</view>
+        </view>
+        <empty-state wx:if="{{!dishes.length}}" icon="🍽️" title="这里还没有菜哦" hint="去菜单管理添一道喜欢的"/>
+      </block>
+      <view class="bottom-space"></view>
+    </scroll-view>
+  </view>
+  <view class="cart-float" style="{{cartStyle}}" bindtap="goCart" bindtouchstart="dragStart" catchtouchmove="dragMove" bindtouchend="dragEnd"><view class="cart-icon">⌑</view><text>小菜单</text><text class="drag-handle">⋮</text><view wx:if="{{cartCount}}" class="cart-count">{{cartCount}}</view></view>
+</view>

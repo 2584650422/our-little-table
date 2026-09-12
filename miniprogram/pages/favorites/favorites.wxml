@@ -1,0 +1,1 @@
+<view class="page"><view wx:if="{{loading}}" class="loading">正在找你喜欢的…</view><block wx:else><dish-card wx:for="{{dishes}}" wx:key="id" dish="{{item}}" binddetail="detail" bindadd="add" bindfavorite="favorite"/><empty-state wx:if="{{!dishes.length}}" icon="♡" title="还没有收藏" hint="遇见喜欢的菜，就点一下小爱心吧"/></block></view>

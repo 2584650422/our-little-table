@@ -1,0 +1,2 @@
+.header{text-align:center;padding:44rpx 28rpx}.header .title{margin-top:24rpx}.item{display:flex;align-items:center}.item image,.thumb{width:112rpx;height:112rpx;border-radius:20rpx}.info{margin-left:20rpx;line-height:1.8}.message{line-height:1.7}.total{text-align:center;margin:24rpx}.btn{width:100%;margin-top:18rpx}.cancel{background:transparent;color:#B8ADB1;font-size:24rpx;margin-top:14rpx}.cancel::after{border:0}
+

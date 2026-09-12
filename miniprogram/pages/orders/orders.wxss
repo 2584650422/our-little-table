@@ -1,0 +1,2 @@
+.tabs{display:flex;background:#fff;border-radius:999rpx;padding:8rpx;margin-bottom:28rpx}.tabs view{width:50%;text-align:center;padding:16rpx;border-radius:999rpx;color:#8A7E82}.tabs .active{background:#FFDCE6;color:#A96379;font-weight:600}.date{font-weight:600}.names{font-size:30rpx;line-height:1.7;margin:24rpx 0 10rpx}.again{display:inline-block;margin:22rpx 0 0;background:#FFF0F4;color:#E86F94;border-radius:999rpx;font-size:24rpx;padding:12rpx 24rpx}.again::after{border:0}.error .btn{margin-top:24rpx}
+

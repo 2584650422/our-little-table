@@ -1,0 +1,23 @@
+<view wx:if="{{loading}}" class="loading">正在看看这道菜…</view>
+<view wx:elif="{{error}}" class="error">{{error}}</view>
+<view wx:else class="page detail">
+  <image wx:if="{{dish.imageUrl}}" class="cover" src="{{dish.imageUrl}}" mode="aspectFill"/>
+  <view wx:else class="cover image-placeholder">🍽️</view>
+  <view class="card info-card">
+    <view class="dish-heading">
+      <view class="heading-copy"><view class="dish-title">{{dish.name}}</view><view class="dish-category">{{dish.categoryIcon}} {{dish.categoryName}}</view></view>
+      <view class="heart" bindtap="favorite">{{dish.isFavorite?'♥':'♡'}}</view>
+    </view>
+    <view class="desc">{{dish.description||'这道菜还没有写介绍，喜欢就点它吧。'}}</view>
+    <view class="wrap"><text wx:for="{{dish.tags}}" wx:key="*this" class="tag">{{item}}</text></view>
+  </view>
+  <view class="card grid">
+    <view><text>大致热量</text><text class="value">{{dish.calorieKcal?'约 '+dish.calorieKcal+' kcal':'暂未记录'}}</text><text class="small">{{dish.calorieKcal?'/ '+dish.calorieUnit:''}}</text></view>
+    <view><text>烹饪时间</text><text class="value">{{dish.cookTimeMinutes?dish.cookTimeMinutes+' 分钟':'不用开火'}}</text></view>
+    <view><text>难度</text><text class="value">{{dish.difficultyLabel}}</text></view>
+    <view><text>辣度</text><text class="value">{{dish.spicyLevel?'辣度 '+dish.spicyLevel+'/5':'不辣'}}</text></view>
+  </view>
+  <view class="card history"><view>最近吃过</view><text>{{dish.lastEatenLabel}}</text><view>一起吃过</view><text>{{dish.eatenCount}} 次</text></view>
+  <view wx:if="{{dish.calorieKcal}}" class="note">热量为家庭做法估算，会因食材和份量不同而变化。</view>
+  <button class="btn fixed" bindtap="add">+ 放进今天的小菜单</button>
+</view>
