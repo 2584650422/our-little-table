@@ -29,10 +29,9 @@ router.get('/me', auth, asyncRoute(async (req, res) => ok(res, req.user)))
 router.put('/me', auth, asyncRoute(async (req, res) => {
   const nickname = String(req.body.nickname || '').trim().slice(0, 30)
   if (!nickname) throw new AppError('告诉我该怎么称呼你吧')
-  const avatarUrl = req.body.avatarUrl ? String(req.body.avatarUrl).slice(0, 500) : null
+  const avatarUrl = Object.prototype.hasOwnProperty.call(req.body,'avatarUrl') ? (req.body.avatarUrl ? String(req.body.avatarUrl).slice(0, 500) : null) : req.user.avatarUrl
   await db.query('UPDATE users SET nickname=?,avatar_url=? WHERE id=?', [nickname, avatarUrl, req.user.id])
   ok(res, { ...req.user, nickname, avatarUrl }, '称呼记住啦')
 }))
 
 module.exports = router
-

@@ -3,6 +3,7 @@ USE little_table;
 
 CREATE TABLE couples (
   id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  public_id CHAR(36) NOT NULL UNIQUE,
   name VARCHAR(50) NOT NULL DEFAULT '我们的小饭桌',
   invite_code VARCHAR(8) UNIQUE,
   invite_expire_at DATETIME NULL,
@@ -27,6 +28,19 @@ CREATE TABLE users (
 ) ENGINE=InnoDB;
 
 ALTER TABLE couples ADD CONSTRAINT fk_couples_creator FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL;
+
+CREATE TABLE couple_members (
+  id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  couple_id BIGINT UNSIGNED NOT NULL,
+  user_id BIGINT UNSIGNED NOT NULL,
+  joined_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  left_at DATETIME NULL,
+  CONSTRAINT fk_couple_members_couple FOREIGN KEY (couple_id) REFERENCES couples(id) ON DELETE CASCADE,
+  CONSTRAINT fk_couple_members_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  UNIQUE KEY uk_couple_member (couple_id,user_id),
+  INDEX idx_member_user_active (user_id,left_at,joined_at),
+  INDEX idx_member_couple_active (couple_id,left_at)
+) ENGINE=InnoDB;
 
 CREATE TABLE starter_categories (
   id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,

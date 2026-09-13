@@ -6,7 +6,7 @@
         <view class="category {{categoryId===''?'active':''}}" bindtap="chooseCategory" data-id=""><text class="category-icon">🍽️</text><text class="category-name">全部</text></view>
         <view wx:for="{{categories}}" wx:key="id" class="category {{categoryId==item.id?'active':''}}" bindtap="chooseCategory" data-id="{{item.id}}"><text class="category-icon">{{item.icon}}</text><text class="category-name">{{item.name}}</text><text wx:if="{{item.cartCount}}" class="category-count">{{item.cartCount}}</text></view>
       </scroll-view>
-      <view class="selected-entry" bindtap="goCart"><text class="category-icon">⌑</text><view class="selected-copy"><text>已选菜品</text><text>{{cartCount?cartCount+' 件 · 去提交':'去看看小菜单'}}</text></view><view wx:if="{{cartCount}}" class="selected-count">{{cartCount}}</view></view>
+      <view class="selected-entry" bindtap="toggleSelected"><text class="category-icon">⌑</text><view class="selected-copy"><text>已选菜品</text><text>{{cartCount?cartCount+' 件 · 点击展开':'还没有选菜'}}</text></view><view wx:if="{{cartCount}}" class="selected-count">{{cartCount}}</view></view>
     </view>
     <scroll-view scroll-y class="dish-list">
       <view class="list-title">{{activeCategoryName}}</view>
@@ -22,5 +22,10 @@
       </block>
       <view class="bottom-space"></view>
     </scroll-view>
+  </view>
+  <view wx:if="{{selectedExpanded}}" class="selected-sheet">
+    <view class="sheet-head"><view><text class="sheet-title">已选菜品</text><text class="sheet-count">{{cartCount}} 件</text></view><text class="clear" bindtap="clearSelected">一键清空</text></view>
+    <scroll-view scroll-y class="sheet-list"><view wx:for="{{selectedItems}}" wx:key="dishId" class="sheet-item"><text class="sheet-dish-name">{{item.dishName}}</text><view class="sheet-counter"><text class="counter-button" catchtap="changeQuantity" data-id="{{item.dishId}}" data-delta="-1">−</text><text class="counter-value">{{item.quantity}}</text><text class="counter-button plus" catchtap="changeQuantity" data-id="{{item.dishId}}" data-delta="1">＋</text><text class="remove-selected" catchtap="removeSelected" data-id="{{item.dishId}}">删除</text></view></view><empty-state wx:if="{{!selectedItems.length}}" icon="🥣" title="还没有选菜" hint="从菜单里挑几样喜欢的吧"/></scroll-view>
+    <button class="btn sheet-submit" bindtap="goCart">去提交</button>
   </view>
 </view>

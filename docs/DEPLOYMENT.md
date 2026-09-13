@@ -15,9 +15,10 @@ mysql -u root -p < database/seed.sql
 mysql -u root -p little_table < database/migrations/001_couple_owned_categories.sql
 mysql -u root -p little_table < database/migrations/002_couple_home_copy.sql
 mysql -u root -p little_table < database/migrations/003_separate_starter_menu.sql
+mysql -u root -p little_table < database/migrations/004_couple_memberships.sql
 ```
 
-全新安装不要执行这些迁移，因为最新 `schema.sql` 已包含相应字段和索引。旧库应严格按编号执行；`002` 增加饭桌级首页主副标题，`003` 将初始化模板与真实饭桌菜单分表并收紧 `couple_id` 非空约束。
+全新安装不要执行这些迁移，因为最新 `schema.sql` 已包含相应字段和索引。旧库应严格按编号执行；`002` 增加饭桌级首页主副标题，`003` 将初始化模板与真实饭桌菜单分表并收紧 `couple_id` 非空约束，`004` 增加饭桌稳定 UUID 和可保留多张饭桌关联的成员表。
 
 生产环境建议为 `little_table` 单独创建只拥有该库 DML 权限的用户，不要让应用使用 root。
 

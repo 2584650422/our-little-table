@@ -14,6 +14,6 @@
     <view id="members" class="section-title">饭桌成员 · {{couple.members.length}} / 2</view>
     <view class="card members"><view wx:for="{{couple.members}}" wx:key="id" class="member"><image wx:if="{{item.avatarUrl}}" class="member-avatar" src="{{item.avatarUrl}}" mode="aspectFill"/><view wx:else class="avatar">{{item.nickname[0]}}</view><view class="member-info"><view>{{item.nickname}}<text wx:if="{{item.id==currentUserId}}" class="me-tag">我</text></view><text>{{item.id==currentUserId?'可在上方修改自己的头像和称呼':(item.id===couple.createdBy?'创建者 · 仅查看':'对方 · 仅查看')}}</text></view></view></view>
     <view wx:if="{{couple.members.length<2}}" class="card invite"><view class="label">邀请另一半</view><view wx:if="{{couple.inviteCode}}" class="code">{{couple.inviteCode}}</view><view class="hint">邀请码有效期 7 天，只能再加入 1 人。</view><view class="invite-actions"><button wx:if="{{couple.inviteCode}}" bindtap="copy">复制邀请码</button><button bindtap="invite">{{couple.inviteCode?'换一个':'生成邀请码'}}</button></view></view>
-    <view class="danger"><view class="danger-title">离开小饭桌</view><view>退出后不再共享菜单和点菜记录。最后一位成员退出时会删除整张饭桌。</view><button bindtap="leave">退出当前小饭桌</button></view>
+    <view class="danger"><view class="danger-title">离开小饭桌</view><view>退出只会移除你和这张饭桌的关系，饭桌与历史记录仍会保留。</view><button bindtap="leave">退出当前小饭桌</button><view class="danger-title delete-title">删除整张小饭桌</view><view>仅创建者且没有其他成员时可删除，菜单、订单和照片都会永久移除。</view><button class="delete-couple" bindtap="deleteCouple">永久删除小饭桌</button></view>
   </block>
 </view>

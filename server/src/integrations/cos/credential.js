@@ -12,7 +12,7 @@ function getCredential({ mimeType, size, purpose }) {
   if (!env.cos.secretId || !env.cos.secretKey || !env.cos.bucket || !env.cos.region) {
     throw new AppError('图片上传暂未配置', 503)
   }
-  const now = new Date(),folder=purpose==='avatar'?'avatar-images':'dish-images'
+  const now = new Date(),folder=purpose==='avatar'?'avatar-images':purpose==='meal'?'meal-images':'dish-images'
   const key = `${folder}/${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${randomUUID()}.${allowed[mimeType]}`
   const shortBucket = env.cos.bucket.replace(/-\d+$/, '')
   const appId = env.cos.bucket.slice(shortBucket.length + 1)

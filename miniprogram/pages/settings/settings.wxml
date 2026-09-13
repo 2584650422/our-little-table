@@ -13,6 +13,7 @@
       <view class="link-row" bindtap="manage"><view class="link-main"><text class="link-icon">☷</text><text class="link-label">菜单与分类管理</text></view><text class="link-arrow">›</text></view>
       <view class="link-row" bindtap="subscribe"><view class="link-main"><text class="link-icon">◌</text><text class="link-label">微信点菜提醒</text></view><text class="link-arrow">›</text></view>
       <view class="link-row" bindtap="coupleSettings"><view class="link-main"><text class="link-icon">⚙</text><text class="link-label">小饭桌设置</text></view><text class="link-arrow">›</text></view>
+      <view class="link-row" bindtap="couple"><view class="link-main"><text class="link-icon">⇄</text><text class="link-label">切换小饭桌</text></view><text class="link-arrow">›</text></view>
       <view class="link-row"><view class="link-main"><text class="link-icon">○</text><text class="link-label">关于两个人的小饭桌</text></view><text class="link-arrow">›</text></view>
     </view>
   </block>

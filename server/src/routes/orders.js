@@ -1,47 +1,27 @@
-const router = require('express').Router()
-const db = require('../config/db')
-const { auth, requireCouple } = require('../middleware/auth')
-const { AppError, ok, asyncRoute } = require('../utils/http')
-const { notifyNewOrder } = require('../services/notificationService')
-const { ensureCoupleMenu } = require('../services/coupleMenuService')
-router.use(auth, requireCouple)
+const router=require('express').Router()
+const db=require('../config/db')
+const {auth,requireCouple}=require('../middleware/auth')
+const {AppError,ok,asyncRoute}=require('../utils/http')
+const {notifyNewOrder}=require('../services/notificationService')
+const {ensureCoupleMenu}=require('../services/coupleMenuService')
+router.use(auth,requireCouple)
 
-const transitions={pending:['accepted','cancelled'],accepted:['preparing','cancelled'],preparing:['ready','cancelled'],ready:['completed','cancelled'],completed:[],cancelled:[]}
-const timeColumn={accepted:'accepted_at',preparing:'preparing_at',ready:'ready_at',completed:'completed_at',cancelled:'cancelled_at'}
-const hydrate=async orders=>{ if(!orders.length)return orders; const ids=orders.map(o=>o.id); const [items]=await db.query(`SELECT id,order_id AS orderId,dish_id AS dishId,dish_name AS dishName,dish_image_url AS dishImageUrl,dish_calorie_kcal AS dishCalorieKcal,dish_calorie_unit AS dishCalorieUnit,quantity,note FROM order_items WHERE order_id IN (${ids.map(()=>'?').join(',')}) ORDER BY id`,ids); return orders.map(o=>({...o,items:items.filter(i=>i.orderId===o.id)})) }
+const transitions={pending:['ready','cancelled'],accepted:['ready','cancelled'],preparing:['ready','cancelled'],ready:['completed','cancelled'],completed:[],cancelled:[]}
+const timeColumn={ready:'ready_at',completed:'completed_at',cancelled:'cancelled_at'}
+const dateExpr="DATE_FORMAT(o.meal_date,'%Y-%m-%d')"
+const hydrate=async orders=>{if(!orders.length)return orders;const ids=orders.map(o=>o.id);const placeholders=ids.map(()=>'?').join(',');const [items]=await db.query(`SELECT id,order_id AS orderId,dish_id AS dishId,dish_name AS dishName,dish_image_url AS dishImageUrl,dish_calorie_kcal AS dishCalorieKcal,dish_calorie_unit AS dishCalorieUnit,quantity,note FROM order_items WHERE order_id IN (${placeholders}) ORDER BY id`,ids);const [reviews]=await db.query(`SELECT order_id AS orderId,image_url AS imageUrl FROM meal_reviews WHERE order_id IN (${placeholders}) AND image_url IS NOT NULL ORDER BY created_at DESC`,ids);return orders.map(o=>({...o,items:items.filter(i=>i.orderId===o.id),servedImageUrl:reviews.find(r=>r.orderId===o.id)?.imageUrl||null}))}
 
-router.post('/', asyncRoute(async(req,res)=>{
-  await ensureCoupleMenu(req.user.coupleId)
-  const items=Array.isArray(req.body.items)?req.body.items:[]
-  if(!items.length||items.length>30)throw new AppError('先选一道想吃的吧')
-  const quantities=new Map(); for(const item of items){const id=Number(item.dishId),q=Math.max(1,Math.min(20,Number(item.quantity)||1)); if(id)quantities.set(id,q)}
-  const ids=[...quantities.keys()]; if(!ids.length)throw new AppError('点菜单里没有有效菜品')
-  const [dishes]=await db.query(`SELECT id,name,image_url AS imageUrl,calorie_kcal AS calorieKcal,calorie_unit AS calorieUnit FROM dishes WHERE enabled=1 AND couple_id=? AND id IN (${ids.map(()=>'?').join(',')})`,[req.user.coupleId,...ids])
-  if(dishes.length!==ids.length)throw new AppError('有菜品已经下架，请刷新点菜单')
-  const mealTypes=['breakfast','lunch','dinner','late_night','snack','casual'],mealType=mealTypes.includes(req.body.mealType)?req.body.mealType:'dinner'
-  const mealDate=/^\d{4}-\d{2}-\d{2}$/.test(req.body.mealDate||'')?req.body.mealDate:new Date().toISOString().slice(0,10)
-  const total=dishes.reduce((sum,d)=>sum+(d.calorieKcal||0)*quantities.get(d.id),0)||null
-  const [[target]]=await db.query('SELECT id,openid FROM users WHERE couple_id=? AND id<>? LIMIT 1',[req.user.coupleId,req.user.id])
-  const conn=await db.getConnection(); let orderId
-  try{await conn.beginTransaction(); const orderNo=`LT${Date.now()}${Math.floor(Math.random()*900+100)}`; const [result]=await conn.query('INSERT INTO orders (order_no,couple_id,creator_user_id,target_user_id,meal_type,meal_date,message,total_calories) VALUES (?,?,?,?,?,?,?,?)',[orderNo,req.user.coupleId,req.user.id,target?.id||null,mealType,mealDate,String(req.body.message||'').slice(0,300)||null,total]); orderId=result.insertId
-    for(const d of dishes)await conn.query('INSERT INTO order_items (order_id,dish_id,dish_name,dish_image_url,dish_calorie_kcal,dish_calorie_unit,quantity,note) VALUES (?,?,?,?,?,?,?,?)',[orderId,d.id,d.name,d.imageUrl,d.calorieKcal,d.calorieUnit,quantities.get(d.id),null]); await conn.commit()
-  }catch(e){await conn.rollback();throw e}finally{conn.release()}
-  const mealNames={breakfast:'早餐',lunch:'午餐',dinner:'晚餐',late_night:'夜宵',snack:'零食',casual:'随便吃点'}
-  const dishNames=dishes.map(d=>d.name).join('、'); const notification=await notifyNewOrder(target,{id:orderId,title:mealNames[mealType],dishNames,message:req.body.message,mealDate})
-  ok(res,{id:orderId,notification},'点好啦，等对方接单～')
-}))
+router.post('/',asyncRoute(async(req,res)=>{await ensureCoupleMenu(req.user.coupleId);const items=Array.isArray(req.body.items)?req.body.items:[];if(!items.length||items.length>30)throw new AppError('先选一道想吃的吧');const quantities=new Map();for(const item of items){const id=Number(item.dishId),q=Math.max(1,Math.min(20,Number(item.quantity)||1));if(id)quantities.set(id,q)}const ids=[...quantities.keys()];if(!ids.length)throw new AppError('点菜单里没有有效菜品');const [dishes]=await db.query(`SELECT id,name,image_url AS imageUrl,calorie_kcal AS calorieKcal,calorie_unit AS calorieUnit FROM dishes WHERE enabled=1 AND couple_id=? AND id IN (${ids.map(()=>'?').join(',')})`,[req.user.coupleId,...ids]);if(dishes.length!==ids.length)throw new AppError('有菜品已经下架，请刷新点菜单');const mealTypes=['breakfast','lunch','dinner','late_night','snack','casual'],mealType=mealTypes.includes(req.body.mealType)?req.body.mealType:'dinner',mealDate=/^\d{4}-\d{2}-\d{2}$/.test(req.body.mealDate||'')?req.body.mealDate:new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Shanghai'}),total=dishes.reduce((sum,d)=>sum+(d.calorieKcal||0)*quantities.get(d.id),0)||null;const [[target]]=await db.query('SELECT u.id,u.openid FROM couple_members cm JOIN users u ON u.id=cm.user_id WHERE cm.couple_id=? AND cm.left_at IS NULL AND u.id<>? LIMIT 1',[req.user.coupleId,req.user.id]);const conn=await db.getConnection();let orderId;try{await conn.beginTransaction();const orderNo=`LT${Date.now()}${Math.floor(Math.random()*900+100)}`;const [result]=await conn.query('INSERT INTO orders (order_no,couple_id,creator_user_id,target_user_id,meal_type,meal_date,message,total_calories) VALUES (?,?,?,?,?,?,?,?)',[orderNo,req.user.coupleId,req.user.id,target?.id||null,mealType,mealDate,String(req.body.message||'').slice(0,300)||null,total]);orderId=result.insertId;for(const d of dishes)await conn.query('INSERT INTO order_items (order_id,dish_id,dish_name,dish_image_url,dish_calorie_kcal,dish_calorie_unit,quantity,note) VALUES (?,?,?,?,?,?,?,?)',[orderId,d.id,d.name,d.imageUrl,d.calorieKcal,d.calorieUnit,quantities.get(d.id),null]);await conn.commit()}catch(e){await conn.rollback();throw e}finally{conn.release()}const mealNames={breakfast:'早餐',lunch:'午餐',dinner:'晚餐',late_night:'夜宵',snack:'零食',casual:'随便吃点'},notification=await notifyNewOrder(target,{id:orderId,title:mealNames[mealType],dishNames:dishes.map(d=>d.name).join('、'),message:req.body.message,mealDate});ok(res,{id:orderId,notification},'点好啦，等对方上菜～')}))
 
-router.get('/',asyncRoute(async(req,res)=>{
-  const where=['o.couple_id=?'],params=[req.user.coupleId]
-  if(req.query.scope==='history')where.push("o.status IN ('completed','cancelled')")
-  if(req.query.scope==='active')where.push("o.status NOT IN ('completed','cancelled')")
-  const [rows]=await db.query(`SELECT o.id,o.order_no AS orderNo,o.meal_type AS mealType,o.meal_date AS mealDate,o.message,o.status,o.total_calories AS totalCalories,o.created_at AS createdAt,u.nickname AS creatorName,o.creator_user_id AS creatorUserId FROM orders o JOIN users u ON u.id=o.creator_user_id WHERE ${where.join(' AND ')} ORDER BY o.created_at DESC LIMIT 100`,params)
-  ok(res,await hydrate(rows))
-}))
+router.get('/',asyncRoute(async(req,res)=>{const where=['o.couple_id=?'],params=[req.user.coupleId];if(req.query.scope==='history')where.push("o.status IN ('completed','cancelled')");if(req.query.scope==='active')where.push("o.status NOT IN ('completed','cancelled')");const [rows]=await db.query(`SELECT o.id,o.order_no AS orderNo,o.meal_type AS mealType,${dateExpr} AS mealDate,o.message,o.status,o.total_calories AS totalCalories,o.created_at AS createdAt,u.nickname AS creatorName,o.creator_user_id AS creatorUserId FROM orders o JOIN users u ON u.id=o.creator_user_id WHERE ${where.join(' AND ')} ORDER BY o.created_at DESC LIMIT 100`,params);ok(res,await hydrate(rows))}))
 
-router.get('/:id',asyncRoute(async(req,res)=>{ const [[row]]=await db.query(`SELECT o.*,u.nickname AS creatorName,t.nickname AS targetName FROM orders o JOIN users u ON u.id=o.creator_user_id LEFT JOIN users t ON t.id=o.target_user_id WHERE o.id=? AND o.couple_id=?`,[req.params.id,req.user.coupleId]); if(!row)throw new AppError('这次点菜记录找不到啦',404); ok(res,(await hydrate([row]))[0]) }))
+router.get('/:id',asyncRoute(async(req,res)=>{const [[row]]=await db.query(`SELECT o.id,o.order_no AS orderNo,o.couple_id AS coupleId,o.creator_user_id AS creatorUserId,o.target_user_id AS targetUserId,o.meal_type AS mealType,${dateExpr} AS mealDate,o.message,o.status,o.total_calories AS totalCalories,o.created_at AS createdAt,o.ready_at AS readyAt,o.completed_at AS completedAt,u.nickname AS creatorName,t.nickname AS targetName FROM orders o JOIN users u ON u.id=o.creator_user_id LEFT JOIN users t ON t.id=o.target_user_id WHERE o.id=? AND o.couple_id=?`,[req.params.id,req.user.coupleId]);if(!row)throw new AppError('这次点菜记录找不到啦',404);ok(res,(await hydrate([row]))[0])}))
 
-router.put('/:id/status',asyncRoute(async(req,res)=>{ const [[order]]=await db.query('SELECT status FROM orders WHERE id=? AND couple_id=?',[req.params.id,req.user.coupleId]); if(!order)throw new AppError('订单找不到啦',404); const next=req.body.status; if(!transitions[order.status].includes(next))throw new AppError('现在还不能切换到这个状态'); await db.query(`UPDATE orders SET status=?,${timeColumn[next]}=NOW() WHERE id=? AND couple_id=?`,[next,req.params.id,req.user.coupleId]); ok(res,{status:next},next==='ready'?'好啦，准备开饭 ❤️':'状态更新好啦') }))
+router.put('/:id/status',asyncRoute(async(req,res)=>{const [[order]]=await db.query('SELECT status FROM orders WHERE id=? AND couple_id=?',[req.params.id,req.user.coupleId]);if(!order)throw new AppError('订单找不到啦',404);const next=req.body.status;if(!transitions[order.status]?.includes(next))throw new AppError('现在还不能切换到这个状态');await db.query(`UPDATE orders SET status=?,${timeColumn[next]}=NOW() WHERE id=? AND couple_id=?`,[next,req.params.id,req.user.coupleId]);ok(res,{status:next},next==='ready'?'上菜成功，准备好开饭啦 ❤️':'状态更新好啦')}))
 
-router.post('/:id/reorder',asyncRoute(async(req,res)=>{ const [[order]]=await db.query('SELECT id FROM orders WHERE id=? AND couple_id=?',[req.params.id,req.user.coupleId]); if(!order)throw new AppError('历史记录找不到啦',404); const [items]=await db.query('SELECT dish_id AS dishId,dish_name AS dishName,dish_image_url AS imageUrl,dish_calorie_kcal AS calorieKcal,dish_calorie_unit AS calorieUnit,quantity FROM order_items WHERE order_id=?',[req.params.id]); ok(res,{items},'已经放回今天的小菜单啦') }))
+router.post('/:id/serve',asyncRoute(async(req,res)=>{const imageUrl=req.body.imageUrl?String(req.body.imageUrl).slice(0,500):null,imageKey=req.body.imageKey?String(req.body.imageKey).slice(0,255):null,conn=await db.getConnection();try{await conn.beginTransaction();const [[order]]=await conn.query('SELECT status FROM orders WHERE id=? AND couple_id=? FOR UPDATE',[req.params.id,req.user.coupleId]);if(!order)throw new AppError('订单找不到啦',404);if(!['pending','accepted','preparing'].includes(order.status))throw new AppError('这顿饭已经上过菜啦');await conn.query("UPDATE orders SET status='ready',ready_at=NOW() WHERE id=? AND couple_id=?",[req.params.id,req.user.coupleId]);if(imageUrl)await conn.query('INSERT INTO meal_reviews (order_id,user_id,image_key,image_url) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE image_key=VALUES(image_key),image_url=VALUES(image_url)',[req.params.id,req.user.id,imageKey,imageUrl]);await conn.commit();ok(res,{status:'ready',imageUrl},'上菜成功，准备好开饭啦 ❤️')}catch(error){await conn.rollback();throw error}finally{conn.release()}}))
+
+router.delete('/:id',asyncRoute(async(req,res)=>{const [[order]]=await db.query('SELECT status FROM orders WHERE id=? AND couple_id=?',[req.params.id,req.user.coupleId]);if(!order)throw new AppError('记录找不到啦',404);if(!['completed','cancelled'].includes(order.status))throw new AppError('正在进行的点菜不能删除，请先取消或完成');await db.query('DELETE FROM orders WHERE id=? AND couple_id=?',[req.params.id,req.user.coupleId]);ok(res,{},'这条饭饭记录已删除')}))
+
+router.post('/:id/reorder',asyncRoute(async(req,res)=>{const [[order]]=await db.query('SELECT id FROM orders WHERE id=? AND couple_id=?',[req.params.id,req.user.coupleId]);if(!order)throw new AppError('历史记录找不到啦',404);const [items]=await db.query('SELECT dish_id AS dishId,dish_name AS dishName,dish_image_url AS imageUrl,dish_calorie_kcal AS calorieKcal,dish_calorie_unit AS calorieUnit,quantity FROM order_items WHERE order_id=?',[req.params.id]);ok(res,{items},'已经放回今天的小菜单啦')}))
 module.exports=router

@@ -1,7 +1,7 @@
 const api=require('../../services/dishes'),cart=require('../../utils/cart')
 
 Page({
-  data:{categories:[],dishes:[],categoryId:'',keyword:'',loading:true,error:'',cartCount:0,activeCategoryName:'全部菜品'},
+  data:{categories:[],dishes:[],categoryId:'',keyword:'',loading:true,error:'',cartCount:0,activeCategoryName:'全部菜品',selectedItems:[],selectedExpanded:false},
   onShow(){this.load()},
   async load(){
     this.setData({loading:true,error:''})
@@ -23,7 +23,7 @@ Page({
       if(categoryId)counts[String(categoryId)]=(counts[String(categoryId)]||0)+item.quantity
     })
     const categories=(sourceCategories||this.data.categories).map(item=>({...item,cartCount:counts[String(item.id)]||0}))
-    this.setData({categories,cartCount:list.reduce((sum,item)=>sum+item.quantity,0)})
+    this.setData({categories,cartCount:list.reduce((sum,item)=>sum+item.quantity,0),selectedItems:list})
   },
   applyFilters(sourceCategories){
     const keyword=this.data.keyword.trim().toLowerCase(),categoryId=String(this.data.categoryId||'')
@@ -48,5 +48,21 @@ Page({
       this.applyFilters();wx.showToast({title:!dish.isFavorite?'收藏好啦 ❤️':'已取消收藏',icon:'none'})
     }catch(err){wx.showToast({title:err.message,icon:'none'})}
   },
-  goCart(){wx.navigateTo({url:'/pages/cart/cart'})}
+  toggleSelected(){this.setData({selectedExpanded:!this.data.selectedExpanded})},
+  goCart(){wx.navigateTo({url:'/pages/cart/cart'})},
+  changeQuantity(e){
+    const dishId=String(e.currentTarget.dataset.id),delta=Number(e.currentTarget.dataset.delta)
+    const list=cart.get().map(item=>String(item.dishId)===dishId?{...item,quantity:Math.max(0,item.quantity+delta)}:item).filter(item=>item.quantity>0)
+    cart.save(list);this.refreshCartState()
+  },
+  removeSelected(e){
+    const dishId=String(e.currentTarget.dataset.id)
+    cart.save(cart.get().filter(item=>String(item.dishId)!==dishId));this.refreshCartState()
+  },
+  async clearSelected(){
+    if(!this.data.cartCount)return
+    const result=await new Promise(resolve=>wx.showModal({title:'清空已选菜品？',content:'这次加入的小菜单会全部移除。',confirmText:'清空',confirmColor:'#C45F7D',success:resolve}))
+    if(!result.confirm)return
+    cart.clear();this.refreshCartState();this.setData({selectedExpanded:false});wx.showToast({title:'已清空小菜单',icon:'none'})
+  }
 })
