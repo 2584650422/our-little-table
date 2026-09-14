@@ -49,7 +49,7 @@ Page({
     }catch(err){wx.showToast({title:err.message,icon:'none'})}
   },
   toggleSelected(){this.setData({selectedExpanded:!this.data.selectedExpanded})},
-  goCart(){wx.navigateTo({url:'/pages/cart/cart'})},
+  goCart(){this.setData({selectedExpanded:false});wx.navigateTo({url:'/pages/cart/cart'})},
   changeQuantity(e){
     const dishId=String(e.currentTarget.dataset.id),delta=Number(e.currentTarget.dataset.delta)
     const list=cart.get().map(item=>String(item.dishId)===dishId?{...item,quantity:Math.max(0,item.quantity+delta)}:item).filter(item=>item.quantity>0)
