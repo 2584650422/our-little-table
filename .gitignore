@@ -5,6 +5,10 @@ server/node_modules/
 .env
 server/.env
 server/logs/
+server/.venv/
+server/__pycache__/
+server/app/__pycache__/
+*.py[cod]
 npm-debug.log*
 coverage/
 dist/

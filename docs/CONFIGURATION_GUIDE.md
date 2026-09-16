@@ -81,8 +81,8 @@ git status --short
 
 | 后端运行位置 | MySQL 运行位置 | 建议值 |
 | --- | --- | --- |
-| Mac 本机直接运行 Node.js | 同一台 Mac | `127.0.0.1` |
-| 云服务器直接运行 Node.js | 同一台云服务器 | `127.0.0.1` |
+| Mac 本机直接运行 Python 服务 | 同一台 Mac | `127.0.0.1` |
+| 云服务器直接运行 Python 服务 | 同一台云服务器 | `127.0.0.1` |
 | Docker 容器内运行后端 | Mac/Windows 宿主机 | `host.docker.internal` |
 | Docker 容器内运行后端 | 同一个 Compose 网络的 MySQL | MySQL 服务名，例如 `mysql` |
 | 云服务器 A | 云数据库或服务器 B | 数据库的内网地址，优先使用内网 |
@@ -190,7 +190,7 @@ MYSQL_PASSWORD="包含特殊字符的密码"
 
 ### `MYSQL_CONNECTION_LIMIT`
 
-这是 Node.js 连接池最多保留的连接数，不是 MySQL 服务端的全局最大连接数。两个人使用：
+这是服务端可同时建立的连接规模建议，不是 MySQL 服务端的全局最大连接数。两个人使用：
 
 ```ini
 MYSQL_CONNECTION_LIMIT=10
@@ -362,7 +362,7 @@ WECHAT_TEMPLATE_DATE_KEY=date4
 你选模板时应尽量找到语义和字段类型都能匹配上述四项的模板。如果后台模板没有四个合适字段，不要硬填；应根据真实模板调整：
 
 ```text
-server/src/integrations/wechat/client.js
+server/app/main.py
 ```
 
 配置完成后，两个人都需要分别在自己的微信账号中主动点击“开启点菜提醒”。订阅授权属于当前 OpenID，A 授权不会自动替 B 授权。拒绝授权或发送失败都不影响订单主流程。
@@ -536,9 +536,10 @@ openssl rand -hex 32
 ### 第 3 步：安装并启动后端
 
 ```bash
-npm install
-npm run check
-npm run dev
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+.venv/bin/python -m compileall -q app
+.venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 3000
 ```
 
 ### 第 4 步：验证数据库健康状态
@@ -638,22 +639,19 @@ apiBaseUrl: 'https://api.example.com'
 
 - 应用代码负责定义日志结构、脱敏、级别和 Request ID；
 - 应用只向 stdout/stderr 输出，不自己维护日志文件；
-- 开发环境由 npm 启动指令决定是否用 `tee` 留存日志；
-- 生产环境由 Docker、systemd、PM2 或云平台管理 PID、重启与日志轮转。
+- 开发环境由 Uvicorn 启动指令决定是否用 `tee` 留存日志；
+- 生产环境由 Docker、systemd、Supervisor 或云平台管理 PID、重启与日志轮转。
 
-这样不会在 `node --watch` 子进程重启时产生过期 PID 文件，也不会把业务进程与日志文件生命周期耦合。
+这样不会在 Uvicorn 自动重载时产生过期 PID 文件，也不会把业务进程与日志文件生命周期耦合。
 
 ### 日志配置
 
 ```ini
 LOG_LEVEL=info
-LOG_FORMAT=pretty
 MYSQL_CONNECT_TIMEOUT_MS=5000
 ```
 
 - `LOG_LEVEL`：可选 `debug`、`info`、`warn`、`error`。
-- `LOG_FORMAT=pretty`：便于本地阅读。
-- `LOG_FORMAT=json`：每行一个 JSON，适合 Docker、systemd 和日志平台。
 - `MYSQL_CONNECT_TIMEOUT_MS=5000`：数据库不可达时最多等待约 5 秒。
 
 ### 三个常用启动命令
@@ -662,38 +660,38 @@ MYSQL_CONNECT_TIMEOUT_MS=5000
 
 ```bash
 cd /Users/yc/Desktop/food_project/server
-npm run dev
+.venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 3000
 ```
 
 同时在终端显示并保存到 `server/logs/dev.log`：
 
 ```bash
-npm run dev:log
+mkdir -p logs && .venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 3000 2>&1 | tee -a logs/dev.log
 ```
 
 另开终端跟踪保存的日志：
 
 ```bash
-npm run logs
+tail -f logs/dev.log
 ```
 
 生产启动：
 
 ```bash
-LOG_FORMAT=json npm start
+.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 3000
 ```
 
-`dev:log` 中的 `tee` 属于启动命令行为；应用本身并不知道日志最终被写入文件、Docker stdout、journald 还是其他平台。
+带 `tee` 的启动命令属于运行方式；应用本身并不知道日志最终被写入文件、Docker stdout、journald 还是其他平台。
 
 ### PID 怎么看
 
-服务启动日志会同时输出 Node 子进程 PID 和父进程 PID：
+服务启动日志会输出 Python/Uvicorn 的 PID：
 
 ```text
-INFO pid=12345 server.started {"pid":12345,"parentPid":12344,...}
+INFO:     Uvicorn running on http://0.0.0.0:3000
 ```
 
-本地 `node --watch` 会管理子进程，通常直接在运行终端按 `Ctrl+C` 停止。需要检查端口对应进程时：
+本地 `uvicorn --reload` 会管理重载进程，通常直接在运行终端按 `Ctrl+C` 停止。需要检查端口对应进程时：
 
 ```bash
 lsof -nP -iTCP:3000 -sTCP:LISTEN
@@ -705,17 +703,16 @@ lsof -nP -iTCP:3000 -sTCP:LISTEN
 ps -p <上一步看到的PID> -o pid,ppid,command
 ```
 
-生产环境不要依靠项目内 PID 文件；Docker 使用容器 PID，systemd 使用 `MainPID`，PM2 使用自己的进程表。
+生产环境不要依靠项目内 PID 文件；Docker 使用容器 PID，systemd 使用 `MainPID`，Supervisor 使用自己的进程表。
 
 ### 启动日志内容
 
 成功监听后会输出：
 
-- PID 和父 PID；
+- PID；
 - 当前环境和监听地址；
 - Health 地址；
 - MySQL Host、Port、数据库名、用户名；
-- MySQL 凭据是否完整；
 - 微信、COS、订阅消息是否完成配置。
 
 日志不会输出 MySQL 密码、JWT、AppSecret、COS SecretKey、access token 或 session_key。日志对象中命中 `password`、`secret`、`token`、`authorization` 等名称的字段会被替换为 `[REDACTED]`。
@@ -732,7 +729,7 @@ ps -p <上一步看到的PID> -o pid,ppid,command
 curl -i http://127.0.0.1:3000/health
 ```
 
-使用 `npm run dev:log` 时，可以搜索某次请求：
+使用带 `tee` 的启动命令时，可以搜索某次请求：
 
 ```bash
 rg '<Request ID>' logs/dev.log

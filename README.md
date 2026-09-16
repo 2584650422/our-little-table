@@ -22,8 +22,8 @@
 ## 技术架构
 
 - 小程序：原生 JavaScript + WXML + WXSS。
-- API：Node.js 20 + Express + JWT。
-- 数据：MySQL 8 + `mysql2/promise`。
+- API：Python 3.9+ + FastAPI + JWT。
+- 数据：MySQL 8 + PyMySQL。
 - 外部服务：微信开放接口、腾讯云 COS STS。
 
 设计细节见 [PRODUCT_DESIGN.md](docs/PRODUCT_DESIGN.md)，安全和分层见 [ARCHITECTURE.md](docs/ARCHITECTURE.md)。
@@ -40,7 +40,10 @@
 │   ├── pages/           # 首页、菜单、详情、点菜单、订单、我们、管理
 │   ├── services/        # 小程序统一请求与业务 API
 │   └── utils/           # 点菜单、格式化、COS 签名
-├── server/              # Express API、Dockerfile、环境变量模板
+├── server/              # FastAPI、Dockerfile、环境变量模板
+│   ├── app/             # Python 路由、认证、MySQL 与第三方集成
+│   ├── requirements.txt # Python 依赖锁定
+│   └── Makefile         # install / dev / start / check 快捷命令
 ├── database/            # schema.sql、seed.sql、增量 migrations
 └── docs/                # 产品、架构、部署文档
 ```
@@ -52,9 +55,12 @@ mysql -u root -p < database/schema.sql
 mysql -u root -p < database/seed.sql
 cd server
 cp .env.example .env
-npm install
-npm run dev
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+.venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 3000
 ```
+
+安装完成后也可以在 `server/` 中直接运行 `make dev`；检查 Python 语法使用 `make check`。
 
 然后：
 
@@ -88,7 +94,7 @@ mysql -u root -p little_table < database/migrations/004_couple_memberships.sql
 
 ```bash
 cd server
-npm run check
+.venv/bin/python -m compileall -q app
 curl http://127.0.0.1:3000/health
 ```
 
@@ -98,16 +104,16 @@ curl http://127.0.0.1:3000/health
 
 ```bash
 cd server
-npm run dev
+.venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 3000
 ```
 
 需要同时保存本地日志时运行：
 
 ```bash
-npm run dev:log
+mkdir -p logs && .venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 3000 2>&1 | tee -a logs/dev.log
 ```
 
-该启动命令通过 `tee` 保存到 `server/logs/dev.log`。PID 和生产日志管理交给 `node --watch`、Docker、systemd 或 PM2，不由应用写 PID 文件。完整说明见 [首次测试配置指南的日志与进程章节](docs/CONFIGURATION_GUIDE.md#十服务端日志进程与请求追踪)。
+该启动命令通过 `tee` 保存到 `server/logs/dev.log`。PID 和生产日志管理交给 Uvicorn、Docker、systemd 或 Supervisor，不由应用写 PID 文件。完整说明见 [首次测试配置指南的日志与进程章节](docs/CONFIGURATION_GUIDE.md#十服务端日志进程与请求追踪)。
 
 ## TODO
 

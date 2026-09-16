@@ -35,13 +35,16 @@ cp .env.example .env
 
 ```bash
 cd server
-npm install
-npm run dev
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+.venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 3000
 ```
+
+依赖已安装后，可用 `make dev` 代替最后一条命令；部署时用 `make start`。
 
 访问 `http://127.0.0.1:3000/health` 检查数据库连接。微信开发者工具应打开 `food_project/miniprogram`。本地调试时，把 `miniprogram/config/index.js` 的 `apiBaseUrl` 改为本机可访问地址；仅本地开发可暂时关闭“校验合法域名”。真机不能用 `127.0.0.1` 指向电脑。
 
-应用只向 stdout/stderr 输出结构化日志。本地用 `npm run dev` 直接查看，或用 `npm run dev:log` 通过启动命令保存到 `server/logs/dev.log`。生产 PID、重启和日志轮转交给 Docker、systemd、PM2 或云平台；建议使用 `LOG_FORMAT=json`。详细说明见 [`CONFIGURATION_GUIDE.md`](CONFIGURATION_GUIDE.md#十服务端日志进程与请求追踪)。
+应用只向 stdout/stderr 输出日志。本地使用 Uvicorn 直接查看，或用以下命令保存到 `server/logs/dev.log`：`mkdir -p logs && .venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 3000 2>&1 | tee -a logs/dev.log`。生产 PID、重启和日志轮转交给 Docker、systemd、Supervisor 或云平台。详细说明见 [`CONFIGURATION_GUIDE.md`](CONFIGURATION_GUIDE.md#十服务端日志进程与请求追踪)。
 
 ## 4. Docker
 
@@ -95,7 +98,7 @@ server {
 - 服务端 `.env` 的 `WECHAT_ORDER_TEMPLATE_ID`；
 - 小程序 `miniprogram/config/index.js` 的 `wechatOrderTemplateId`（Template ID 可公开，用于拉起授权）。
 
-再把模板详情中的四个真实字段键填入服务端 `WECHAT_TEMPLATE_MEAL_KEY`、`WECHAT_TEMPLATE_DISH_KEY`、`WECHAT_TEMPLATE_MESSAGE_KEY`、`WECHAT_TEMPLATE_DATE_KEY`。若模板字段类型/长度不同，需要同步调整 `server/src/integrations/wechat/client.js` 的值格式。用户必须主动点击“开启点菜提醒”授权；一次性订阅通常一次授权对应一次下发机会。
+再把模板详情中的四个真实字段键填入服务端 `WECHAT_TEMPLATE_MEAL_KEY`、`WECHAT_TEMPLATE_DISH_KEY`、`WECHAT_TEMPLATE_MESSAGE_KEY`、`WECHAT_TEMPLATE_DATE_KEY`。若模板字段类型/长度不同，需要同步调整 `server/app/main.py` 的值格式。用户必须主动点击“开启点菜提醒”授权；一次性订阅通常一次授权对应一次下发机会。
 
 ## 7. 腾讯云 COS
 
@@ -112,6 +115,6 @@ Bucket CORS 允许来源应包含小程序请求来源，方法包含 `PUT`，�
 
 1. 将 `miniprogram/config/index.js` 的 `apiBaseUrl` 改成正式 HTTPS 域名。
 2. 保持 `miniprogram/project.config.json` 中现有 AppID，不把 `.env` 上传版本库。
-3. 运行 `npm run check`，访问 `/health`。
+3. 运行 `.venv/bin/python -m compileall -q app`，访问 `/health`。
 4. 用两个微信账号完成创建/加入、提交、状态流转、历史、再次点菜测试。
 5. 在真机验证 COS 上传、图片读取与订阅消息；未配置时主流程仍正常，仅显示友好提示。

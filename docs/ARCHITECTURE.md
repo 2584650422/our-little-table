@@ -6,7 +6,7 @@
 微信原生小程序（JavaScript/WXML/WXSS）
         │ HTTPS + JWT
         ▼
-Node.js 20 + Express
+Python 3.9+ + FastAPI
    ├── MySQL 8（业务数据）
    ├── 微信 code2Session / 订阅消息
    └── 腾讯云 COS STS（图片直传）
@@ -17,7 +17,7 @@ Node.js 20 + Express
 ## 关键决策
 
 - 原生 JavaScript：现有工程即 JS，体量小，不引入构建链。
-- Express + `mysql2/promise`：足够清晰且部署成本低，所有 SQL 参数化。
+- FastAPI + PyMySQL：与 Python 运维、自动化和未来 AI 工具链衔接自然，所有 SQL 参数化。
 - JWT：服务端只从 token 获取用户身份，不接受前端传入 `user_id`。
 - 数据隔离：业务查询以 `req.user.coupleId` 作为约束；没有绑定时只开放绑定相关接口。
 - 菜单归属：初始化数据独立保存在 `starter_categories`、`starter_dishes`。饭桌首次访问时在命名锁保护下复制为饭桌私有数据；业务表 `categories`、`dishes` 的 `couple_id` 强制非空。
@@ -28,11 +28,10 @@ Node.js 20 + Express
 
 ## 服务端分层
 
-- `routes/`：参数解析、HTTP 语义和接口编排。
-- `services/`：推荐、通知、上传等业务/集成逻辑。
-- `middleware/`：JWT、饭桌绑定校验、错误处理。
-- `config/`：环境变量和 MySQL 连接池。
-- `integrations/`：微信与 COS SDK 边界。
+- `app/main.py`：集中维护兼容的 REST 路由、JWT、饭桌权限和业务编排；当前体量下不为两人应用拆成过多服务。
+- `app/config.py`：环境变量边界。
+- `app/db.py`：MySQL 连接、参数化查询和事务。
+- 迁移前的 Express 实现已从工作区移除；Git 提交历史仍可用于审阅或恢复旧版本。
 
 ## 状态机
 
