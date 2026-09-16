@@ -21,7 +21,7 @@ Python 3.9+ + FastAPI
 - JWT：服务端只从 token 获取用户身份，不接受前端传入 `user_id`。
 - 数据隔离：业务查询以 `req.user.coupleId` 作为约束；没有绑定时只开放绑定相关接口。
 - 菜单归属：初始化数据独立保存在 `starter_categories`、`starter_dishes`。饭桌首次访问时在命名锁保护下复制为饭桌私有数据；业务表 `categories`、`dishes` 的 `couple_id` 强制非空。
-- 订单快照：订单项复制菜名、图片与热量，菜单更新不会污染历史。
+- 订单快照：订单项复制菜名、图片 Object Key 与热量，菜单更新不会污染历史。
 - 点单次数：通过当前饭桌非取消订单的 `order_items` 动态聚合，不接受客户端写入，也不提供手工修改字段。
 - 可选集成降级：COS 或订阅消息配置缺失时返回明确状态，但不让点菜主流程失败。
 - 点菜单保存在本机 Storage，提交时由服务端重新读取菜品并计算快照和热量，避免伪造。
@@ -31,6 +31,7 @@ Python 3.9+ + FastAPI
 - `app/main.py`：集中维护兼容的 REST 路由、JWT、饭桌权限和业务编排；当前体量下不为两人应用拆成过多服务。
 - `app/config.py`：环境变量边界。
 - `app/db.py`：MySQL 连接、参数化查询和事务。
+- `app/storage.py`：COS Object Key 命名、短时读取签名与限定前缀清理。
 - 迁移前的 Express 实现已从工作区移除；Git 提交历史仍可用于审阅或恢复旧版本。
 
 ## 状态机
@@ -54,8 +55,9 @@ pending → ready → completed
 
 - 微信 AppSecret、数据库密码、COS SecretKey 仅来自服务端环境变量。
 - JWT 默认 7 天，生产环境必须设置高强度 `JWT_SECRET`。
-- 所有上传先校验 MIME 与不超过 5MB 的文件大小；STS policy 再次约束 Content-Type、Content-Length、单一对象路径和短时效。
-- COS 对象键由服务端生成：菜品使用 `dish-images/YYYY/MM/<uuid>.<ext>`，成员头像使用 `avatar-images/YYYY/MM/<uuid>.<ext>`。
+- 小程序拒绝超过 10MB 的原图，并本地压缩到 2MB 以内；服务端与 STS policy 再次限制 MIME、2MB Content-Length、单一对象路径和短时效。
+- COS 使用私有读写 Bucket：数据库只保存 Object Key，不保存会过期的签名 URL。每次 API 响应按当前访问权限生成短时 GET URL。
+- COS 对象键由服务端生成并隔离到饭桌：`little-table/couples/<couple-public-id>/dish-images/YYYY/MM/<uuid>.<ext>`；成品照和头像同在该饭桌前缀下。删除整张饭桌会清理整个前缀；菜品下架是软删除，因此保留其图片与历史快照。
 - CORS、请求体大小和统一错误输出均受限；生产日志不输出密钥、session_key 或 access_token。
 
 ## 推荐算法

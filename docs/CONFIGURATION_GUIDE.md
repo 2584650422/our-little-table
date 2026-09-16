@@ -44,6 +44,8 @@ COS_BUCKET=
 COS_REGION=
 COS_BASE_URL=
 COS_UPLOAD_MAX_MB=5
+COS_KEY_PREFIX=little-table
+COS_SIGNED_URL_EXPIRES_SECONDS=600
 ```
 
 这时图片上传会提示“图片上传暂未配置”，微信提醒会提示“微信提醒暂未配置”，但核心点菜流程可以正常工作，菜品没有图片时会显示统一占位图。
@@ -425,36 +427,25 @@ COS_REGION=ap-shanghai
 
 ### `COS_BASE_URL`
 
-填写保存到数据库、供小程序 `<image>` 读取的根地址，不带末尾 `/`。
-
-使用 COS 默认域名时：
+私有读写 Bucket 请留空。当前版本只在数据库保存 COS Object Key，每次 API 返回图片时由后端生成短时 GET 签名，不需要、也不应保存公开读取根地址。`COS_BASE_URL` 仅保留给历史公开图片兼容，不是 API 域名、不是 COS 上传地址。
 
 ```ini
-COS_BASE_URL=https://food-images-1251234567.cos.ap-shanghai.myqcloud.com
+COS_BASE_URL=
+COS_KEY_PREFIX=little-table
+COS_SIGNED_URL_EXPIRES_SECONDS=600
 ```
 
-使用自定义 CDN/访问域名时：
-
-```ini
-COS_BASE_URL=https://images.example.com
-```
-
-当前版本保存的是普通图片 URL，没有为每次读取生成临时 GET 签名。因此：
-
-- 公有读、私有写 Bucket：上传后可直接显示，最方便进行前期测试。
-- 私有读 Bucket：上传可能成功，但普通 URL 读取会返回 403，需要后续增加后端签名 URL 或代理读取逻辑。
-
-如果你不希望菜品和饭后照片公开访问，建议先不要把 Bucket 改成公有读，而是后续让我补充私有读签名 URL。不要为了赶测试把包含隐私照片的 Bucket 整体公开。
+COS 控制台中无需手建文件夹。首张图上传成功后，会自动出现类似 `little-table/couples/<饭桌UUID>/dish-images/2026/09/...jpg` 的前缀层级。删除整张饭桌会删除这个饭桌前缀下的对象；菜品“下架”是软删除，为保证历史订单仍可显示，不会立即删除对应图片。
 
 ### `COS_UPLOAD_MAX_MB`
 
-单张图片大小限制，默认：
+最终上传到 COS 的单张图片大小限制，默认：
 
 ```ini
-COS_UPLOAD_MAX_MB=5
+COS_UPLOAD_MAX_MB=2
 ```
 
-服务端先检查客户端声明的大小和类型，STS policy 又会限制上传请求的 Content-Length、Content-Type 和唯一对象路径。允许格式为 JPG/JPEG、PNG 和 WEBP。菜品图片写入 `dish-images/`，成员头像写入 `avatar-images/`；两者都使用临时凭证，不会把 COS 密钥放进小程序。前期不建议提高限制。
+小程序先拒绝超过 10MB 的原图，再尝试以质量 80、质量 60 两档压缩到 2MB 内；压缩后仍超限会提示先裁剪。服务端再检查客户端声明的大小和类型，STS policy 也限制 Content-Length、Content-Type 和唯一对象路径。允许格式为 JPG/JPEG、PNG 和 WEBP。菜品图片、成品照片、成员头像都写入当前饭桌自己的 COS 前缀；前端只拿短期凭证，不会拿到 COS 永久密钥。
 
 ### COS 控制台还需要配置什么
 
@@ -503,6 +494,8 @@ COS_BUCKET=
 COS_REGION=
 COS_BASE_URL=
 COS_UPLOAD_MAX_MB=5
+COS_KEY_PREFIX=little-table
+COS_SIGNED_URL_EXPIRES_SECONDS=600
 
 DEV_LOGIN_ENABLED=false
 ```
@@ -629,7 +622,7 @@ apiBaseUrl: 'https://api.example.com'
 | 真机请求 `127.0.0.1` 失败 | 该地址指向手机本身 | 改用正式 HTTPS 域名 |
 | “图片上传暂未配置” | 任一 COS 必填项为空 | COS 五项配置 |
 | COS 上传返回 403 | Bucket/Region 错、CAM/STS 权限不足、CORS 或系统时间异常 | Bucket 概览、CAM policy、CORS、服务器时间 |
-| 图片上传成功但页面不显示 | Bucket 私有读或 `COS_BASE_URL` 错 | 对象访问权限、图片 URL |
+| 图片上传成功但页面不显示 | 后端未填 COS 密钥、签名 URL 过期或微信后台未登记 COS 域名 | 后端日志、Bucket/Region、服务器域名设置 |
 | “微信提醒暂未配置” | Template ID、AppSecret 或字段键不完整 | 六个订阅消息变量 |
 | 订阅消息发送失败 | 用户未授权、模板字段类型不匹配、订阅次数已消耗 | 用户授权结果、模板详情、微信接口返回日志 |
 

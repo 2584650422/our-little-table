@@ -37,6 +37,8 @@ class Settings:
     cos_region: str = os.getenv("COS_REGION", "")
     cos_base_url: str = os.getenv("COS_BASE_URL", "").rstrip("/")
     cos_upload_max_mb: int = _integer("COS_UPLOAD_MAX_MB", 5)
+    cos_key_prefix: str = os.getenv("COS_KEY_PREFIX", "little-table").strip("/") or "little-table"
+    cos_signed_url_expires_seconds: int = _integer("COS_SIGNED_URL_EXPIRES_SECONDS", 600)
     dev_login_enabled: bool = os.getenv("DEV_LOGIN_ENABLED", "false").lower() == "true"
     log_level: str = os.getenv("LOG_LEVEL", "info").upper()
     log_format: str = os.getenv("LOG_FORMAT", "pretty")

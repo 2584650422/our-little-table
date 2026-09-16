@@ -21,6 +21,7 @@ from fastapi.responses import JSONResponse
 
 from .config import settings
 from .db import connection, execute, fetch_all, fetch_one
+from . import storage
 
 logging.basicConfig(level=getattr(logging, settings.log_level, logging.INFO),
                     format="%(asctime)s %(levelname)s pid=%(process)d %(message)s")
@@ -56,6 +57,14 @@ def expiration() -> datetime:
 def sign(user: dict) -> str:
     return jwt.encode({"sub": str(user["id"]), "exp": expiration()}, settings.jwt_secret, algorithm="HS256")
 
+def hydrate_image(row: dict, key_field: str = "imageKey", url_field: str = "imageUrl") -> dict:
+    """Replace a stored Object Key with a fresh private COS read URL."""
+    row[url_field] = storage.signed_url(row.get(key_field), row.get(url_field))
+    return row
+
+def hydrate_avatar(row: dict) -> dict:
+    return hydrate_image(row, "avatarKey", "avatarUrl")
+
 def user_from_token(request: Request) -> dict:
     raw = request.headers.get("authorization", "")
     token = re.sub(r"^Bearer\s+", "", raw, flags=re.I)
@@ -65,10 +74,10 @@ def user_from_token(request: Request) -> dict:
         payload = jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])
     except jwt.PyJWTError:
         raise AppError("登录状态已失效", 401)
-    user = fetch_one("SELECT id,openid,nickname,avatar_url AS avatarUrl,couple_id AS coupleId FROM users WHERE id=%s", (payload.get("sub"),))
+    user = fetch_one("SELECT id,openid,nickname,avatar_key AS avatarKey,avatar_url AS avatarUrl,couple_id AS coupleId FROM users WHERE id=%s", (payload.get("sub"),))
     if not user:
         raise AppError("登录状态已失效", 401)
-    return user
+    return hydrate_avatar(user)
 
 def current_user(request: Request) -> dict:
     return user_from_token(request)
@@ -131,19 +140,34 @@ def normalize_dish(row: dict) -> dict:
     except json.JSONDecodeError:
         row["tags"] = []
     row["isFavorite"] = bool(row.get("isFavorite")); row["enabled"] = bool(row.get("enabled"))
-    return row
+    return hydrate_image(row)
 
 DISH_SELECT = """SELECT d.id,d.name,d.description,d.image_key AS imageKey,d.image_url AS imageUrl,d.calorie_kcal AS calorieKcal,d.calorie_unit AS calorieUnit,d.calorie_note AS calorieNote,d.serving_note AS servingNote,d.cook_time_minutes AS cookTimeMinutes,d.difficulty,d.spicy_level AS spicyLevel,d.tags,d.enabled,d.couple_id AS coupleId,d.sort_order AS sortOrder,c.id AS categoryId,c.name AS categoryName,c.icon AS categoryIcon,
 EXISTS(SELECT 1 FROM favorites f WHERE f.dish_id=d.id AND f.user_id=%s) AS isFavorite,
 (SELECT COUNT(DISTINCT oi.order_id) FROM order_items oi JOIN orders oo ON oo.id=oi.order_id WHERE oo.couple_id=%s AND oo.status<>'cancelled' AND (oi.dish_id=d.id OR oi.dish_name=d.name)) AS orderedCount FROM dishes d JOIN categories c ON c.id=d.category_id"""
 
-def dish_payload(body: dict):
+def couple_public_id(couple_id: int, conn=None) -> str:
+    row = fetch_one("SELECT public_id AS publicId FROM couples WHERE id=%s", (couple_id,), conn)
+    if not row:
+        raise AppError("小饭桌找不到啦", 404)
+    return row["publicId"]
+
+def owned_key_or_error(key: Optional[str], public_id: str) -> Optional[str]:
+    if not key:
+        return None
+    if not storage.is_couple_key(key, public_id):
+        raise AppError("图片不属于当前小饭桌，请重新上传", 403)
+    return key
+
+def dish_payload(body: dict, public_id: str):
     category_id = int(number(body.get("categoryId"), 0) or 0); name = text(body.get("name"), 80)
     if not category_id or not name: raise AppError("菜名和分类都要填写哦")
     calorie = number(body.get("calorieKcal")); cook_time = number(body.get("cookTimeMinutes"))
     tags = body.get("tags") if isinstance(body.get("tags"), list) else []
     spicy = number(body.get("spicyLevel"))
-    return (category_id, name, text(body.get("description"),255) or None, body.get("imageKey") or None, body.get("imageUrl") or None,
+    image_key = owned_key_or_error(text(body.get("imageKey"), 255) or None, public_id)
+    # Object URLs are intentionally not persisted: private reads are signed per response.
+    return (category_id, name, text(body.get("description"),255) or None, image_key, None,
         max(0, round(calorie)) if calorie is not None else None, text(body.get("calorieUnit"),16,"份") or "份", text(body.get("calorieNote"),80,"家庭做法估算值"), text(body.get("servingNote"),80) or None,
         max(0, round(cook_time)) if cook_time is not None else None, body.get("difficulty") if body.get("difficulty") in ("easy","medium","hard") else None,
         clamp(int(spicy),0,5) if spicy is not None else None, json.dumps(tags[:8], ensure_ascii=False), int(number(body.get("sortOrder"),0) or 0))
@@ -151,8 +175,13 @@ def dish_payload(body: dict):
 def order_hydrate(rows: list[dict]) -> list[dict]:
     if not rows: return rows
     ids = [row["id"] for row in rows]; marks = ",".join(["%s"] * len(ids))
-    items = fetch_all(f"SELECT id,order_id AS orderId,dish_id AS dishId,dish_name AS dishName,dish_image_url AS dishImageUrl,dish_calorie_kcal AS dishCalorieKcal,dish_calorie_unit AS dishCalorieUnit,quantity,note FROM order_items WHERE order_id IN ({marks}) ORDER BY id", ids)
-    reviews = fetch_all(f"SELECT r.order_id AS orderId,r.user_id AS userId,u.nickname,u.avatar_url AS avatarUrl,r.comment,r.image_key AS imageKey,r.image_url AS imageUrl,DATE_FORMAT(r.created_at, '%Y-%m-%d %H:%i') AS createdAt FROM meal_reviews r JOIN users u ON u.id=r.user_id WHERE r.order_id IN ({marks}) ORDER BY r.created_at ASC", ids)
+    items = fetch_all(f"SELECT id,order_id AS orderId,dish_id AS dishId,dish_name AS dishName,dish_image_key AS imageKey,dish_image_url AS dishImageUrl,dish_calorie_kcal AS dishCalorieKcal,dish_calorie_unit AS dishCalorieUnit,quantity,note FROM order_items WHERE order_id IN ({marks}) ORDER BY id", ids)
+    reviews = fetch_all(f"SELECT r.order_id AS orderId,r.user_id AS userId,u.nickname,u.avatar_key AS avatarKey,u.avatar_url AS avatarUrl,r.comment,r.image_key AS imageKey,r.image_url AS imageUrl,DATE_FORMAT(r.created_at, '%Y-%m-%d %H:%i') AS createdAt FROM meal_reviews r JOIN users u ON u.id=r.user_id WHERE r.order_id IN ({marks}) ORDER BY r.created_at ASC", ids)
+    for item in items:
+        item["dishImageUrl"] = storage.signed_url(item.get("imageKey"), item.get("dishImageUrl"))
+    for review in reviews:
+        hydrate_image(review)
+        hydrate_avatar(review)
     for row in rows:
         row_reviews = [review for review in reviews if review["orderId"] == row["id"]]
         row["items"] = [item for item in items if item["orderId"] == row["id"]]
@@ -212,7 +241,8 @@ async def auth_wechat(request: Request):
     if not code: raise AppError("缺少微信登录凭证")
     session=await code2session(code)
     execute("INSERT INTO users (openid) VALUES (%s) ON DUPLICATE KEY UPDATE updated_at=NOW()",(session["openid"],))
-    user=fetch_one("SELECT id,nickname,avatar_url AS avatarUrl,couple_id AS coupleId FROM users WHERE openid=%s",(session["openid"],))
+    user=fetch_one("SELECT id,nickname,avatar_key AS avatarKey,avatar_url AS avatarUrl,couple_id AS coupleId FROM users WHERE openid=%s",(session["openid"],))
+    hydrate_avatar(user)
     return success({"token":sign(user),"user":user})
 
 @app.post("/api/auth/dev")
@@ -220,7 +250,8 @@ async def auth_dev(request: Request):
     if not settings.dev_login_enabled or settings.environment == "production": raise AppError("开发登录未开启",404)
     body=await request.json(); identity=re.sub(r"[^a-zA-Z0-9_-]","",str(body.get("identity","one")))[:24]
     execute("INSERT INTO users (openid,nickname) VALUES (%s,%s) ON DUPLICATE KEY UPDATE updated_at=NOW()",(f"dev_{identity}", text(body.get("nickname"),30,"本地体验用户") or "本地体验用户"))
-    user=fetch_one("SELECT id,nickname,avatar_url AS avatarUrl,couple_id AS coupleId FROM users WHERE openid=%s",(f"dev_{identity}",))
+    user=fetch_one("SELECT id,nickname,avatar_key AS avatarKey,avatar_url AS avatarUrl,couple_id AS coupleId FROM users WHERE openid=%s",(f"dev_{identity}",))
+    hydrate_avatar(user)
     return success({"token":sign(user),"user":user})
 
 @app.get("/api/auth/me")
@@ -230,9 +261,13 @@ def auth_me(user: dict=Depends(current_user)): return success(user)
 async def update_me(request: Request, user: dict=Depends(current_user)):
     body=await request.json(); nickname=text(body.get("nickname"),30)
     if not nickname: raise AppError("告诉我该怎么称呼你吧")
-    avatar=body.get("avatarUrl",user.get("avatarUrl")); avatar=text(avatar,500) or None
-    execute("UPDATE users SET nickname=%s,avatar_url=%s WHERE id=%s",(nickname,avatar,user["id"]))
-    user.update(nickname=nickname,avatarUrl=avatar); return success(user,"称呼记住啦")
+    public_id = couple_public_id(user["coupleId"]) if user.get("coupleId") else None
+    avatar_key = body.get("avatarImageKey") if "avatarImageKey" in body else user.get("avatarKey")
+    avatar_key = owned_key_or_error(text(avatar_key, 255) or None, public_id) if public_id else None
+    # Legacy avatarUrl is only kept if there is no object key, so historical data still displays.
+    avatar = None if avatar_key else (text(body.get("avatarUrl", user.get("avatarUrl")), 500) or None)
+    execute("UPDATE users SET nickname=%s,avatar_key=%s,avatar_url=%s WHERE id=%s",(nickname,avatar_key,avatar,user["id"]))
+    user.update(nickname=nickname,avatarKey=avatar_key,avatarUrl=storage.signed_url(avatar_key,avatar)); return success(user,"称呼记住啦")
 
 @app.get("/api/couples/mine")
 def couples_mine(user: dict=Depends(current_user)):
@@ -278,7 +313,8 @@ def switch_couple(couple_id: int, user: dict=Depends(current_user)):
 def current_couple(user: dict=Depends(coupled_user)):
     ensure_menu(user["coupleId"])
     couple=fetch_one("SELECT id,public_id AS publicId,name,invite_code AS inviteCode,DATE_FORMAT(invite_expire_at,'%Y-%m-%d %H:%i') AS inviteExpireAt,DATE_FORMAT(anniversary,'%Y-%m-%d') AS anniversary,home_title AS homeTitle,home_subtitle AS homeSubtitle,created_by AS createdBy,DATE_FORMAT(created_at,'%Y-%m-%d %H:%i') AS createdAt FROM couples WHERE id=%s",(user["coupleId"],))
-    members=fetch_all("SELECT u.id,u.nickname,u.avatar_url AS avatarUrl FROM couple_members cm JOIN users u ON u.id=cm.user_id WHERE cm.couple_id=%s AND cm.left_at IS NULL ORDER BY cm.joined_at,u.id",(user["coupleId"],))
+    members=fetch_all("SELECT u.id,u.nickname,u.avatar_key AS avatarKey,u.avatar_url AS avatarUrl FROM couple_members cm JOIN users u ON u.id=cm.user_id WHERE cm.couple_id=%s AND cm.left_at IS NULL ORDER BY cm.joined_at,u.id",(user["coupleId"],))
+    for member in members: hydrate_avatar(member)
     stats=fetch_one("SELECT COUNT(*) AS meals FROM orders WHERE couple_id=%s AND status='completed'",(user["coupleId"],))
     couple.update(members=members,stats=stats); return success(couple)
 
@@ -308,10 +344,14 @@ def leave_couple(user: dict=Depends(coupled_user)):
 def delete_couple(user: dict=Depends(coupled_user)):
     couple_id=user["coupleId"]
     with connection(transaction=True) as conn:
-        couple=fetch_one("SELECT created_by AS createdBy FROM couples WHERE id=%s FOR UPDATE",(couple_id,),conn)
+        couple=fetch_one("SELECT created_by AS createdBy,public_id AS publicId FROM couples WHERE id=%s FOR UPDATE",(couple_id,),conn)
         if not couple or int(couple["createdBy"] or 0)!=int(user["id"]): raise AppError("只有创建者可以删除小饭桌",403)
         if member_count(couple_id,conn)>1: raise AppError("请先让另一位成员退出，再删除小饭桌")
+        # Delete only this couple's isolated prefix before removing its DB scope.
+        # A COS failure leaves the table intact so the user can retry safely.
+        storage.delete_prefix(storage.couple_prefix(couple["publicId"]))
         fallback=fallback_couple(user["id"],couple_id,conn)
+        execute("UPDATE users SET avatar_key=NULL,avatar_url=NULL WHERE avatar_key LIKE %s", (storage.couple_prefix(couple["publicId"]) + "%",), conn)
         execute("UPDATE users SET couple_id=%s WHERE id=%s",(fallback,user["id"]),conn)
         execute("DELETE FROM couples WHERE id=%s",(couple_id,),conn)
     return success({"currentCoupleId":fallback},"小饭桌已删除")
@@ -372,17 +412,24 @@ def dish_detail(dish_id: int, user: dict=Depends(coupled_user)):
 
 @app.post("/api/dishes")
 async def create_dish(request: Request, user: dict=Depends(coupled_user)):
-    payload=dish_payload(await request.json()); category=fetch_one("SELECT id FROM categories WHERE id=%s AND couple_id=%s AND enabled=1",(payload[0],user["coupleId"]))
+    payload=dish_payload(await request.json(), couple_public_id(user["coupleId"])); category=fetch_one("SELECT id FROM categories WHERE id=%s AND couple_id=%s AND enabled=1",(payload[0],user["coupleId"]))
     if not category: raise AppError("请选择当前小饭桌里的分类")
     dish_id,_=execute("""INSERT INTO dishes (couple_id,category_id,name,description,image_key,image_url,calorie_kcal,calorie_unit,calorie_note,serving_note,cook_time_minutes,difficulty,spicy_level,tags,sort_order,created_by) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",(user["coupleId"],*payload,user["id"]))
     return success({"id":dish_id},"新菜加进菜单啦")
 
 @app.put("/api/dishes/{dish_id}")
 async def update_dish(dish_id: int, request: Request, user: dict=Depends(coupled_user)):
-    payload=dish_payload(await request.json()); category=fetch_one("SELECT id FROM categories WHERE id=%s AND couple_id=%s AND enabled=1",(payload[0],user["coupleId"]))
+    old=fetch_one("SELECT image_key AS imageKey FROM dishes WHERE id=%s AND couple_id=%s",(dish_id,user["coupleId"]))
+    if not old: raise AppError("只能编辑自己饭桌添加的菜",403)
+    payload=dish_payload(await request.json(), couple_public_id(user["coupleId"])); category=fetch_one("SELECT id FROM categories WHERE id=%s AND couple_id=%s AND enabled=1",(payload[0],user["coupleId"]))
     if not category: raise AppError("请选择当前小饭桌里的分类")
     _,count=execute("""UPDATE dishes SET category_id=%s,name=%s,description=%s,image_key=%s,image_url=%s,calorie_kcal=%s,calorie_unit=%s,calorie_note=%s,serving_note=%s,cook_time_minutes=%s,difficulty=%s,spicy_level=%s,tags=%s,sort_order=%s WHERE id=%s AND couple_id=%s""",(*payload,dish_id,user["coupleId"]))
     if not count: raise AppError("只能编辑自己饭桌添加的菜",403)
+    old_key, new_key = old.get("imageKey"), payload[3]
+    if old_key and old_key != new_key:
+        # History snapshots keep their own key, so replacing a dish never breaks old meals.
+        reference=fetch_one("SELECT COUNT(*) AS count FROM order_items WHERE dish_image_key=%s",(old_key,))
+        if not reference["count"]: storage.delete_keys([old_key])
     return success(message="菜单更新好啦")
 
 @app.delete("/api/dishes/{dish_id}")
@@ -402,7 +449,7 @@ def unfavorite_dish(dish_id: int, user: dict=Depends(coupled_user)):
 
 @app.get("/api/recommendations/today")
 def recommendations(request: Request, user: dict=Depends(coupled_user)):
-    ensure_menu(user["coupleId"]); rows=fetch_all("""SELECT d.id,d.name,d.description,d.image_url AS imageUrl,d.calorie_kcal AS calorieKcal,d.calorie_unit AS calorieUnit,c.name AS categoryName,EXISTS(SELECT 1 FROM favorites f WHERE f.dish_id=d.id AND f.user_id=%s) AS isFavorite,(SELECT MAX(o.completed_at) FROM order_items i JOIN orders o ON o.id=i.order_id WHERE i.dish_id=d.id AND o.couple_id=%s AND o.status='completed') AS lastEatenAt FROM dishes d JOIN categories c ON c.id=d.category_id WHERE d.enabled=1 AND d.couple_id=%s""",(user["id"],user["coupleId"],user["coupleId"]))
+    ensure_menu(user["coupleId"]); rows=fetch_all("""SELECT d.id,d.name,d.description,d.image_key AS imageKey,d.image_url AS imageUrl,d.calorie_kcal AS calorieKcal,d.calorie_unit AS calorieUnit,c.name AS categoryName,EXISTS(SELECT 1 FROM favorites f WHERE f.dish_id=d.id AND f.user_id=%s) AS isFavorite,(SELECT MAX(o.completed_at) FROM order_items i JOIN orders o ON o.id=i.order_id WHERE i.dish_id=d.id AND o.couple_id=%s AND o.status='completed') AS lastEatenAt FROM dishes d JOIN categories c ON c.id=d.category_id WHERE d.enabled=1 AND d.couple_id=%s""",(user["id"],user["coupleId"],user["coupleId"]))
     def score(row):
         last=row.get("lastEatenAt"); days=30
         if last:
@@ -410,7 +457,7 @@ def recommendations(request: Request, user: dict=Depends(coupled_user)):
             except TypeError: pass
         return random.random()*10+(3 if row["isFavorite"] else 0)+min(days,30)/10-(6 if days<=3 else 0)
     count=clamp(int(number(request.query_params.get("count"),1) or 1),1,3)
-    return success(sorted(rows,key=score,reverse=True)[:count])
+    return success([hydrate_image(row) for row in sorted(rows,key=score,reverse=True)[:count]])
 
 @app.post("/api/orders")
 async def create_order(request: Request, user: dict=Depends(coupled_user)):
@@ -422,14 +469,14 @@ async def create_order(request: Request, user: dict=Depends(coupled_user)):
         if dish_id: quantities[dish_id]=clamp(int(number(item.get("quantity"),1) or 1),1,20)
     ids=list(quantities)
     if not ids: raise AppError("点菜单里没有有效菜品")
-    marks=",".join(["%s"]*len(ids)); dishes_rows=fetch_all(f"SELECT id,name,image_url AS imageUrl,calorie_kcal AS calorieKcal,calorie_unit AS calorieUnit FROM dishes WHERE enabled=1 AND couple_id=%s AND id IN ({marks})",[user["coupleId"],*ids])
+    marks=",".join(["%s"]*len(ids)); dishes_rows=fetch_all(f"SELECT id,name,image_key AS imageKey,image_url AS imageUrl,calorie_kcal AS calorieKcal,calorie_unit AS calorieUnit FROM dishes WHERE enabled=1 AND couple_id=%s AND id IN ({marks})",[user["coupleId"],*ids])
     if len(dishes_rows)!=len(ids): raise AppError("有菜品已经下架，请刷新点菜单")
     meal_type=body.get("mealType") if body.get("mealType") in ("breakfast","lunch","dinner","late_night","snack","casual") else "dinner"; meal_date=body.get("mealDate") if re.fullmatch(r"\d{4}-\d{2}-\d{2}",str(body.get("mealDate",""))) else date.today().isoformat()
     total=sum((dish.get("calorieKcal") or 0)*quantities[dish["id"]] for dish in dishes_rows) or None
     target=fetch_one("SELECT u.id,u.openid FROM couple_members cm JOIN users u ON u.id=cm.user_id WHERE cm.couple_id=%s AND cm.left_at IS NULL AND u.id<>%s LIMIT 1",(user["coupleId"],user["id"]))
     with connection(transaction=True) as conn:
         order_id,_=execute("INSERT INTO orders (order_no,couple_id,creator_user_id,target_user_id,meal_type,meal_date,message,total_calories) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",(f"LT{int(time.time()*1000)}{random.randint(100,999)}",user["coupleId"],user["id"],target["id"] if target else None,meal_type,meal_date,text(body.get("message"),300) or None,total),conn)
-        for dish in dishes_rows: execute("INSERT INTO order_items (order_id,dish_id,dish_name,dish_image_url,dish_calorie_kcal,dish_calorie_unit,quantity,note) VALUES (%s,%s,%s,%s,%s,%s,%s,NULL)",(order_id,dish["id"],dish["name"],dish["imageUrl"],dish["calorieKcal"],dish["calorieUnit"],quantities[dish["id"]]),conn)
+        for dish in dishes_rows: execute("INSERT INTO order_items (order_id,dish_id,dish_name,dish_image_key,dish_image_url,dish_calorie_kcal,dish_calorie_unit,quantity,note) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,NULL)",(order_id,dish["id"],dish["name"],dish.get("imageKey"),None,dish["calorieKcal"],dish["calorieUnit"],quantities[dish["id"]]),conn)
     labels={"breakfast":"早餐","lunch":"午餐","dinner":"晚餐","late_night":"夜宵","snack":"零食","casual":"随便吃点"}; notification=await notify_created(user,target,{"id":order_id,"title":labels[meal_type],"dishNames":"、".join(d["name"] for d in dishes_rows),"message":body.get("message"),"mealDate":meal_date})
     return success({"id":order_id,"notification":notification},"点菜成功啦")
 
@@ -461,13 +508,13 @@ async def update_order_status(order_id: int, request: Request, user: dict=Depend
 
 @app.post("/api/orders/{order_id}/serve")
 async def serve_order(order_id: int, request: Request, user: dict=Depends(coupled_user)):
-    body=await request.json(); image_url=text(body.get("imageUrl"),500) or None; image_key=text(body.get("imageKey"),255) or None
+    body=await request.json(); public_id=couple_public_id(user["coupleId"]); image_key=owned_key_or_error(text(body.get("imageKey"),255) or None,public_id); image_url=None
     with connection(transaction=True) as conn:
         order=fetch_one("SELECT status,couple_id AS coupleId FROM orders WHERE id=%s AND couple_id=%s FOR UPDATE",(order_id,user["coupleId"]),conn)
         if not order: raise AppError("订单找不到啦",404)
         if order["status"] not in ("pending","accepted","preparing"): raise AppError("这顿饭已经上过菜啦")
         execute("UPDATE orders SET status='ready',ready_at=NOW() WHERE id=%s AND couple_id=%s",(order_id,user["coupleId"]),conn)
-        if image_url: execute("INSERT INTO meal_reviews (order_id,user_id,image_key,image_url) VALUES (%s,%s,%s,%s) ON DUPLICATE KEY UPDATE image_key=VALUES(image_key),image_url=VALUES(image_url)",(order_id,user["id"],image_key,image_url),conn)
+        if image_key: execute("INSERT INTO meal_reviews (order_id,user_id,image_key,image_url) VALUES (%s,%s,%s,%s) ON DUPLICATE KEY UPDATE image_key=VALUES(image_key),image_url=VALUES(image_url)",(order_id,user["id"],image_key,image_url),conn)
     dishes_rows=fetch_all("SELECT dish_name AS dishName FROM order_items WHERE order_id=%s",(order_id,)); await notify_served({"id":order_id,"coupleId":order["coupleId"],"dishNames":"、".join(row["dishName"] for row in dishes_rows)},user["id"])
     return success({"status":"ready","imageUrl":image_url},"上菜成功啦")
 
@@ -478,11 +525,12 @@ async def update_review(order_id: int, request: Request, user: dict=Depends(coup
     if order["status"] not in ("ready","completed"): raise AppError("上菜后才能留下饭后记录")
     existing=fetch_one("SELECT comment,image_key AS imageKey,image_url AS imageUrl FROM meal_reviews WHERE order_id=%s AND user_id=%s",(order_id,user["id"]))
     comment=text(body.get("comment"),300) if "comment" in body else (existing or {}).get("comment")
-    image_url=(text(body.get("imageUrl"),500) or None) if "imageUrl" in body else (existing or {}).get("imageUrl")
-    image_key=(text(body.get("imageKey"),255) or None) if "imageUrl" in body else (existing or {}).get("imageKey")
-    if not comment and not image_url: raise AppError("写一句感受或上传一张照片吧")
+    uploaded_key = "imageKey" in body
+    image_key=owned_key_or_error(text(body.get("imageKey"),255) or None,couple_public_id(user["coupleId"])) if uploaded_key else (existing or {}).get("imageKey")
+    image_url=None if image_key else ((existing or {}).get("imageUrl"))
+    if not comment and not image_key and not image_url: raise AppError("写一句感受或上传一张照片吧")
     execute("INSERT INTO meal_reviews (order_id,user_id,comment,image_key,image_url) VALUES (%s,%s,%s,%s,%s) ON DUPLICATE KEY UPDATE comment=VALUES(comment),image_key=VALUES(image_key),image_url=VALUES(image_url),created_at=NOW()",(order_id,user["id"],comment,image_key,image_url))
-    return success(message="照片保存好啦" if "imageUrl" in body else "评论保存好啦")
+    return success(message="照片保存好啦" if uploaded_key else "评论保存好啦")
 
 @app.delete("/api/orders/{order_id}/review")
 def delete_review(order_id: int, user: dict=Depends(coupled_user)):
@@ -505,7 +553,8 @@ def delete_order(order_id: int, user: dict=Depends(coupled_user)):
 @app.post("/api/orders/{order_id}/reorder")
 def reorder(order_id: int, user: dict=Depends(coupled_user)):
     if not fetch_one("SELECT id FROM orders WHERE id=%s AND couple_id=%s",(order_id,user["coupleId"])): raise AppError("历史记录找不到啦",404)
-    items=fetch_all("SELECT dish_id AS dishId,dish_name AS dishName,dish_image_url AS imageUrl,dish_calorie_kcal AS calorieKcal,dish_calorie_unit AS calorieUnit,quantity FROM order_items WHERE order_id=%s",(order_id,))
+    items=fetch_all("SELECT dish_id AS dishId,dish_name AS dishName,dish_image_key AS imageKey,dish_image_url AS imageUrl,dish_calorie_kcal AS calorieKcal,dish_calorie_unit AS calorieUnit,quantity FROM order_items WHERE order_id=%s",(order_id,))
+    for item in items: hydrate_image(item)
     return success({"items":items},"已经放回今天的小菜单啦")
 
 @app.get("/api/notifications")
@@ -525,12 +574,19 @@ async def cos_credential(request: Request, user: dict=Depends(coupled_user)):
     if not all([settings.cos_secret_id,settings.cos_secret_key,settings.cos_bucket,settings.cos_region]): raise AppError("图片上传暂未配置",503)
     try:
         from sts.sts import Sts
-        purpose=body.get("purpose") if body.get("purpose") in ("avatar","meal") else "dish"; folder={"avatar":"avatar-images","meal":"meal-images","dish":"dish-images"}[purpose]
-        key=f"{folder}/{datetime.now().year}/{datetime.now().month:02d}/{uuid.uuid4()}.{allowed[mime]}"; short_bucket=re.sub(r"-\d+$","",settings.cos_bucket); app_id=settings.cos_bucket[len(short_bucket)+1:]
-        credential=Sts({"secret_id":settings.cos_secret_id,"secret_key":settings.cos_secret_key,"duration_seconds":900,"bucket":settings.cos_bucket,"region":settings.cos_region,"policy":{"version":"2.0","statement":[{"effect":"allow","action":["name/cos:PutObject"],"resource":[f"qcs::cos:{settings.cos_region}:uid/{app_id}:{short_bucket}/{key}"],"condition":{"numeric_less_than_equal":{"cos:content-length":settings.cos_upload_max_mb*1024*1024},"string_equal":{"cos:content-type":mime}}}]}}).get_credential()
+        purpose=body.get("purpose") if body.get("purpose") in ("avatar","meal") else "dish"; folder={"avatar":"avatars","meal":"meal-images","dish":"dish-images"}[purpose]
+        public_id=couple_public_id(user["coupleId"])
+        key=f"{storage.couple_prefix(public_id)}{folder}/{datetime.now().year}/{datetime.now().month:02d}/{uuid.uuid4()}.{allowed[mime]}"
+        # COS policy resources must use the complete Bucket name, including its APPID suffix.
+        # Example: qcs::cos:ap-beijing:uid/1318013210:little-table-1318013210/path/to/file
+        app_id=settings.cos_bucket.rsplit("-",1)[-1]
+        resource=f"qcs::cos:{settings.cos_region}:uid/{app_id}:{settings.cos_bucket}/{key}"
+        credential=Sts({"secret_id":settings.cos_secret_id,"secret_key":settings.cos_secret_key,"duration_seconds":900,"bucket":settings.cos_bucket,"region":settings.cos_region,"policy":{"version":"2.0","statement":[{"effect":"allow","action":["name/cos:PutObject"],"resource":[resource],"condition":{"numeric_less_than_equal":{"cos:content-length":settings.cos_upload_max_mb*1024*1024},"string_equal":{"cos:content-type":mime}}}]}}).get_credential()
     except ImportError:
         raise AppError("COS 临时凭证组件未安装，请重新安装 requirements.txt",503)
     except Exception as error:
         logger.warning("cos.credential_failed: %s",error); raise AppError("图片上传凭证获取失败",503)
-    url=f"{settings.cos_base_url}/{key}" if settings.cos_base_url else f"https://{settings.cos_bucket}.cos.{settings.cos_region}.myqcloud.com/{key}"
+    # This URL is for the editor's immediate preview only. It is never stored in MySQL.
+    url=storage.signed_url(key)
+    logger.info("cos.credential_issued requestId=%s purpose=%s key=%s size=%s", request.state.request_id, purpose, key, int(size))
     return success({"credentials":credential["credentials"],"startTime":credential["startTime"],"expiredTime":credential["expiredTime"],"bucket":settings.cos_bucket,"region":settings.cos_region,"key":key,"url":url})

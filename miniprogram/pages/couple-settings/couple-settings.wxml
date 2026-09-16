@@ -3,7 +3,7 @@
   <block wx:else>
     <view class="section-title">基本信息</view>
     <view class="card form">
-      <view class="avatar-setting"><view class="avatar-editor" bindtap="chooseAvatar"><image wx:if="{{avatarUrl}}" src="{{avatarUrl}}" mode="aspectFill"/><view wx:else class="avatar avatar-large">{{nickname[0]||'饭'}}</view><view class="avatar-mask">{{uploadingAvatar?'上传中':'更换头像'}}</view></view><view class="avatar-copy"><view>我的头像</view><text>未设置时显示称呼的第一个字</text><text wx:if="{{avatarUrl}}" class="remove-avatar" bindtap="removeAvatar">恢复默认头像</text></view></view>
+      <view class="avatar-setting"><view class="avatar-editor" bindtap="chooseAvatar"><image wx:if="{{avatarUrl}}" src="{{avatarUrl}}" mode="aspectFill"/><view wx:else class="avatar avatar-large">{{nickname[0]||'饭'}}</view><view class="avatar-mask">{{uploadingAvatar?(uploadStage==='compressing'?'压缩中':'上传中'):'更换头像'}}</view></view><view class="avatar-copy"><view>我的头像</view><text>照片会自动压缩到 2MB 以内</text><text wx:if="{{avatarUrl}}" class="remove-avatar" bindtap="removeAvatar">恢复默认头像</text></view></view>
       <view class="field"><text>饭桌名称</text><input maxlength="50" value="{{name}}" data-key="name" bindinput="input"/></view>
       <view class="field"><text>我的称呼</text><input maxlength="30" value="{{nickname}}" data-key="nickname" bindinput="input"/></view>
       <view class="field"><text>在一起日期</text><picker mode="date" value="{{anniversary}}" bindchange="date"><view>{{anniversary||'暂未设置'}} ›</view></picker></view>

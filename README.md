@@ -78,16 +78,17 @@ mysql -u root -p little_table < database/migrations/001_couple_owned_categories.
 mysql -u root -p little_table < database/migrations/002_couple_home_copy.sql
 mysql -u root -p little_table < database/migrations/003_separate_starter_menu.sql
 mysql -u root -p little_table < database/migrations/004_couple_memberships.sql
+mysql -u root -p little_table < database/migrations/005_private_cos_object_keys.sql
 ```
 
-全新安装只执行 `schema.sql` 和 `seed.sql`，不要再重复执行增量迁移。`002` 为每张小饭桌增加可编辑的首页主标题与副标题；`003` 把初始化菜单拆入独立的 `starter_categories`、`starter_dishes`，此后实际分类和菜品的 `couple_id` 不允许为空；`004` 增加稳定的饭桌 UUID 与用户—饭桌关联表。`users.couple_id` 仍允许为空，因为尚未创建或加入饭桌的用户需要这个状态。
+全新安装只执行 `schema.sql` 和 `seed.sql`，不要再重复执行增量迁移。`002` 为每张小饭桌增加可编辑的首页主标题与副标题；`003` 把初始化菜单拆入独立的 `starter_categories`、`starter_dishes`，此后实际分类和菜品的 `couple_id` 不允许为空；`004` 增加稳定的饭桌 UUID 与用户—饭桌关联表；`005` 为私有 COS 增加头像 Key 和订单图片快照 Key。`users.couple_id` 仍允许为空，因为尚未创建或加入饭桌的用户需要这个状态。
 
 ## 配置说明
 
 - MySQL：`MYSQL_HOST`、`MYSQL_PORT`、`MYSQL_DATABASE`、`MYSQL_USER`、`MYSQL_PASSWORD`。
 - 微信登录：`WECHAT_APP_ID`、`WECHAT_APP_SECRET`（只在服务端）。
 - API 域名：小程序 `miniprogram/config/index.js`。
-- COS：服务端 `COS_SECRET_ID`、`COS_SECRET_KEY`、`COS_BUCKET`、`COS_REGION`、`COS_BASE_URL`。
+- COS：服务端 `COS_SECRET_ID`、`COS_SECRET_KEY`、`COS_BUCKET`、`COS_REGION`；私有桶通常让 `COS_BASE_URL` 留空，并使用 `COS_KEY_PREFIX` 与 `COS_SIGNED_URL_EXPIRES_SECONDS`。
 - 订阅消息：前端公开 Template ID + 服务端 Template ID 和实际字段键。
 
 ## 验证
@@ -120,5 +121,4 @@ mkdir -p logs && .venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 3
 - 用真实微信 AppSecret、MySQL、域名、COS 和订阅模板完成双账号真机联调。
 - 补充自有菜品照片；当前无图统一展示项目内 CSS 占位，不引用网络图片。
 - 增加饭后评价、成品照片与饭饭日历。
-- 增加替换菜图后的旧 COS 对象清理任务。
 - 根据最终订阅模板字段类型调整消息值并完成审核验证。

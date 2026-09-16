@@ -1,11 +1,11 @@
 const {request}=require('../../services/api'),cart=require('../../utils/cart'),upload=require('../../services/upload'),homeCopy=require('../../utils/home-copy')
 Page({
-  data:{couple:null,name:'',anniversary:'',homeTitle:'',homeSubtitle:'',nickname:'',avatarUrl:'',currentUserId:null,loading:true,uploadingAvatar:false},
+  data:{couple:null,name:'',anniversary:'',homeTitle:'',homeSubtitle:'',nickname:'',avatarUrl:'',avatarImageKey:'',currentUserId:null,loading:true,uploadingAvatar:false,uploadStage:''},
   onLoad(options){this._focus=options.focus;this.load()},
   async load(){
     try{
       const couple=await request({url:'/api/couples/current'}),user=wx.getStorageSync('user')||{}
-      this.setData({couple,name:couple.name,anniversary:couple.anniversary||'',homeTitle:couple.homeTitle||'今天想吃点什么呀？',homeSubtitle:couple.homeSubtitle||'认真选一顿，也是在认真过日子。',nickname:user.nickname||'',avatarUrl:user.avatarUrl||'',currentUserId:user.id,loading:false})
+      this.setData({couple,name:couple.name,anniversary:couple.anniversary||'',homeTitle:couple.homeTitle||'今天想吃点什么呀？',homeSubtitle:couple.homeSubtitle||'认真选一顿，也是在认真过日子。',nickname:user.nickname||'',avatarUrl:user.avatarUrl||'',avatarImageKey:user.avatarKey||'',currentUserId:user.id,loading:false})
       if(this._focus==='members'){this._focus='';setTimeout(()=>wx.pageScrollTo({selector:'#members',duration:250}),100)}
     }catch(e){wx.showToast({title:e.message,icon:'none'})}
   },
@@ -15,13 +15,13 @@ Page({
     try{
       const result=await new Promise((resolve,reject)=>wx.chooseMedia({count:1,mediaType:['image'],sourceType:['album','camera'],success:resolve,fail:reject}))
       this.setData({uploadingAvatar:true})
-      const image=await upload.uploadImage(result.tempFiles[0].tempFilePath,'avatar')
-      this.setData({avatarUrl:image.imageUrl})
+      const image=await upload.uploadImage(result.tempFiles[0].tempFilePath,'avatar',stage=>this.setData({uploadStage:stage}))
+      this.setData({avatarUrl:image.imageUrl,avatarImageKey:image.imageKey})
       wx.showToast({title:'头像选好啦，记得保存',icon:'none'})
     }catch(e){if(!String(e.errMsg||'').includes('cancel'))wx.showToast({title:e.message||'头像选择失败',icon:'none'})}
-    finally{this.setData({uploadingAvatar:false})}
+    finally{this.setData({uploadingAvatar:false,uploadStage:''})}
   },
-  removeAvatar(){this.setData({avatarUrl:''})},
+  removeAvatar(){this.setData({avatarUrl:'',avatarImageKey:''})},
   async save(){
     const oldUser=wx.getStorageSync('user')||{}
     try{
@@ -29,8 +29,8 @@ Page({
       const copy=homeCopy.save(updatedCouple)
       const homePage=getCurrentPages().find(page=>page.route==='pages/home/home')
       if(homePage)homePage.setData({homeTitle:copy.title,homeSubtitle:copy.subtitle})
-      if(this.data.nickname.trim()!==String(oldUser.nickname||'')||this.data.avatarUrl!==String(oldUser.avatarUrl||'')){
-        const user=await request({url:'/api/auth/me',method:'PUT',data:{nickname:this.data.nickname,avatarUrl:this.data.avatarUrl||null}})
+      if(this.data.nickname.trim()!==String(oldUser.nickname||'')||this.data.avatarImageKey!==String(oldUser.avatarKey||'')||this.data.avatarUrl!==String(oldUser.avatarUrl||'')){
+        const user=await request({url:'/api/auth/me',method:'PUT',data:{nickname:this.data.nickname,avatarImageKey:this.data.avatarImageKey||null,avatarUrl:this.data.avatarUrl||null}})
         wx.setStorageSync('user',user);getApp().globalData.user=user
       }
       wx.showToast({title:'小饭桌更新好啦',icon:'none'});this.load()

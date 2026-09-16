@@ -16,9 +16,10 @@ mysql -u root -p little_table < database/migrations/001_couple_owned_categories.
 mysql -u root -p little_table < database/migrations/002_couple_home_copy.sql
 mysql -u root -p little_table < database/migrations/003_separate_starter_menu.sql
 mysql -u root -p little_table < database/migrations/004_couple_memberships.sql
+mysql -u root -p little_table < database/migrations/005_private_cos_object_keys.sql
 ```
 
-全新安装不要执行这些迁移，因为最新 `schema.sql` 已包含相应字段和索引。旧库应严格按编号执行；`002` 增加饭桌级首页主副标题，`003` 将初始化模板与真实饭桌菜单分表并收紧 `couple_id` 非空约束，`004` 增加饭桌稳定 UUID 和可保留多张饭桌关联的成员表。
+全新安装不要执行这些迁移，因为最新 `schema.sql` 已包含相应字段和索引。旧库应严格按编号执行；`002` 增加饭桌级首页主副标题，`003` 将初始化模板与真实饭桌菜单分表并收紧 `couple_id` 非空约束，`004` 增加饭桌稳定 UUID 和可保留多张饭桌关联的成员表，`005` 为私有 COS 增加 Object Key 字段。
 
 生产环境建议为 `little_table` 单独创建只拥有该库 DML 权限的用户，不要让应用使用 root。
 
@@ -81,7 +82,7 @@ server {
 }
 ```
 
-上传图片由客户端直传 COS，图片上限由 `COS_UPLOAD_MAX_MB`（默认 5MB）控制，不经过 Nginx。
+上传图片由客户端直传 COS，不经过 Nginx。小程序拒绝超过 10MB 的原图，并自动压缩；`COS_UPLOAD_MAX_MB` 默认限制最终上传文件为 2MB。
 
 ## 6. 微信公众平台
 
@@ -107,9 +108,11 @@ server {
 - `COS_SECRET_ID` / `COS_SECRET_KEY`：仅服务端可见，建议使用仅能签发目标 Bucket 上传权限的子账号。
 - `COS_BUCKET`：必须是完整 Bucket 名（含 APPID 后缀）。
 - `COS_REGION`：如 `ap-shanghai`。
-- `COS_BASE_URL`：公开读取地址或 CDN 地址，不以 `/` 结尾。
+- `COS_BASE_URL`：私有桶一般留空。它只用于兼容历史公开图片，不是 API 域名，也不是上传地址。
+- `COS_KEY_PREFIX=little-table`：所有对象的顶层前缀；COS 不需要手动创建文件夹。
+- `COS_SIGNED_URL_EXPIRES_SECONDS=600`：私有图片临时读取链接的有效期。
 
-Bucket CORS 允许来源应包含小程序请求来源，方法包含 `PUT`，请求头允许 `Authorization`、`x-cos-security-token` 和 `Content-Type`。服务端 STS 策略只授予单个随机对象键的 `PutObject`，有效期 15 分钟。
+Bucket 保持私有读写。CORS 方法包含 `PUT`，请求头允许 `Authorization`、`x-cos-security-token` 和 `Content-Type`。服务端 STS 策略只授予当前饭桌下单个随机 Object Key 的 `PutObject`，有效期 15 分钟；数据库只保存 Key，读图时由 API 按请求临时签名。
 
 ## 8. 发布前检查
 
