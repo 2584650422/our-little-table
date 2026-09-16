@@ -5,10 +5,13 @@ module.exports={
   categories:()=>request({url:'/api/categories'}),
   createCategory:data=>request({url:'/api/categories',method:'POST',data,loading:true}),
   updateCategory:(id,data)=>request({url:`/api/categories/${id}`,method:'PUT',data,loading:true}),
+  reorderCategories:ids=>request({url:'/api/categories/reorder',method:'PUT',data:{ids}}),
   deleteCategory:id=>request({url:`/api/categories/${id}`,method:'DELETE',loading:true}),
   favorite:(id,on)=>request({url:`/api/dishes/${id}/favorite`,method:on?'POST':'DELETE'}),
   create:data=>request({url:'/api/dishes',method:'POST',data,loading:true}),
   update:(id,data)=>request({url:`/api/dishes/${id}`,method:'PUT',data,loading:true}),
+  deleteImage:id=>request({url:`/api/dishes/${id}/image`,method:'DELETE',loading:true}),
+  discardImage:key=>request({url:'/api/uploads/discard',method:'POST',data:{key}}),
   disable:id=>request({url:`/api/dishes/${id}`,method:'DELETE'}),
   recommend:(count=1)=>request({url:`/api/recommendations/today?count=${count}`})
 }

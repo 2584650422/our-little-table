@@ -29,13 +29,20 @@ Page({
   },
   applyFilters(sourceCategories){
     const keyword=this.data.keyword.trim().toLowerCase(),categoryId=String(this.data.categoryId||'')
-    const dishes=(this._allDishes||[]).filter(item=>(!categoryId||String(item.categoryId)===categoryId)&&(!keyword||item.name.toLowerCase().includes(keyword)||(item.description||'').toLowerCase().includes(keyword)))
+    const normalize=value=>String(value||'').replace(/\s+/g,'').toLowerCase()
+    const dishes=(this._allDishes||[]).filter(item=>{
+      const searchable=normalize([item.name,item.description,item.categoryName,...(item.tags||[])].join(' '))
+      return keyword?searchable.includes(normalize(keyword)):(!categoryId||String(item.categoryId)===categoryId)
+    })
     const categories=sourceCategories||this.data.categories,active=categories.find(item=>String(item.id)===categoryId)
-    this.setData({dishes,activeCategoryName:active?`${active.icon||''} ${active.name}`:'全部菜品'})
+    this.setData({dishes,activeCategoryName:keyword?`“${this.data.keyword.trim()}” 的搜索结果`:(active?`${active.icon||''} ${active.name}`:'全部菜品')})
   },
   chooseCategory(e){if(this.foldForInteraction())return;this.setData({categoryId:e.currentTarget.dataset.id||''},()=>this.applyFilters())},
-  input(e){this.setData({keyword:e.detail.value})},
+  input(e){this.setData({keyword:e.detail.value},()=>this.applyFilters())},
   search(){if(this.foldForInteraction())return;this.applyFilters()},
+  clearSearch(){this.setData({keyword:''},()=>this.applyFilters())},
+  previewImage(e){this.setData({previewImageUrl:e.currentTarget.dataset.url,previewImageName:e.currentTarget.dataset.name||''})},
+  closePreview(){this.setData({previewImageUrl:'',previewImageName:''})},
   detail(e){if(this.foldForInteraction())return;wx.navigateTo({url:`/pages/dish-detail/dish-detail?id=${e.currentTarget.dataset.id}`})},
   add(e){
     const id=e.currentTarget.dataset.id,dish=(this._allDishes||[]).find(item=>String(item.id)===String(id))

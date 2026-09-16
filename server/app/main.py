@@ -159,6 +159,20 @@ def owned_key_or_error(key: Optional[str], public_id: str) -> Optional[str]:
         raise AppError("图片不属于当前小饭桌，请重新上传", 403)
     return key
 
+def delete_unreferenced_image(key: Optional[str]) -> bool:
+    """Remove an object only when it is no longer needed by any saved record."""
+    if not key:
+        return False
+    references=fetch_one("""SELECT
+        (SELECT COUNT(*) FROM dishes WHERE image_key=%s)+
+        (SELECT COUNT(*) FROM users WHERE avatar_key=%s)+
+        (SELECT COUNT(*) FROM order_items WHERE dish_image_key=%s)+
+        (SELECT COUNT(*) FROM meal_reviews WHERE image_key=%s) AS count""",(key,key,key,key))
+    if references["count"]:
+        return False
+    storage.delete_keys([key])
+    return True
+
 def dish_payload(body: dict, public_id: str):
     category_id = int(number(body.get("categoryId"), 0) or 0); name = text(body.get("name"), 80)
     if not category_id or not name: raise AppError("菜名和分类都要填写哦")
@@ -370,6 +384,19 @@ async def create_category(request: Request, user: dict=Depends(coupled_user)):
         raise
     return success({"id":category_id},"分类添加好啦")
 
+@app.put("/api/categories/reorder")
+async def reorder_categories(request: Request, user: dict=Depends(coupled_user)):
+    ids=(await request.json()).get("ids")
+    if not isinstance(ids,list) or len(ids)>100: raise AppError("分类顺序数据不正确")
+    try: normalized=[int(item) for item in ids]
+    except (TypeError,ValueError): raise AppError("分类顺序数据不正确")
+    if len(set(normalized))!=len(normalized): raise AppError("分类顺序不能重复")
+    existing=fetch_all("SELECT id FROM categories WHERE couple_id=%s AND enabled=1 ORDER BY id",(user["coupleId"],))
+    if {row["id"] for row in existing}!={*normalized}: raise AppError("分类列表已经变化，请刷新后再试")
+    with connection(transaction=True) as conn:
+        for index,category_id in enumerate(normalized): execute("UPDATE categories SET sort_order=%s WHERE id=%s AND couple_id=%s",((index+1)*10,category_id,user["coupleId"]),conn)
+    return success(message="分类顺序已保存")
+
 @app.put("/api/categories/{category_id}")
 async def update_category(category_id: int, request: Request, user: dict=Depends(coupled_user)):
     body=await request.json(); name=text(body.get("name"),30); icon=text(body.get("icon"),16,"🍽️") or "🍽️"
@@ -428,9 +455,18 @@ async def update_dish(dish_id: int, request: Request, user: dict=Depends(coupled
     old_key, new_key = old.get("imageKey"), payload[3]
     if old_key and old_key != new_key:
         # History snapshots keep their own key, so replacing a dish never breaks old meals.
-        reference=fetch_one("SELECT COUNT(*) AS count FROM order_items WHERE dish_image_key=%s",(old_key,))
-        if not reference["count"]: storage.delete_keys([old_key])
+        delete_unreferenced_image(old_key)
     return success(message="菜单更新好啦")
+
+@app.delete("/api/dishes/{dish_id}/image")
+def delete_dish_image(dish_id: int, user: dict=Depends(coupled_user)):
+    dish=fetch_one("SELECT image_key AS imageKey FROM dishes WHERE id=%s AND couple_id=%s",(dish_id,user["coupleId"]))
+    if not dish: raise AppError("这道菜找不到啦",404)
+    old_key=dish.get("imageKey")
+    if not old_key: return success({"deleted":False},"这道菜还没有图片")
+    execute("UPDATE dishes SET image_key=NULL,image_url=NULL WHERE id=%s AND couple_id=%s",(dish_id,user["coupleId"]))
+    deleted=delete_unreferenced_image(old_key)
+    return success({"deleted":deleted},"菜品图片已删除" if deleted else "已移除菜品图片，历史记录仍保留原图")
 
 @app.delete("/api/dishes/{dish_id}")
 def disable_dish(dish_id: int, user: dict=Depends(coupled_user)):
@@ -590,3 +626,10 @@ async def cos_credential(request: Request, user: dict=Depends(coupled_user)):
     url=storage.signed_url(key)
     logger.info("cos.credential_issued requestId=%s purpose=%s key=%s size=%s", request.state.request_id, purpose, key, int(size))
     return success({"credentials":credential["credentials"],"startTime":credential["startTime"],"expiredTime":credential["expiredTime"],"bucket":settings.cos_bucket,"region":settings.cos_region,"key":key,"url":url})
+
+@app.post("/api/uploads/discard")
+async def discard_upload(request: Request, user: dict=Depends(coupled_user)):
+    key=owned_key_or_error(text((await request.json()).get("key"),255) or None,couple_public_id(user["coupleId"]))
+    if not key: raise AppError("缺少待删除的图片")
+    if not delete_unreferenced_image(key): raise AppError("这张图片已经被使用，不能直接删除")
+    return success(message="未保存的图片已清理")

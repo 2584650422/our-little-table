@@ -1,5 +1,5 @@
 <view class="menu-page">
-  <view class="toolbar" bindtap="foldOnBackground"><view class="search"><text>⌕</text><input placeholder="搜索菜名" value="{{keyword}}" bindfocus="foldOnInputFocus" bindinput="input" confirm-type="search" bindconfirm="search"/><text class="search-action" catchtap="search">搜索</text></view></view>
+  <view class="toolbar" bindtap="foldOnBackground"><view class="search"><text>⌕</text><input placeholder="搜索菜名、分类或标签" value="{{keyword}}" bindfocus="foldOnInputFocus" bindinput="input" confirm-type="search" bindconfirm="search"/><text wx:if="{{keyword}}" class="search-clear" style="width:38rpx;height:38rpx;line-height:34rpx;text-align:center;border-radius:50%;background:#F0E6EA;font-size:34rpx;color:#9D8E93" catchtap="clearSearch">×</text><text wx:else class="search-action" catchtap="search">搜索</text></view></view>
   <view class="menu-body" bindtap="foldOnBackground">
     <view class="rail-wrap">
       <scroll-view scroll-y class="category-rail">

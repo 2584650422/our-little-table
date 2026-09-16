@@ -1,5 +1,6 @@
 <view class="page">
-  <view class="manage-head"><view class="tip">这里的菜都属于你们，可以随时编辑或下架。</view><view class="category-link" bindtap="categories">分类管理 ›</view></view>
+  <view class="manage-head"><view class="tip">按点过次数优先排列，方便整理常吃的菜。</view><view class="head-actions"><view class="search-icon" bindtap="searchToggle">⌕</view><view class="category-link" bindtap="categories">分类管理 ›</view></view></view>
+  <view wx:if="{{searchOpen}}" class="manage-search"><input focus value="{{keyword}}" placeholder="搜索想修改的菜品" bindinput="input"/><text bindtap="searchToggle">×</text></view>
 
   <block wx:if="{{loading}}">
     <view class="loading">正在整理菜单…</view>

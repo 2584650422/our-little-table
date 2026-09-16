@@ -1,7 +1,7 @@
 <view wx:if="{{loading}}" class="loading">正在看看这道菜…</view>
 <view wx:elif="{{error}}" class="error">{{error}}</view>
 <view wx:else class="page detail">
-  <image wx:if="{{dish.imageUrl}}" class="cover" src="{{dish.imageUrl}}" mode="aspectFill"/>
+  <image wx:if="{{dish.imageUrl}}" class="cover" src="{{dish.imageUrl}}" mode="aspectFill" bindtap="preview"/>
   <view wx:else class="cover image-placeholder">🍽️</view>
   <view class="card info-card">
     <view class="dish-heading">
@@ -20,4 +20,5 @@
   <view class="card history"><view>最近吃过</view><text>{{dish.lastEatenLabel}}</text><view>一起吃过</view><text>{{dish.eatenCount}} 次</text></view>
   <view wx:if="{{dish.calorieKcal}}" class="note">热量为家庭做法估算，会因食材和份量不同而变化。</view>
   <button class="btn fixed" bindtap="add">+ 放进今天的小菜单</button>
+  <view wx:if="{{previewImageUrl}}" class="preview-mask" style="position:fixed;z-index:60;left:0;right:0;top:0;bottom:0;background:rgba(24,19,21,.84);display:flex;align-items:center;justify-content:center;padding:52rpx;box-sizing:border-box" catchtap="closePreview"><view style="width:100%;position:relative" catchtap="noop"><image style="width:100%;max-height:78vh;border-radius:22rpx" src="{{previewImageUrl}}" mode="aspectFit"/><text style="position:absolute;right:-8rpx;top:-64rpx;width:56rpx;height:56rpx;text-align:center;line-height:50rpx;border-radius:50%;background:rgba(255,255,255,.2);color:#fff;font-size:48rpx" catchtap="closePreview">×</text></view></view>
 </view>

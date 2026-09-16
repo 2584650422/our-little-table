@@ -1,9 +1,9 @@
 <view class="page">
-  <view class="intro">左侧菜单会按照这里的顺序展示。Emoji 可以让分类更好认。</view>
+  <view class="intro">长按左侧六点手柄后上下拖动，就能调整左侧菜单顺序。</view>
   <view wx:if="{{loading}}" class="loading">正在整理分类…</view>
-  <view wx:for="{{categories}}" wx:key="id" class="card category-row" bindtap="edit" data-id="{{item.id}}">
-    <view class="icon">{{item.icon||'🍽️'}}</view><view class="name">{{item.name}}</view><view class="order">排序 {{item.sortOrder}}</view>
-    <view class="delete" catchtap="remove" data-id="{{item.id}}">删除</view><view class="arrow">›</view>
+  <view wx:for="{{categories}}" wx:key="id" class="card category-row {{draggingId==item.id?'dragging':''}} {{shiftingId==item.id?'shifting':''}}" bindtap="edit" data-id="{{item.id}}">
+    <view class="drag-handle" catchlongpress="dragStart" catchtouchmove="dragMove" catchtouchend="dragEnd" data-id="{{item.id}}" data-index="{{index}}">⠿</view><view class="icon">{{item.icon||'🍽️'}}</view><view class="name">{{item.name}}</view>
+    <view class="delete" catchtap="remove" data-id="{{item.id}}">删除</view>
   </view>
   <button class="btn add-btn" bindtap="add">＋ 新建分类</button>
   <view wx:if="{{editingId!==null}}" class="mask" bindtap="cancel"></view>
@@ -11,7 +11,6 @@
     <view class="editor-title">{{editingId?'编辑分类':'新建分类'}}</view>
     <view class="field"><text>分类图标</text><input value="{{form.icon}}" maxlength="4" data-key="icon" bindinput="input" placeholder="例如 🍲"/></view>
     <view class="field"><text>分类名称</text><input value="{{form.name}}" maxlength="30" data-key="name" bindinput="input" placeholder="例如 汤羹" focus="{{true}}"/></view>
-    <view class="field"><text>排序数字</text><input type="number" value="{{form.sortOrder}}" data-key="sortOrder" bindinput="input"/></view>
     <view class="actions"><button class="secondary" bindtap="cancel">取消</button><button class="primary" bindtap="save">保存</button></view>
   </view>
 </view>
