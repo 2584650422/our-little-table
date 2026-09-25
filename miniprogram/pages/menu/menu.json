@@ -1,1 +1,1 @@
-{"navigationBarTitleText":"我们的菜单","usingComponents":{"empty-state":"/components/empty-state/empty-state"}}
+{"navigationStyle":"custom","usingComponents":{"empty-state":"/components/empty-state/empty-state"}}

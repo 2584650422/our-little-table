@@ -17,16 +17,16 @@
   "window": {
     "navigationBarTextStyle": "black",
     "navigationBarTitleText": "两个人的小饭桌",
-    "navigationBarBackgroundColor": "#FFF7FA",
-    "backgroundColor": "#FFF7FA",
+    "navigationBarBackgroundColor": "#FAF9F6",
+    "backgroundColor": "#FAF9F6",
     "backgroundTextStyle": "dark"
   },
   "tabBar": {
-    "color": "#9C8E93", "selectedColor": "#E86F94", "backgroundColor": "#FFFFFF", "borderStyle": "white",
+    "color": "#77787D", "selectedColor": "#DE7E80", "backgroundColor": "#FFFFFF", "borderStyle": "white",
     "list": [
       { "pagePath": "pages/home/home", "text": "今天", "iconPath": "assets/tabbar/today.png", "selectedIconPath": "assets/tabbar/today-active.png" },
       { "pagePath": "pages/menu/menu", "text": "菜单", "iconPath": "assets/tabbar/menu.png", "selectedIconPath": "assets/tabbar/menu-active.png" },
-      { "pagePath": "pages/orders/orders", "text": "我们吃过", "iconPath": "assets/tabbar/history.png", "selectedIconPath": "assets/tabbar/history-active.png" },
+      { "pagePath": "pages/orders/orders", "text": "吃过", "iconPath": "assets/tabbar/history.png", "selectedIconPath": "assets/tabbar/history-active.png" },
       { "pagePath": "pages/settings/settings", "text": "我们", "iconPath": "assets/tabbar/us.png", "selectedIconPath": "assets/tabbar/us-active.png" }
     ]
   },

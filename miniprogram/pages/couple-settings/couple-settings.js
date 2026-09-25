@@ -5,7 +5,7 @@ Page({
   async load(){
     try{
       const couple=await request({url:'/api/couples/current'}),user=wx.getStorageSync('user')||{}
-      this.setData({couple,name:couple.name,anniversary:couple.anniversary||'',homeTitle:couple.homeTitle||'今天想吃点什么呀？',homeSubtitle:couple.homeSubtitle||'认真选一顿，也是在认真过日子。',nickname:user.nickname||'',avatarUrl:user.avatarUrl||'',avatarImageKey:user.avatarKey||'',currentUserId:user.id,loading:false})
+      this.setData({couple,name:couple.name,anniversary:couple.anniversary||'',homeTitle:couple.homeTitle||homeCopy.defaults.title,homeSubtitle:couple.homeSubtitle||homeCopy.defaults.subtitle,nickname:user.nickname||'',avatarUrl:user.avatarUrl||'',avatarImageKey:user.avatarKey||'',currentUserId:user.id,loading:false})
       if(this._focus==='members'){this._focus='';setTimeout(()=>wx.pageScrollTo({selector:'#members',duration:250}),100)}
     }catch(e){wx.showToast({title:e.message,icon:'none'})}
   },
@@ -37,6 +37,7 @@ Page({
     }catch(e){wx.showToast({title:e.message,icon:'none'})}
   },
   copy(){wx.setClipboardData({data:this.data.couple.inviteCode})},
+  switchTable(){wx.navigateTo({url:'/pages/couple/couple'})},
   async invite(){try{const result=await request({url:'/api/couples/invite',method:'POST',loading:true});this.setData({'couple.inviteCode':result.inviteCode});wx.showToast({title:'新邀请码准备好啦',icon:'none'})}catch(e){wx.showToast({title:e.message,icon:'none'})}},
   async leave(){const result=await new Promise(resolve=>wx.showModal({title:'确定离开小饭桌？',content:'离开后不再显示这张饭桌，但它和历史记录不会被删除。',confirmText:'确认离开',confirmColor:'#C45F7D',success:resolve}));if(!result.confirm)return;try{await request({url:'/api/couples/leave',method:'POST',loading:true});const user=await request({url:'/api/auth/me'});wx.setStorageSync('user',user);getApp().globalData.user=user;cart.clear();homeCopy.clear();wx.showToast({title:'已经离开小饭桌',icon:'none'});setTimeout(()=>wx.switchTab({url:'/pages/settings/settings'}),500)}catch(e){wx.showToast({title:e.message,icon:'none'})}},
   async deleteCouple(){const result=await new Promise(resolve=>wx.showModal({title:'删除整张小饭桌？',content:'菜单、订单、照片和饭饭记录都会永久删除，无法恢复。仅创建者且没有其他成员时可执行。',confirmText:'永久删除',confirmColor:'#C45F7D',success:resolve}));if(!result.confirm)return;try{await request({url:'/api/couples/current',method:'DELETE',loading:true});const user=await request({url:'/api/auth/me'});wx.setStorageSync('user',user);getApp().globalData.user=user;cart.clear();homeCopy.clear();wx.showToast({title:'小饭桌已删除',icon:'none'});setTimeout(()=>wx.switchTab({url:'/pages/settings/settings'}),500)}catch(e){wx.showToast({title:e.message,icon:'none'})}}

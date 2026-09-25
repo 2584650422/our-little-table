@@ -58,6 +58,21 @@ docker run -d --name little-table-api --restart unless-stopped \
 
 MySQL 使用已有实例，因此项目不强制提供或启动新的 MySQL 容器。
 
+### 使用现有 Nginx / MySQL Compose 网络部署
+
+如果服务器已有 `compose_blog-network` 网络，并且数据库容器在该网络中的服务名为 `mysql`，可将 `server/` 上传到服务器的 `server/` 目录，并将真实环境文件单独放到 `server/.env`（权限设为 `600`）。随后执行：
+
+```bash
+cd /data/software/little-table/server
+docker compose -f compose.production.yml up -d --build
+docker compose -f compose.production.yml ps
+docker compose -f compose.production.yml logs --tail=100 api
+```
+
+此 Compose 不发布数据库端口或后端端口到公网；Nginx 与 API 通过 `compose_blog-network` 通信，API 通过网络别名 `mysql:3306` 连接现有 MySQL。生产 Compose 会强制关闭 `DEV_LOGIN_ENABLED`。
+
+`server/little-table.nginx.conf` 是独立的反向代理配置样例。新增或替换服务器上的 Nginx 配置前，先备份原配置、运行 `nginx -t`，通过后再 reload。切换现有域名会改变该域名原先承载的网站内容。
+
 ## 5. Nginx HTTPS 反向代理
 
 ```nginx
@@ -88,7 +103,7 @@ server {
 
 在“小程序后台 → 开发管理 → 开发设置 → 服务器域名”配置：
 
-- `request 合法域名`：`https://api.example.com` 以及 `https://<Bucket>.cos.<Region>.myqcloud.com`。后者用于以 `wx.request + PUT` 安全直传 COS。
+- `request 合法域名`：部署后的 HTTPS API 域名（当前服务器可使用 `https://aaa.imlyc.cn`）以及 `https://<Bucket>.cos.<Region>.myqcloud.com`。后者用于以 `wx.request + PUT` 安全直传 COS。
 - `uploadFile 合法域名`：当前架构不需要；小程序的 `wx.uploadFile` 只适合 multipart POST，而本项目使用 COS `PutObject`。
 - `downloadFile 合法域名`：COS 图片实际访问域名；若绑定了 CDN/自定义域名则填写该域名。
 

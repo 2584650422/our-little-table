@@ -1,30 +1,30 @@
-<view class="page">
-  <view class="hero">
-    <view class="date">{{dateText}}</view>
-    <view class="title">{{greeting}}，{{homeTitle}}</view>
-    <view class="subtitle">{{homeSubtitle}}</view>
+<view class="page home-page" style="padding-top:{{topInset}}px">
+  <view class="home-intro">
+    <view class="greeting">{{greeting}}</view>
+    <view class="intro-line">{{homeSubtitle}}</view>
+    <view class="botanical botanical-top"><view class="botanical-circle"></view><view class="branch"></view><view class="leaf leaf-1"></view><view class="leaf leaf-2"></view><view class="leaf leaf-3"></view><view class="leaf leaf-4"></view></view>
   </view>
+  <view class="hero-title">{{homeTitle}}</view>
   <view wx:if="{{loading}}" class="loading">正在翻翻我们的小菜单…</view>
   <view wx:elif="{{error}}" class="card error"><view>{{error}}</view><button class="btn secondary" bindtap="bootstrap">重新试试</button></view>
-  <view wx:elif="{{needsCouple}}" class="card bind-card">
-    <view class="big">先把两把椅子摆好</view><view class="muted">创建或加入只属于你们的小饭桌</view><button class="btn" bindtap="goCouple">开始布置</button>
-  </view>
+  <view wx:elif="{{needsCouple}}" class="card bind-card"><view class="big">先把两把椅子摆好</view><view class="muted">创建或加入只属于你们的小饭桌</view><button class="btn" bindtap="goCouple">开始布置</button></view>
   <block wx:else>
-    <view class="random card">
-      <view class="between"><view><view class="eyebrow">今晚要不要吃……</view><view class="section-name">不知道吃什么？交给小饭桌</view></view><view class="dice" bindtap="shuffle">↻</view></view>
-      <view class="recommend-grid">
-        <view wx:for="{{recommendations}}" wx:key="id" class="recommend" bindtap="detail" data-id="{{item.id}}">
-          <image wx:if="{{item.imageUrl}}" src="{{item.imageUrl}}" mode="aspectFill"/><view wx:else class="mini-placeholder">🍽️</view>
-          <view class="recommend-name">{{item.name}}</view><view wx:if="{{item.calorieKcal}}" class="recommend-meta">约 {{item.calorieKcal}} kcal</view>
-          <view class="mini-add" catchtap="add" data-id="{{item.id}}">就吃它</view>
-        </view>
-      </view>
-      <button class="btn secondary" bindtap="shuffle">再换一组</button>
+    <view wx:if="{{recommendations.length}}" class="feature-wrap">
+      <swiper class="dish-swiper" current="{{recommendationIndex}}" circular="{{recommendations.length>1}}" bindchange="recommendChanged">
+        <swiper-item wx:for="{{recommendations}}" wx:key="id">
+          <view class="feature-card" bindtap="detail" data-id="{{item.id}}">
+            <image wx:if="{{item.imageUrl}}" class="feature-image" src="{{item.imageUrl}}" mode="aspectFill" lazy-load />
+            <view wx:else class="feature-image feature-placeholder"><image src="/assets/icons/dish-placeholder.png" mode="aspectFit"/></view>
+            <view class="image-shade"></view>
+            <view class="feature-copy"><view class="feature-name">{{item.name}}</view><view class="feature-description">{{item.description||'简单又满足的家常味道'}}</view></view>
+            <view class="feature-foot"><text>两个人，一顿刚刚好</text><text>{{index+1}}/{{recommendations.length}}</text></view>
+          </view>
+        </swiper-item>
+      </swiper>
+      <view class="feature-actions"><button class="btn secondary shuffle-btn" bindtap="shuffle"><text class="shuffle-icon">↻</text> 换一个</button><button class="btn choose-btn" bindtap="add" data-id="{{recommendations[recommendationIndex].id}}">就吃它</button></view>
+      <view class="recommend-dots"><view wx:for="{{recommendations}}" wx:key="id" class="dot {{index===recommendationIndex?'active':''}}"></view></view>
     </view>
-    <view class="quick"><view class="quick-item" bindtap="goMenu">🍳<text>家常菜</text></view><view class="quick-item" bindtap="goMenu">🥬<text>清爽点</text></view><view class="quick-item" bindtap="goMenu">🍪<text>来点零食</text></view><view class="quick-item" bindtap="goMenu">🥤<text>喝点什么</text></view></view>
-    <view class="section-title">最近一次点菜</view>
-    <view wx:if="{{recent}}" class="card recent" bindtap="goOrders"><view class="between"><view>{{recent.mealDate}} · {{recent.mealLabel}}</view><order-status status="{{recent.status}}"/></view><view class="dish-line">{{recent.items[0].dishName}}<text wx:if="{{recent.items.length>1}}"> 等 {{recent.items.length}} 样</text></view><view class="muted">{{recent.creatorName}} 点的</view></view>
-    <empty-state wx:else icon="🍚" title="还没有点过菜" hint="第一顿，就从今天开始吧"/>
-    <view class="menu-guide" bindtap="goMenu"><view><view class="guide-title">还没决定今天吃什么？</view><text>去菜单里挑一挑</text></view><text class="guide-arrow">›</text></view>
+    <view wx:else class="card empty-recommend"><view class="empty-recommend-icon">♡</view><view class="empty-recommend-title">菜单里还没有菜呢</view><view class="muted">先添几道喜欢的菜，再让小饭桌帮忙挑一挑</view><button class="btn secondary" bindtap="goMenu">去看看菜单</button></view>
+    <view class="home-reminder"><view class="reminder-label"><text>♥</text> 小提醒</view><view class="reminder-copy">好好吃饭，<view>就是对生活温柔的回应。</view></view><view class="botanical botanical-note"><view class="branch"></view><view class="leaf leaf-1"></view><view class="leaf leaf-2"></view><view class="leaf leaf-3"></view><view class="leaf leaf-4"></view></view></view>
   </block>
 </view>

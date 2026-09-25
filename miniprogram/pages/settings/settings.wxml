@@ -1,20 +1,12 @@
-<view class="page">
+<view class="page us-page" style="padding-top:{{topInset}}px">
   <view wx:if="{{loading}}" class="loading">正在收拾小饭桌…</view>
-  <view wx:elif="{{!couple}}" class="card setup"><view class="title">桌边还缺一个位置</view><view class="subtitle">创建或加入一个只属于你们的小饭桌</view><button class="btn" bindtap="couple">开始布置</button></view>
+  <view wx:elif="{{error}}" class="card error"><view>{{error}}</view><button class="btn secondary" bindtap="load">重新试试</button></view>
+  <view wx:elif="{{!couple}}" class="card setup"><view class="setup-mark">♡</view><view class="title">桌边还缺一个位置</view><view class="subtitle">创建或加入一个只属于你们的小饭桌</view><button class="btn" bindtap="couple">开始布置</button></view>
   <block wx:else>
-    <view class="card profile">
-      <view class="avatars"><block wx:for="{{couple.members}}" wx:key="id"><view class="person"><image wx:if="{{item.avatarUrl}}" src="{{item.avatarUrl}}"/><view wx:else class="avatar">{{item.nickname[0]}}</view><text>{{item.nickname}}</text></view><view wx:if="{{index===0&&couple.members.length>1}}" class="heart">♥</view></block></view>
-      <view class="title">{{couple.name}}</view><view class="subtitle" wx:if="{{couple.anniversary}}">从 {{couple.anniversary}} 开始认真吃饭</view><view class="subtitle" wx:else>属于两个人的菜单和饭饭记录</view>
-    </view>
-    <view class="stats"><view bindtap="meals"><text class="stat-number">{{couple.stats.meals}}</text><text>一起吃过 ›</text></view><view bindtap="members"><text class="stat-number">{{couple.members.length}} / 2</text><text>饭桌成员 ›</text></view></view>
-    <view class="section-title">我们的小东西</view>
-    <view class="card links">
-      <view class="link-row" bindtap="favorites"><view class="link-main"><text class="link-icon">♡</text><text class="link-label">我的收藏</text></view><text class="link-arrow">›</text></view>
-      <view class="link-row" bindtap="manage"><view class="link-main"><text class="link-icon">☷</text><text class="link-label">菜单与分类管理</text></view><text class="link-arrow">›</text></view>
-      <view class="link-row" bindtap="subscribe"><view class="link-main"><text class="link-icon">◌</text><text class="link-label">微信点菜提醒</text></view><text class="link-arrow">›</text></view>
-      <view class="link-row" bindtap="coupleSettings"><view class="link-main"><text class="link-icon">⚙</text><text class="link-label">小饭桌设置</text></view><text class="link-arrow">›</text></view>
-      <view class="link-row" bindtap="couple"><view class="link-main"><text class="link-icon">⇄</text><text class="link-label">切换小饭桌</text></view><text class="link-arrow">›</text></view>
-      <view class="link-row"><view class="link-main"><text class="link-icon">○</text><text class="link-label">关于两个人的小饭桌</text></view><text class="link-arrow">›</text></view>
-    </view>
+    <view class="us-top"><image class="us-settings" src="/assets/icons/settings.png" mode="aspectFit" bindtap="coupleSettings"/></view>
+    <view class="couple-profile"><view class="avatars"><view class="person"><image wx:if="{{couple.members[0].avatarUrl}}" src="{{couple.members[0].avatarUrl}}" mode="aspectFill"/><view wx:else class="avatar">{{couple.members[0].nickname[0]||'饭'}}</view></view><view class="couple-heart">♥</view><view wx:if="{{couple.members[1]}}" class="person"><image wx:if="{{couple.members[1].avatarUrl}}" src="{{couple.members[1].avatarUrl}}" mode="aspectFill"/><view wx:else class="avatar second-avatar">{{couple.members[1].nickname[0]||'饭'}}</view></view><view wx:else class="person"><view class="avatar second-avatar">?</view></view></view><view class="couple-name">{{couple.name}}</view><view class="couple-subtitle">{{coupleSubtitle}}</view></view>
+    <view class="stats"><view bindtap="meals"><text class="stat-number">{{couple.stats.meals||0}}</text><text>一起吃过</text></view><view bindtap="meals"><text class="stat-number">{{couple.stats.monthlyMeals||0}}</text><text>本月吃过</text></view><view bindtap="favorites"><text class="stat-number">{{favoriteCount}}</text><text>收藏菜谱</text></view></view>
+    <view class="links"><view class="link-row" bindtap="favorites"><image class="link-icon-image" src="/assets/icons/heart.png" mode="aspectFit"/><text class="link-label">我们喜欢的菜</text><text class="link-arrow">›</text></view><view class="link-row" bindtap="manage"><image class="link-icon-image" src="/assets/icons/document.png" mode="aspectFit"/><text class="link-label">菜单管理</text><text class="link-arrow">›</text></view><view class="link-row" bindtap="meals"><image class="link-icon-image" src="/assets/icons/calendar.png" mode="aspectFit"/><text class="link-label">饮食小记录</text><text class="link-arrow">›</text></view><view class="link-row" bindtap="subscribe"><image class="link-icon-image" src="/assets/icons/bell.png" mode="aspectFit"/><text class="link-label">提醒设置</text><text class="link-arrow">›</text></view></view>
+    <view class="links secondary-links"><view class="link-row" bindtap="members"><image class="link-icon-image" src="/assets/icons/members.png" mode="aspectFit"/><text class="link-label">成员管理</text><text class="link-arrow">›</text></view><view class="link-row" bindtap="about"><image class="link-icon-image" src="/assets/icons/info.png" mode="aspectFit"/><text class="link-label">关于我们</text><text class="link-arrow">›</text></view></view>
   </block>
 </view>

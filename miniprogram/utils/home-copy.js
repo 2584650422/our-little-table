@@ -1,5 +1,5 @@
 const KEY='couple_home_copy'
-const defaults={title:'今天想吃点什么呀？',subtitle:'认真选一顿，也是在认真过日子。'}
+const defaults={title:'今天想吃什么？',subtitle:'和你一起吃饭，就是好日子'}
 
 function normalize(value={}){
   return {

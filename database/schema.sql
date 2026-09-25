@@ -9,8 +9,8 @@ CREATE TABLE couples (
   invite_expire_at DATETIME NULL,
   created_by BIGINT UNSIGNED NULL,
   anniversary DATE NULL,
-  home_title VARCHAR(80) NOT NULL DEFAULT '今天想吃点什么呀？',
-  home_subtitle VARCHAR(120) NOT NULL DEFAULT '认真选一顿，也是在认真过日子。',
+  home_title VARCHAR(80) NOT NULL DEFAULT '今天想吃什么？',
+  home_subtitle VARCHAR(120) NOT NULL DEFAULT '和你一起吃饭，就是好日子',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;

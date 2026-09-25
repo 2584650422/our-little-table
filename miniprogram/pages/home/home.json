@@ -1,1 +1,1 @@
-{"navigationBarTitleText":"今天吃什么","usingComponents":{"dish-card":"/components/dish-card/dish-card","empty-state":"/components/empty-state/empty-state","order-status":"/components/order-status/order-status"}}
+{"navigationStyle":"custom","usingComponents":{"empty-state":"/components/empty-state/empty-state"}}

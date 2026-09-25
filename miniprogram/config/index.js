@@ -1,1 +1,1 @@
-module.exports = { apiBaseUrl: 'http://127.0.0.1:3000', wechatOrderTemplateId: '' }
+module.exports = { apiBaseUrl: 'https://aaa.imlyc.cn', wechatOrderTemplateId: '' }

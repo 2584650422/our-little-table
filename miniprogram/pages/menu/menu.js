@@ -1,7 +1,7 @@
-const api=require('../../services/dishes'),cart=require('../../utils/cart')
+const api=require('../../services/dishes'),cart=require('../../utils/cart'),layout=require('../../utils/layout')
 
 Page({
-  data:{categories:[],dishes:[],categoryId:'',keyword:'',loading:true,error:'',cartCount:0,activeCategoryName:'全部菜品',selectedItems:[],selectedExpanded:false,selectedSheetMounted:false},
+  data:{topInset:layout.topInset(),categories:[],dishes:[],categoryId:'',keyword:'',searchOpen:false,loading:true,error:'',cartCount:0,activeCategoryName:'全部菜品',selectedItems:[],selectedThumbs:[],sheetListHeight:120,selectedExpanded:false,selectedSheetMounted:false},
   onShow(){this.closeSelected({immediate:true});this.load()},
   onHide(){this.closeSelected({immediate:true})},
   onUnload(){clearTimeout(this._sheetTimer)},
@@ -25,7 +25,7 @@ Page({
       if(categoryId)counts[String(categoryId)]=(counts[String(categoryId)]||0)+item.quantity
     })
     const categories=(sourceCategories||this.data.categories).map(item=>({...item,cartCount:counts[String(item.id)]||0}))
-    this.setData({categories,cartCount:list.reduce((sum,item)=>sum+item.quantity,0),selectedItems:list})
+    this.setData({categories,cartCount:list.reduce((sum,item)=>sum+item.quantity,0),selectedItems:list,selectedThumbs:list.slice(0,3),sheetListHeight:Math.min(400,Math.max(120,list.length*123))})
   },
   applyFilters(sourceCategories){
     const keyword=this.data.keyword.trim().toLowerCase(),categoryId=String(this.data.categoryId||'')
@@ -41,6 +41,7 @@ Page({
   input(e){this.setData({keyword:e.detail.value},()=>this.applyFilters())},
   search(){if(this.foldForInteraction())return;this.applyFilters()},
   clearSearch(){this.setData({keyword:''},()=>this.applyFilters())},
+  toggleSearch(){if(this.foldForInteraction())return;this.setData({searchOpen:!this.data.searchOpen,keyword:!this.data.searchOpen?this.data.keyword:''},()=>this.applyFilters())},
   previewImage(e){this.setData({previewImageUrl:e.currentTarget.dataset.url,previewImageName:e.currentTarget.dataset.name||''})},
   closePreview(){this.setData({previewImageUrl:'',previewImageName:''})},
   detail(e){if(this.foldForInteraction())return;wx.navigateTo({url:`/pages/dish-detail/dish-detail?id=${e.currentTarget.dataset.id}`})},

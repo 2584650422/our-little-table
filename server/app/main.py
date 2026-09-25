@@ -292,7 +292,7 @@ def couples_mine(user: dict=Depends(current_user)):
 async def create_couple(request: Request, user: dict=Depends(current_user)):
     body=await request.json(); name=text(body.get("name"),50,"我们的小饭桌") or "我们的小饭桌"
     with connection(transaction=True) as conn:
-        couple_id,_=execute("INSERT INTO couples (public_id,name,invite_code,invite_expire_at) VALUES (%s,%s,%s,DATE_ADD(NOW(),INTERVAL 7 DAY))",(str(uuid.uuid4()),name,uuid.uuid4().hex[:8].upper()),conn)
+        couple_id,_=execute("INSERT INTO couples (public_id,name,invite_code,invite_expire_at,home_title,home_subtitle) VALUES (%s,%s,%s,DATE_ADD(NOW(),INTERVAL 7 DAY),%s,%s)",(str(uuid.uuid4()),name,uuid.uuid4().hex[:8].upper(),"今天想吃什么？","和你一起吃饭，就是好日子"),conn)
         execute("INSERT INTO couple_members (couple_id,user_id) VALUES (%s,%s)",(couple_id,user["id"]),conn)
         execute("UPDATE users SET couple_id=%s WHERE id=%s",(couple_id,user["id"]),conn)
         execute("UPDATE couples SET created_by=%s WHERE id=%s",(user["id"],couple_id),conn)
@@ -329,14 +329,18 @@ def current_couple(user: dict=Depends(coupled_user)):
     couple=fetch_one("SELECT id,public_id AS publicId,name,invite_code AS inviteCode,DATE_FORMAT(invite_expire_at,'%Y-%m-%d %H:%i') AS inviteExpireAt,DATE_FORMAT(anniversary,'%Y-%m-%d') AS anniversary,home_title AS homeTitle,home_subtitle AS homeSubtitle,created_by AS createdBy,DATE_FORMAT(created_at,'%Y-%m-%d %H:%i') AS createdAt FROM couples WHERE id=%s",(user["coupleId"],))
     members=fetch_all("SELECT u.id,u.nickname,u.avatar_key AS avatarKey,u.avatar_url AS avatarUrl FROM couple_members cm JOIN users u ON u.id=cm.user_id WHERE cm.couple_id=%s AND cm.left_at IS NULL ORDER BY cm.joined_at,u.id",(user["coupleId"],))
     for member in members: hydrate_avatar(member)
-    stats=fetch_one("SELECT COUNT(*) AS meals FROM orders WHERE couple_id=%s AND status='completed'",(user["coupleId"],))
+    stats=fetch_one("""SELECT COUNT(*) AS meals,
+        SUM(CASE WHEN COALESCE(ready_at,completed_at,created_at)>=DATE_FORMAT(CURDATE(),'%Y-%m-01')
+                  AND COALESCE(ready_at,completed_at,created_at)<DATE_FORMAT(DATE_ADD(CURDATE(),INTERVAL 1 MONTH),'%Y-%m-01')
+                 THEN 1 ELSE 0 END) AS monthlyMeals
+        FROM orders WHERE couple_id=%s AND status IN ('ready','completed')""",(user["coupleId"],))
     couple.update(members=members,stats=stats); return success(couple)
 
 @app.put("/api/couples/current")
 async def update_couple(request: Request, user: dict=Depends(coupled_user)):
     body=await request.json(); name=text(body.get("name"),50)
     if not name: raise AppError("小饭桌也要有个名字呀")
-    anniversary=body.get("anniversary") or None; title=text(body.get("homeTitle"),80,"今天想吃点什么呀？") or "今天想吃点什么呀？"; subtitle=text(body.get("homeSubtitle"),120,"认真选一顿，也是在认真过日子。") or "认真选一顿，也是在认真过日子。"
+    anniversary=body.get("anniversary") or None; title=text(body.get("homeTitle"),80,"今天想吃什么？") or "今天想吃什么？"; subtitle=text(body.get("homeSubtitle"),120,"和你一起吃饭，就是好日子") or "和你一起吃饭，就是好日子"
     execute("UPDATE couples SET name=%s,anniversary=%s,home_title=%s,home_subtitle=%s WHERE id=%s",(name,anniversary,title,subtitle,user["coupleId"]))
     return success({"name":name,"anniversary":anniversary,"homeTitle":title,"homeSubtitle":subtitle},"小饭桌更新好啦")
 
@@ -434,7 +438,7 @@ def dish_detail(dish_id: int, user: dict=Depends(coupled_user)):
     ensure_menu(user["coupleId"])
     dish=fetch_one(f"{DISH_SELECT} WHERE d.id=%s AND d.couple_id=%s",(user["id"],user["coupleId"],dish_id,user["coupleId"]))
     if not dish: raise AppError("这道菜找不到啦",404)
-    stats=fetch_one("SELECT COUNT(*) AS eatenCount,DATE_FORMAT(MAX(o.completed_at),'%Y-%m-%d %H:%i') AS lastEatenAt FROM order_items i JOIN orders o ON o.id=i.order_id WHERE i.dish_id=%s AND o.couple_id=%s AND o.status='completed'",(dish_id,user["coupleId"]))
+    stats=fetch_one("SELECT COUNT(*) AS eatenCount,DATE_FORMAT(MAX(COALESCE(o.completed_at,o.ready_at)),'%Y-%m-%d %H:%i') AS lastEatenAt FROM order_items i JOIN orders o ON o.id=i.order_id WHERE i.dish_id=%s AND o.couple_id=%s AND o.status IN ('ready','completed')",(dish_id,user["coupleId"]))
     dish=normalize_dish(dish); dish.update(stats); return success(dish)
 
 @app.post("/api/dishes")
@@ -485,7 +489,7 @@ def unfavorite_dish(dish_id: int, user: dict=Depends(coupled_user)):
 
 @app.get("/api/recommendations/today")
 def recommendations(request: Request, user: dict=Depends(coupled_user)):
-    ensure_menu(user["coupleId"]); rows=fetch_all("""SELECT d.id,d.name,d.description,d.image_key AS imageKey,d.image_url AS imageUrl,d.calorie_kcal AS calorieKcal,d.calorie_unit AS calorieUnit,c.name AS categoryName,EXISTS(SELECT 1 FROM favorites f WHERE f.dish_id=d.id AND f.user_id=%s) AS isFavorite,(SELECT MAX(o.completed_at) FROM order_items i JOIN orders o ON o.id=i.order_id WHERE i.dish_id=d.id AND o.couple_id=%s AND o.status='completed') AS lastEatenAt FROM dishes d JOIN categories c ON c.id=d.category_id WHERE d.enabled=1 AND d.couple_id=%s""",(user["id"],user["coupleId"],user["coupleId"]))
+    ensure_menu(user["coupleId"]); rows=fetch_all("""SELECT d.id,d.name,d.description,d.image_key AS imageKey,d.image_url AS imageUrl,d.calorie_kcal AS calorieKcal,d.calorie_unit AS calorieUnit,c.name AS categoryName,EXISTS(SELECT 1 FROM favorites f WHERE f.dish_id=d.id AND f.user_id=%s) AS isFavorite,(SELECT MAX(COALESCE(o.completed_at,o.ready_at)) FROM order_items i JOIN orders o ON o.id=i.order_id WHERE i.dish_id=d.id AND o.couple_id=%s AND o.status IN ('ready','completed')) AS lastEatenAt FROM dishes d JOIN categories c ON c.id=d.category_id WHERE d.enabled=1 AND d.couple_id=%s""",(user["id"],user["coupleId"],user["coupleId"]))
     def score(row):
         last=row.get("lastEatenAt"); days=30
         if last:

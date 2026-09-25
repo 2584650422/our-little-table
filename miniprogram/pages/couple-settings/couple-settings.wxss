@@ -2,3 +2,4 @@
 .avatar-editor .avatar-large{width:112rpx;height:112rpx;margin:0;font-size:38rpx;line-height:112rpx}
 .copy-field .title-editor{min-height:84rpx}
 .delete-title{margin-top:36rpx}.danger .delete-couple{background:#FFF0F3;color:#C45F7D}
+.switch-table{display:flex;align-items:center;justify-content:space-between;font-size:26rpx;color:#51464A}.switch-table text:last-child{font-size:21rpx;color:#A38E95}
