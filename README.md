@@ -123,6 +123,6 @@ mkdir -p logs && .venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 3
 
 ## TODO
 
-- 用真实微信 AppSecret、MySQL、域名、COS 和订阅模板完成双账号真机联调，并应用迁移 `008_wechat_subscription_credits.sql`。
+- 用真实微信 AppSecret、MySQL、域名、COS 和订阅模板完成双账号真机联调，并按顺序应用尚未运行的数据库迁移，包括 `008_wechat_subscription_credits.sql` 和 `009_cap_wechat_subscription_credits.sql`。
 - 补充自有菜品照片；当前无图统一展示项目内 CSS 占位，不引用网络图片。
 - 可进一步增加饭饭日历，并根据真机截图继续微调不同设备的安全区和字号。

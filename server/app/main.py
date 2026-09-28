@@ -223,6 +223,7 @@ async def code2session(code: str) -> dict:
     return data
 
 _access_token = {"value":"", "expires":0.0}
+SUBSCRIPTION_CREDIT_MAX = 10
 def subscribe_template(event: str) -> tuple[str,list[tuple[str,str]]]:
     if event == "served":
         return settings.wechat_served_template_id,[(settings.wechat_served_user_key,"reminderUser"),(settings.wechat_served_dish_name_key,"dishNames")]
@@ -244,7 +245,7 @@ def record_subscription_grants(user_id: int, template_ids: list[str], request_id
             if not event: continue
             _,changed=execute("INSERT IGNORE INTO wechat_subscription_grants (user_id,request_id,template_id,event) VALUES (%s,%s,%s,%s)",(user_id,request_id,template_id,event),conn)
             if changed:
-                execute("INSERT INTO wechat_subscription_credits (user_id,template_id,event,available_count) VALUES (%s,%s,%s,1) ON DUPLICATE KEY UPDATE available_count=available_count+1",(user_id,template_id,event),conn)
+                execute("INSERT INTO wechat_subscription_credits (user_id,template_id,event,available_count) VALUES (%s,%s,%s,1) ON DUPLICATE KEY UPDATE available_count=LEAST(%s,available_count+1)",(user_id,template_id,event,SUBSCRIPTION_CREDIT_MAX),conn)
 
 def reserve_subscription_credit(user_id: int, template_id: str) -> bool:
     with connection(transaction=True) as conn:
@@ -254,7 +255,7 @@ def reserve_subscription_credit(user_id: int, template_id: str) -> bool:
         return True
 
 def refund_subscription_credit(user_id: int, template_id: str) -> None:
-    execute("UPDATE wechat_subscription_credits SET available_count=available_count+1 WHERE user_id=%s AND template_id=%s",(user_id,template_id))
+    execute("UPDATE wechat_subscription_credits SET available_count=LEAST(%s,available_count+1) WHERE user_id=%s AND template_id=%s",(SUBSCRIPTION_CREDIT_MAX,user_id,template_id))
 
 async def send_subscribe(member: dict, order: dict, event: str = "created") -> dict:
     template_id,fields=subscribe_template(event)
@@ -757,7 +758,9 @@ def notifications(user: dict=Depends(coupled_user)):
 def notification_config(user: dict=Depends(coupled_user)):
     # Template IDs are public identifiers; secrets and template field mappings stay server-side.
     templates=subscription_templates()
-    return success({"orderTemplateId":templates.get("created",""),"servedTemplateId":templates.get("served","")})
+    credits=fetch_all("SELECT event,available_count AS availableCount FROM wechat_subscription_credits WHERE user_id=%s",(user["id"],))
+    balance={row["event"]:row["availableCount"] for row in credits}
+    return success({"orderTemplateId":templates.get("created",""),"servedTemplateId":templates.get("served",""),"subscriptionCredits":balance,"subscriptionCreditMax":SUBSCRIPTION_CREDIT_MAX})
 
 @app.post("/api/notifications/subscriptions")
 def register_subscriptions(request: Request, body: dict, user: dict=Depends(coupled_user)):

@@ -19,7 +19,7 @@ mysql -u root -p little_table < database/migrations/004_couple_memberships.sql
 mysql -u root -p little_table < database/migrations/005_private_cos_object_keys.sql
 ```
 
-全新安装不要执行这些迁移，因为最新 `schema.sql` 已包含相应字段和索引。旧库应严格按编号执行；`002` 增加饭桌级首页主副标题，`003` 将初始化模板与真实饭桌菜单分表并收紧 `couple_id` 非空约束，`004` 增加饭桌稳定 UUID 和可保留多张饭桌关联的成员表，`005` 为私有 COS 增加 Object Key 字段，`008` 记录微信一次性订阅授权机会。
+全新安装不要执行这些迁移，因为最新 `schema.sql` 已包含相应字段和索引。旧库应严格按编号执行；`002` 增加饭桌级首页主副标题，`003` 将初始化模板与真实饭桌菜单分表并收紧 `couple_id` 非空约束，`004` 增加饭桌稳定 UUID 和可保留多张饭桌关联的成员表，`005` 为私有 COS 增加 Object Key 字段，`008` 记录微信一次性订阅授权机会，`009` 将每位用户每个模板的预计可用次数限制为 10 次。
 
 生产环境建议为 `little_table` 单独创建只拥有该库 DML 权限的用户，不要让应用使用 root。
 
@@ -115,7 +115,7 @@ server {
 
 数据库升级分两步：先执行 `database/migrations/006_couple_background.sql`（只加列，可在旧后端运行时做）；部署并验证新版 Python API 后再备份数据库、执行 `database/migrations/007_remove_category_icons.sql`（删列，不可在旧后端运行时提前执行）。详见 [容器运维](CONTAINER_OPERATIONS.md)。
 
-启用微信订阅次数记录时，在发布读取该表的 API 前执行 `database/migrations/008_wechat_subscription_credits.sql`。该迁移只新增两张表；全新安装的 `database/schema.sql` 已包含它们。已迁移过的库不要重复运行。
+启用微信订阅次数记录时，按顺序执行尚未运行的 `008_wechat_subscription_credits.sql` 和 `009_cap_wechat_subscription_credits.sql`，再发布读取这些表的 API。`008` 新增授权及次数表；`009` 将已有余额收敛到每用户、每模板最多 10 次。全新安装的 `database/schema.sql` 已包含表结构，不需要执行这两项迁移。已迁移过的库不要重复运行。
 
 ## 7. 腾讯云 COS
 

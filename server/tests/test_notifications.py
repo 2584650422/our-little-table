@@ -32,6 +32,25 @@ class NotificationTests(unittest.TestCase):
         self.assertEqual(send.call_count, 2)
         self.assertTrue(all(call.args[2] == "served" for call in send.call_args_list))
 
+    def test_subscription_grants_are_capped_at_ten(self):
+        with patch.object(main, "subscription_templates", return_value={"created": "order-template"}), \
+             patch.object(main, "connection") as connection, \
+             patch.object(main, "execute", side_effect=[(None, 1), (None, 1)]) as execute:
+            connection.return_value.__enter__.return_value = object()
+            main.record_subscription_grants(12, ["order-template"], "request-1")
+
+        grant_sql, grant_params, _ = execute.call_args_list[1].args
+        self.assertIn("LEAST(%s,available_count+1)", grant_sql)
+        self.assertEqual(grant_params[-1], 10)
+
+    def test_subscription_refunds_are_capped_at_ten(self):
+        with patch.object(main, "execute") as execute:
+            main.refund_subscription_credit(12, "order-template")
+
+        sql, params = execute.call_args.args
+        self.assertIn("LEAST(%s,available_count+1)", sql)
+        self.assertEqual(params[0], 10)
+
 
 if __name__ == "__main__":
     unittest.main()

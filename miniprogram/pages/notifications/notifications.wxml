@@ -2,7 +2,7 @@
   <subpage-header/>
   <view class="prototype-title page-title">消息提醒</view>
   <view class="page-caption">点菜和上菜的消息，都留在这里。</view>
-  <view class="prototype-card subscribe-card" bindtap="subscribe"><view><view class="subscribe-title">补充微信提醒</view><text>{{templateHint}}</text><text wx:if="{{creditHint}}">{{creditHint}}</text></view><text class="chevron">›</text></view>
+  <view class="prototype-card subscribe-card {{canSupplement?'':'subscribe-card-closed'}}" bindtap="subscribe"><view><view class="subscribe-title">补充微信提醒</view><text>{{templateHint}}</text><text wx:if="{{creditHint}}">{{creditHint}}</text></view><text class="chevron">›</text></view>
   <view class="section-head"><text>饭桌消息</text><text wx:if="{{unreadCount}}" bindtap="markRead">全部标为已读</text></view>
   <view wx:if="{{loading}}" class="loading">正在看看有什么新消息…</view>
   <view wx:elif="{{error}}" class="prototype-card state"><view>{{error}}</view><button bindtap="load">重新试试</button></view>
@@ -14,5 +14,5 @@
       <text class="chevron">›</text>
     </view>
   </view>
-  <view class="tip">预计次数按本小程序记录，微信不提供准确余额。提交、查看菜单和上菜时也会顺便申请机会；站内消息会一直保留。</view>
+  <view class="tip">预计次数按本小程序记录，微信不提供准确余额。每类最多保留10次；满额后会跳过该模板的授权申请，发送消耗后可再次补充。站内消息会一直保留。</view>
 </view>
