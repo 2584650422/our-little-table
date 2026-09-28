@@ -45,6 +45,8 @@ python3 -m venv .venv
 
 访问 `http://127.0.0.1:3000/health` 检查数据库连接。微信开发者工具应打开 `food_project/miniprogram`。本地调试时，把 `miniprogram/config/index.js` 的 `apiBaseUrl` 改为本机可访问地址；仅本地开发可暂时关闭“校验合法域名”。真机不能用 `127.0.0.1` 指向电脑。
 
+小程序已接入微信 `UpdateManager`：当微信后台发布了新版本，客户端下载完成后会提示用户重新打开；确认后 `applyUpdate()` 重启并切换到新代码包。此流程更新的是小程序代码缓存，不清除登录态、未提交点菜单等本地业务数据。开发版和预览版没有正式版本更新流程，需在开发者工具中重新编译预览；更新弹窗应在正式发布后的客户端版本中验证。[微信小程序更新机制说明](https://intl.cloud.tencent.com/zh/document/product/1219/70913)
+
 应用只向 stdout/stderr 输出日志。本地使用 Uvicorn 直接查看，或用以下命令保存到 `server/logs/dev.log`：`mkdir -p logs && .venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 3000 2>&1 | tee -a logs/dev.log`。生产 PID、重启和日志轮转交给 Docker、systemd、Supervisor 或云平台。详细说明见 [`CONFIGURATION_GUIDE.md`](CONFIGURATION_GUIDE.md#十服务端日志进程与请求追踪)。
 
 ## 4. Docker
