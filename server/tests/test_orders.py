@@ -1,3 +1,8 @@
+"""订单删除与图片清理的回归测试。
+
+此处验证删除历史订单时，即使关联的饭后记录查询为空，接口仍能正常删除订单，
+并对历史图片调用“无其他记录引用时才清理”的逻辑。数据库和 COS 均由 mock 替代。
+"""
 import unittest
 from unittest.mock import patch
 

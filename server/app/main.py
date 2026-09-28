@@ -1,7 +1,9 @@
-"""HTTP API compatible with the original Express implementation.
+"""“两个人的小饭桌”后端 HTTP API。
 
-The routes deliberately keep the established JSON envelope and URLs so the
-native mini-program can switch runtime without changing its request layer.
+路由沿用小程序已经使用的 URL 和 {code, message, data} 响应结构。这个模块
+集中实现登录、双人饭桌、分类/菜品、点单/饭后记录、订阅提醒和图片上传。
+所有饭桌业务接口都从登录令牌取得用户，再用令牌对应的 coupleId 限定查询范围；
+不能相信客户端自行提交的 userId 或 coupleId。
 """
 import json
 import logging
@@ -36,10 +38,12 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=False,
                    allow_methods=["*"], allow_headers=["*"])
 
 class AppError(Exception):
+    """可预期的业务错误；由统一处理器转换成小程序可识别的 JSON 响应。"""
     def __init__(self, message: str, status: int = 400, code: Optional[int] = None):
         self.message, self.status, self.code = message, status, code or status
 
 def success(data: Any = None, message: str = "ok") -> dict:
+    """成功响应统一使用 code/message/data 信封，保持小程序请求层兼容。"""
     return {"code": 0, "message": message, "data": {} if data is None else data}
 
 def clamp(value, low, high):
@@ -55,6 +59,7 @@ def number(value, default=None):
         return default
 
 def expiration() -> datetime:
+    """把 JWT_EXPIRES_IN 的 7d、12h、30m 等配置换算为过期时间。"""
     match = re.fullmatch(r"(\d+)([dhm]?)", settings.jwt_expires_in.strip())
     amount, unit = (int(match.group(1)), match.group(2)) if match else (7, "d")
     return datetime.utcnow() + timedelta(days=amount) if unit == "d" else datetime.utcnow() + timedelta(hours=amount) if unit == "h" else datetime.utcnow() + timedelta(minutes=amount)
@@ -71,6 +76,7 @@ def hydrate_avatar(row: dict) -> dict:
     return hydrate_image(row, "avatarKey", "avatarUrl")
 
 def user_from_token(request: Request) -> dict:
+    """验证 Authorization Bearer 令牌，并从数据库加载最新用户资料。"""
     raw = request.headers.get("authorization", "")
     token = re.sub(r"^Bearer\s+", "", raw, flags=re.I)
     if not token:
@@ -79,7 +85,12 @@ def user_from_token(request: Request) -> dict:
         payload = jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])
     except jwt.PyJWTError:
         raise AppError("登录状态已失效", 401)
-    user = fetch_one("SELECT id,openid,nickname,avatar_key AS avatarKey,avatar_url AS avatarUrl,couple_id AS coupleId FROM users WHERE id=%s", (payload.get("sub"),))
+    user = fetch_one(
+        "SELECT id,openid,nickname,"
+        "avatar_key AS avatarKey,"
+        "avatar_url AS avatarUrl,"
+        "couple_id AS coupleId "
+        "FROM users WHERE id=%s", (payload.get("sub"),))
     if not user:
         raise AppError("登录状态已失效", 401)
     return hydrate_avatar(user)
@@ -88,6 +99,7 @@ def current_user(request: Request) -> dict:
     return user_from_token(request)
 
 def coupled_user(request: Request) -> dict:
+    """仅允许已加入一个小饭桌的用户继续访问饭桌业务接口。"""
     user = user_from_token(request)
     if not user.get("coupleId"):
         raise AppError("请先创建或加入小饭桌", 403)
@@ -109,6 +121,7 @@ async def unhandled_error_handler(request: Request, error: Exception):
 
 @app.middleware("http")
 async def request_log(request: Request, call_next):
+    """为每次 HTTP 请求生成关联 ID，记录耗时和状态并回传响应头。"""
     request.state.request_id = str(request.headers.get("x-request-id") or uuid.uuid4())[:80]
     started = time.perf_counter()
     response = await call_next(request)
@@ -120,7 +133,11 @@ async def request_log(request: Request, call_next):
     return response
 
 def ensure_menu(couple_id: int) -> None:
-    """Copy the starter menu exactly once, protected by MySQL's named lock."""
+    """首次为饭桌复制默认分类和菜品。
+
+    同一个 couple_id 使用 MySQL 命名锁串行初始化，防止两名成员首次同时打开
+    菜单时复制出两份默认数据。初始化和复制发生在同一个事务中。
+    """
     lock_name = f"little_table_menu_{couple_id}"
     with connection(transaction=True) as conn:
         lock = fetch_one("SELECT GET_LOCK(%s, 5) AS acquired", (lock_name,), conn)
@@ -170,7 +187,11 @@ def owned_key_or_error(key: Optional[str], public_id: str) -> Optional[str]:
     return key
 
 def delete_unreferenced_image(key: Optional[str]) -> bool:
-    """Remove an object only when it is no longer needed by any saved record."""
+    """仅当数据库中没有任何记录引用图片时才从 COS 删除对象。
+
+    同一张图可能同时被菜品、历史点单快照、饭后记录、头像或饭桌背景引用；
+    任何一个引用仍存在，都必须保留原图。
+    """
     if not key:
         return False
     references=fetch_one("""SELECT
@@ -215,6 +236,7 @@ def order_hydrate(rows: list[dict]) -> list[dict]:
     return rows
 
 async def code2session(code: str) -> dict:
+    """用小程序临时登录 code 向微信换取 openid；AppSecret 只在服务端使用。"""
     if not settings.wechat_app_id or not settings.wechat_app_secret: raise AppError("微信登录尚未配置", 503)
     async with httpx.AsyncClient(timeout=8) as client:
         response = await client.get("https://api.weixin.qq.com/sns/jscode2session", params={"appid":settings.wechat_app_id,"secret":settings.wechat_app_secret,"js_code":code,"grant_type":"authorization_code"})
@@ -224,6 +246,8 @@ async def code2session(code: str) -> dict:
 
 _access_token = {"value":"", "expires":0.0}
 SUBSCRIPTION_CREDIT_MAX = 10
+
+# 微信一次性订阅授权按用户、模板分别记账。created 是点菜提醒，served 是上菜完成提醒。
 def subscribe_template(event: str) -> tuple[str,list[tuple[str,str]]]:
     if event == "served":
         return settings.wechat_served_template_id,[(settings.wechat_served_user_key,"reminderUser"),(settings.wechat_served_dish_name_key,"dishNames")]
@@ -237,6 +261,11 @@ def subscription_templates() -> dict[str,str]:
     return {event:subscribe_template(event)[0] for event in ("created","served") if valid_subscribe_template(event)}
 
 def record_subscription_grants(user_id: int, template_ids: list[str], request_id: str) -> dict[str,int]:
+    """记录一次微信授权，并按模板把可用机会加一，余额最多为 10。
+
+    request_id 与模板 ID 组成去重依据；同一次授权接口重试不会重复增加机会。
+    微信回报用户同意了模板，不代表未来一定送达，因此这里只登记机会，不发消息。
+    """
     available=subscription_templates()
     by_id={template_id:event for event,template_id in available.items()}
     added={}
@@ -251,6 +280,7 @@ def record_subscription_grants(user_id: int, template_ids: list[str], request_id
     return added
 
 def reserve_subscription_credit(user_id: int, template_id: str) -> bool:
+    """发送前原子扣减一个提醒机会；余额不足则不调用微信发送接口。"""
     with connection(transaction=True) as conn:
         row=fetch_one("SELECT available_count FROM wechat_subscription_credits WHERE user_id=%s AND template_id=%s FOR UPDATE",(user_id,template_id),conn)
         if not row or row["available_count"]<1: return False
@@ -258,9 +288,16 @@ def reserve_subscription_credit(user_id: int, template_id: str) -> bool:
         return True
 
 def refund_subscription_credit(user_id: int, template_id: str) -> None:
+    """微信接口异常或拒绝时退回已预扣的机会，避免无效消耗。"""
     execute("UPDATE wechat_subscription_credits SET available_count=LEAST(%s,available_count+1) WHERE user_id=%s AND template_id=%s",(SUBSCRIPTION_CREDIT_MAX,user_id,template_id))
 
 async def send_subscribe(member: dict, order: dict, event: str = "created", page: Optional[str] = None) -> dict:
+    """使用成员的一次性订阅机会发送微信模板消息。
+
+    发送前先扣次数，成功后不退回；若微信明确表示用户已无授权(43101)，
+    将余额同步为 0；其他失败会退款。返回值表示微信接口是否接受请求，
+    并不等于用户已阅读消息。
+    """
     template_id,fields=subscribe_template(event)
     if not valid_subscribe_template(event):
         logger.info("wechat.subscribe_skipped event=%s orderId=%s reason=not_configured",event,order["id"])
@@ -294,16 +331,19 @@ async def send_subscribe(member: dict, order: dict, event: str = "created", page
         raise
 
 async def notify_created(creator: dict, target: Optional[dict], order: dict) -> dict:
+    """写入点单成功和新点单两类站内通知，不在这里直接发送微信消息。"""
     execute("INSERT INTO notifications (user_id,type,title,content,order_id) VALUES (%s,'order_created',%s,%s,%s)", (creator["id"],"点菜成功啦",f"已提交：{order['dishNames']}",order["id"]))
     if target: execute("INSERT INTO notifications (user_id,type,title,content,order_id) VALUES (%s,'new_order',%s,%s,%s)", (target["id"],"今天想吃这些",order["dishNames"],order["id"]))
     return {"creator":{"sent":True,"channel":"in_app"},"target":{"sent":bool(target),"channel":"in_app" if target else None}}
 
 async def deliver_wechat(recipients: list[dict], order: dict, event: str):
+    """逐个发送订阅提醒并吞掉单个收件人的发送异常，避免影响点单主流程。"""
     for member in recipients:
         try: await send_subscribe(member,order,event)
         except Exception as error: logger.warning("wechat.subscribe_failed event=%s orderId=%s userId=%s errorType=%s",event,order["id"],member["id"],type(error).__name__)
 
 async def notify_served(order: dict, served_by: int):
+    """给饭桌当前成员写入上菜站内通知；调用方另行安排微信订阅消息。"""
     members=fetch_all("SELECT u.id,u.openid FROM couple_members cm JOIN users u ON u.id=cm.user_id WHERE cm.couple_id=%s AND cm.left_at IS NULL",(order["coupleId"],))
     for member in members:
         execute("INSERT INTO notifications (user_id,type,title,content,order_id) VALUES (%s,'order_served',%s,%s,%s)",(member["id"],"上菜成功啦",order["dishNames"],order["id"]))
@@ -311,14 +351,17 @@ async def notify_served(order: dict, served_by: int):
 
 @app.get("/health")
 def health(request: Request):
+    """健康检查同时探测 MySQL；数据库不可用时返回 503，便于部署平台告警。"""
     try:
         fetch_one("SELECT 1 AS connected")
         return success({"status":"ok","database":"connected","pid":os.getpid(),"requestId":request.state.request_id})
     except Exception:
         return JSONResponse(status_code=503, content={"code":503,"message":"数据库尚未连接","data":{"status":"degraded","database":"disconnected","pid":os.getpid(),"requestId":request.state.request_id}})
 
+# 登录与个人资料：令牌的 subject 保存 users.id；用户资料每次从数据库读取。
 @app.post("/api/auth/wechat")
 async def auth_wechat(request: Request):
+    """微信登录入口：code 换 openid，再创建/读取用户并签发业务 JWT。"""
     body=await request.json(); code=text(body.get("code"),255)
     if not code: raise AppError("缺少微信登录凭证")
     session=await code2session(code)
@@ -329,6 +372,7 @@ async def auth_wechat(request: Request):
 
 @app.post("/api/auth/dev")
 async def auth_dev(request: Request):
+    """仅供非生产环境本地联调的登录入口，生产环境始终拒绝访问。"""
     if not settings.dev_login_enabled or settings.environment == "production": raise AppError("开发登录未开启",404)
     body=await request.json(); identity=re.sub(r"[^a-zA-Z0-9_-]","",str(body.get("identity","one")))[:24]
     execute("INSERT INTO users (openid,nickname) VALUES (%s,%s) ON DUPLICATE KEY UPDATE updated_at=NOW()",(f"dev_{identity}", text(body.get("nickname"),30,"本地体验用户") or "本地体验用户"))
@@ -341,6 +385,7 @@ def auth_me(user: dict=Depends(current_user)): return success(user)
 
 @app.put("/api/auth/me")
 async def update_me(request: Request, user: dict=Depends(current_user)):
+    """更新当前用户称呼和头像；替换头像后清理不再被引用的旧对象。"""
     body=await request.json(); nickname=text(body.get("nickname"),30)
     if not nickname: raise AppError("告诉我该怎么称呼你吧")
     public_id = couple_public_id(user["coupleId"]) if user.get("coupleId") else None
@@ -362,6 +407,7 @@ async def update_me(request: Request, user: dict=Depends(current_user)):
             logger.error("cos.avatar_cleanup_failed userId=%s key=%s",user["id"],old_key)
     user.update(nickname=nickname,avatarKey=avatar_key,avatarUrl=storage.signed_url(avatar_key,avatar)); return success(user,"称呼记住啦")
 
+# 小饭桌成员与资料：每个查询都以令牌中的用户身份和当前 coupleId 做数据隔离。
 @app.get("/api/couples/mine")
 def couples_mine(user: dict=Depends(current_user)):
     rows=fetch_all("""SELECT c.id,c.public_id AS publicId,c.name,DATE_FORMAT(c.anniversary,'%Y-%m-%d') AS anniversary,c.home_title AS homeTitle,c.home_subtitle AS homeSubtitle,DATE_FORMAT(cm.joined_at,'%Y-%m-%d %H:%i') AS joinedAt,c.id=%s AS isCurrent,(SELECT COUNT(*) FROM couple_members m WHERE m.couple_id=c.id AND m.left_at IS NULL) AS memberCount FROM couple_members cm JOIN couples c ON c.id=cm.couple_id WHERE cm.user_id=%s AND cm.left_at IS NULL ORDER BY isCurrent DESC,cm.joined_at DESC""",(user.get("coupleId") or 0,user["id"]))
@@ -369,6 +415,7 @@ def couples_mine(user: dict=Depends(current_user)):
 
 @app.post("/api/couples")
 async def create_couple(request: Request, user: dict=Depends(current_user)):
+    """创建仅容纳两名成员的小饭桌，并复制一份专属默认菜单。"""
     body=await request.json(); name=text(body.get("name"),50,"我们的小饭桌") or "我们的小饭桌"
     with connection(transaction=True) as conn:
         couple_id,_=execute("INSERT INTO couples (public_id,name,invite_code,invite_expire_at,home_title,home_subtitle) VALUES (%s,%s,%s,DATE_ADD(NOW(),INTERVAL 7 DAY),%s,%s)",(str(uuid.uuid4()),name,uuid.uuid4().hex[:8].upper(),"今天想吃什么？","和你一起吃饭，就是好日子"),conn)
@@ -381,6 +428,7 @@ async def create_couple(request: Request, user: dict=Depends(current_user)):
 
 @app.post("/api/couples/join")
 async def join_couple(request: Request, user: dict=Depends(current_user)):
+    """校验邀请码和饭桌人数后加入；成功使用后关闭邀请码，避免重复加入。"""
     body=await request.json(); invite=text(body.get("inviteCode"),8).upper()
     with connection(transaction=True) as conn:
         couple=fetch_one("SELECT id,name,public_id AS publicId FROM couples WHERE invite_code=%s AND invite_expire_at>NOW() FOR UPDATE",(invite,),conn)
@@ -418,6 +466,7 @@ def current_couple(user: dict=Depends(coupled_user)):
 
 @app.put("/api/couples/current")
 async def update_couple(request: Request, user: dict=Depends(coupled_user)):
+    """更新饭桌名称、纪念日、首页文案和背景图；两位成员共用这些资料。"""
     body=await request.json(); name=text(body.get("name"),50)
     if not name: raise AppError("小饭桌也要有个名字呀")
     anniversary=body.get("anniversary") or None; title=text(body.get("homeTitle"),80,"今天想吃什么？") or "今天想吃什么？"; subtitle=text(body.get("homeSubtitle"),120,"和你一起吃饭，就是好日子") or "和你一起吃饭，就是好日子"
@@ -448,6 +497,7 @@ def leave_couple(user: dict=Depends(coupled_user)):
 
 @app.delete("/api/couples/current")
 def delete_couple(user: dict=Depends(coupled_user)):
+    """仅创建者可删除空出的饭桌；先清理专属 COS 目录，再删除数据库记录。"""
     couple_id=user["coupleId"]
     with connection(transaction=True) as conn:
         couple=fetch_one("SELECT created_by AS createdBy,public_id AS publicId FROM couples WHERE id=%s FOR UPDATE",(couple_id,),conn)
@@ -462,6 +512,7 @@ def delete_couple(user: dict=Depends(coupled_user)):
         execute("DELETE FROM couples WHERE id=%s",(couple_id,),conn)
     return success({"currentCoupleId":fallback},"小饭桌已删除")
 
+# 分类和菜品：创建或修改时都校验 couple_id，历史订单则保存菜品快照。
 @app.get("/api/categories")
 def categories(user: dict=Depends(coupled_user)):
     ensure_menu(user["coupleId"]); return success(fetch_all("SELECT id,name,sort_order AS sortOrder FROM categories WHERE couple_id=%s AND enabled=1 ORDER BY sort_order,id",(user["coupleId"],)))
@@ -562,6 +613,7 @@ def delete_dish_image(dish_id: int, user: dict=Depends(coupled_user)):
 
 @app.delete("/api/dishes/{dish_id}")
 def disable_dish(dish_id: int, user: dict=Depends(coupled_user)):
+    """下架菜品而不是物理删除，保留历史订单和饭后记录中的菜品快照。"""
     _,count=execute("UPDATE dishes SET enabled=0 WHERE id=%s AND couple_id=%s",(dish_id,user["coupleId"]))
     if not count: raise AppError("只能下架当前小饭桌里的菜",403)
     return success(message="已经从菜单里收起来啦")
@@ -577,6 +629,7 @@ def unfavorite_dish(dish_id: int, user: dict=Depends(coupled_user)):
 
 @app.get("/api/recommendations/today")
 def recommendations(request: Request, user: dict=Depends(coupled_user)):
+    """按收藏、距上次吃到的天数和近期重复惩罚生成轻量随机推荐。"""
     ensure_menu(user["coupleId"]); rows=fetch_all("""SELECT d.id,d.name,d.description,d.image_key AS imageKey,d.image_url AS imageUrl,d.calorie_kcal AS calorieKcal,d.calorie_unit AS calorieUnit,c.name AS categoryName,EXISTS(SELECT 1 FROM favorites f WHERE f.dish_id=d.id AND f.user_id=%s) AS isFavorite,(SELECT MAX(COALESCE(o.completed_at,o.ready_at)) FROM order_items i JOIN orders o ON o.id=i.order_id WHERE i.dish_id=d.id AND o.couple_id=%s AND o.status IN ('ready','completed')) AS lastEatenAt FROM dishes d JOIN categories c ON c.id=d.category_id WHERE d.enabled=1 AND d.couple_id=%s""",(user["id"],user["coupleId"],user["coupleId"]))
     def score(row):
         last=row.get("lastEatenAt"); days=30
@@ -589,6 +642,7 @@ def recommendations(request: Request, user: dict=Depends(coupled_user)):
 
 @app.post("/api/orders")
 async def create_order(request: Request, background_tasks: BackgroundTasks, user: dict=Depends(coupled_user)):
+    """创建点单，或把新菜合并进同一饭桌同一餐次尚未完成的点单。"""
     ensure_menu(user["coupleId"]); body=await request.json(); raw=body.get("items") if isinstance(body.get("items"),list) else []
     if not raw or len(raw)>30: raise AppError("先选一道想吃的吧")
     quantities={}
@@ -604,13 +658,14 @@ async def create_order(request: Request, background_tasks: BackgroundTasks, user
     target=fetch_one("SELECT u.id,u.openid FROM couple_members cm JOIN users u ON u.id=cm.user_id WHERE cm.couple_id=%s AND cm.left_at IS NULL AND u.id<>%s LIMIT 1",(user["coupleId"],user["id"]))
     merged=False
     with connection(transaction=True) as conn:
-        # Serialize submissions within the couple so two quick taps cannot create
-        # duplicate active menus for the same person and meal.
+        # 锁住饭桌行，将“查找活动订单 + 创建/合并订单”作为串行操作，
+        # 防止两人几乎同时提交时产生两份相同餐次的活动菜单。
         fetch_one("SELECT id FROM couples WHERE id=%s FOR UPDATE",(user["coupleId"],),conn)
         existing=fetch_one("SELECT id FROM orders WHERE couple_id=%s AND meal_type=%s AND meal_date=%s AND status IN ('pending','accepted','preparing') ORDER BY created_at DESC LIMIT 1 FOR UPDATE",(user["coupleId"],meal_type,meal_date),conn)
         if existing:
             order_id=existing["id"]; merged=True
             execute("UPDATE orders SET message=COALESCE(%s,message),total_calories=COALESCE(total_calories,0)+COALESCE(%s,0) WHERE id=%s",(text(body.get("message"),300) or None,total,order_id),conn)
+            # 每个菜用行锁检查是否已在订单中：已存在则累加数量，否则写入菜品快照。
             for dish in dishes_rows:
                 existing_item=fetch_one("SELECT id FROM order_items WHERE order_id=%s AND dish_id=%s ORDER BY id LIMIT 1 FOR UPDATE",(order_id,dish["id"]),conn)
                 if existing_item:
@@ -620,6 +675,7 @@ async def create_order(request: Request, background_tasks: BackgroundTasks, user
             execute("UPDATE orders SET total_calories=(SELECT SUM(COALESCE(dish_calorie_kcal,0)*quantity) FROM order_items WHERE order_id=%s) WHERE id=%s",(order_id,order_id),conn)
         else:
             order_id,_=execute("INSERT INTO orders (order_no,couple_id,creator_user_id,target_user_id,meal_type,meal_date,message,total_calories) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",(f"LT{int(time.time()*1000)}{random.randint(100,999)}",user["coupleId"],user["id"],target["id"] if target else None,meal_type,meal_date,text(body.get("message"),300) or None,total),conn)
+            # order_items 保存名称、图片和热量快照；之后菜品被编辑或下架也不改历史。
             for dish in dishes_rows: execute("INSERT INTO order_items (order_id,dish_id,dish_name,dish_image_key,dish_image_url,dish_calorie_kcal,dish_calorie_unit,quantity,note) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,NULL)",(order_id,dish["id"],dish["name"],dish.get("imageKey"),None,dish["calorieKcal"],dish["calorieUnit"],quantities[dish["id"]]),conn)
     labels={"breakfast":"早餐","lunch":"午餐","dinner":"晚餐","late_night":"夜宵","snack":"零食","casual":"随便吃点"}
     if merged:
@@ -636,6 +692,7 @@ async def create_order(request: Request, background_tasks: BackgroundTasks, user
     if target: background_tasks.add_task(deliver_wechat,[target],summary,"created")
     return success({"id":order_id,"merged":False,"notification":notification},"点菜成功啦")
 
+# 订单共用字段集中定义，避免列表和详情接口返回格式逐渐不一致。
 ORDER_COLUMNS="""o.id,o.order_no AS orderNo,o.couple_id AS coupleId,o.creator_user_id AS creatorUserId,o.target_user_id AS targetUserId,o.meal_type AS mealType,DATE_FORMAT(o.meal_date,'%Y-%m-%d') AS mealDate,o.message,o.status,o.total_calories AS totalCalories,DATE_FORMAT(o.created_at,'%Y-%m-%d %H:%i') AS createdAt,DATE_FORMAT(o.ready_at,'%Y-%m-%d %H:%i') AS readyAt,u.nickname AS creatorName,t.nickname AS targetName"""
 
 @app.get("/api/orders")
@@ -654,6 +711,7 @@ def order_detail(order_id: int, user: dict=Depends(coupled_user)):
 
 @app.put("/api/orders/{order_id}/status")
 async def update_order_status(order_id: int, request: Request, background_tasks: BackgroundTasks, user: dict=Depends(coupled_user)):
+    """校验订单状态迁移；变为 ready 时写站内通知并给点单人安排微信提醒。"""
     order=fetch_one("SELECT status FROM orders WHERE id=%s AND couple_id=%s",(order_id,user["coupleId"]))
     if not order: raise AppError("订单找不到啦",404)
     next_status=(await request.json()).get("status"); transitions={"pending":["ready","cancelled"],"accepted":["ready","cancelled"],"preparing":["ready","cancelled"],"ready":["cancelled"],"completed":[],"cancelled":[]}
@@ -675,6 +733,7 @@ async def update_order_status(order_id: int, request: Request, background_tasks:
 
 @app.post("/api/orders/{order_id}/serve")
 async def serve_order(order_id: int, request: Request, background_tasks: BackgroundTasks, user: dict=Depends(coupled_user)):
+    """一步完成上菜状态和可选照片记录，事务结束后再发送通知。"""
     body=await request.json(); public_id=couple_public_id(user["coupleId"]); image_key=owned_key_or_error(text(body.get("imageKey"),255) or None,public_id); image_url=None
     old_review_key=None
     with connection(transaction=True) as conn:
@@ -731,6 +790,7 @@ def delete_review(order_id: int, user: dict=Depends(coupled_user)):
 
 @app.delete("/api/orders/{order_id}")
 def delete_order(order_id: int, user: dict=Depends(coupled_user)):
+    """只删除已完成/已取消订单；删除后逐一检查其快照图片是否还能被引用。"""
     order=fetch_one("SELECT status FROM orders WHERE id=%s AND couple_id=%s",(order_id,user["coupleId"]))
     if not order: raise AppError("记录找不到啦",404)
     if order["status"] not in ("ready","completed","cancelled"): raise AppError("正在等待上菜的点单不能删除")
@@ -749,8 +809,10 @@ def reorder(order_id: int, user: dict=Depends(coupled_user)):
     for item in items: hydrate_image(item)
     return success({"items":items},"已经放回今天的小菜单啦")
 
+# 通知分两层：站内通知保存在 notifications；微信订阅消息机会单独记账并消费。
 @app.get("/api/notifications")
 def notifications(user: dict=Depends(coupled_user)):
+    """返回当前用户最近站内通知、未读数量和订阅机会余额。"""
     items=fetch_all("SELECT id,type,title,content,order_id AS orderId,DATE_FORMAT(read_at,'%Y-%m-%d %H:%i') AS readAt,DATE_FORMAT(created_at,'%Y-%m-%d %H:%i') AS createdAt FROM notifications WHERE user_id=%s ORDER BY created_at DESC LIMIT 50",(user["id"],))
     unread=fetch_one("SELECT COUNT(*) AS unreadCount FROM notifications WHERE user_id=%s AND read_at IS NULL",(user["id"],))
     credits=fetch_all("SELECT event,available_count AS availableCount FROM wechat_subscription_credits WHERE user_id=%s",(user["id"],))
@@ -759,6 +821,7 @@ def notifications(user: dict=Depends(coupled_user)):
 
 @app.get("/api/notifications/config")
 def notification_config(user: dict=Depends(coupled_user)):
+    """返回可公开的模板 ID 和当前用户余额，不暴露 AppSecret 等服务端密钥。"""
     # Template IDs are public identifiers; secrets and template field mappings stay server-side.
     templates=subscription_templates()
     credits=fetch_all("SELECT event,available_count AS availableCount FROM wechat_subscription_credits WHERE user_id=%s",(user["id"],))
@@ -767,6 +830,7 @@ def notification_config(user: dict=Depends(coupled_user)):
 
 @app.post("/api/notifications/subscriptions")
 def register_subscriptions(request: Request, body: dict, user: dict=Depends(coupled_user)):
+    """接收小程序授权结果并增加相应模板的提醒次数，同时返回最新余额。"""
     request_id=text(body.get("requestId"),80)
     template_ids=body.get("templateIds") if isinstance(body.get("templateIds"),list) else []
     if not request_id: raise AppError("订阅记录编号无效")
@@ -777,6 +841,7 @@ def register_subscriptions(request: Request, body: dict, user: dict=Depends(coup
 
 @app.post("/api/notifications/test-send")
 async def send_notification_test(body: dict, user: dict=Depends(coupled_user)):
+    """把测试模板消息发给当前登录人；使用真实订阅次数，结果附带剩余余额。"""
     event=text(body.get("event"),16)
     if event not in ("created","served"): raise AppError("测试提醒类型无效")
     sample_order={"id":0,"creatorName":"订阅测试","reminderUser":"订阅测试","dishNames":"订阅提醒测试","message":"这是一条测试消息，可以忽略"}
@@ -788,10 +853,12 @@ async def send_notification_test(body: dict, user: dict=Depends(coupled_user)):
 
 @app.put("/api/notifications/read")
 def read_notifications(user: dict=Depends(coupled_user)):
+    """将当前用户所有未读站内通知标记为已读。"""
     execute("UPDATE notifications SET read_at=NOW() WHERE user_id=%s AND read_at IS NULL",(user["id"],)); return success()
 
 @app.post("/api/uploads/cos-credential")
 async def cos_credential(request: Request, user: dict=Depends(coupled_user)):
+    """签发仅能上传单张指定图片的短期 STS 凭证，小程序随后直传 COS。"""
     body=await request.json(); mime=text(body.get("mimeType"),64); size=number(body.get("size"),0) or 0; allowed={"image/jpeg":"jpg","image/png":"png","image/webp":"webp"}
     if mime not in allowed or size<=0 or size>settings.cos_upload_max_mb*1024*1024: raise AppError(f"仅支持不超过 {settings.cos_upload_max_mb}MB 的 JPG、PNG、WEBP 图片")
     if not all([settings.cos_secret_id,settings.cos_secret_key,settings.cos_bucket,settings.cos_region]): raise AppError("图片上传暂未配置",503)
@@ -829,6 +896,7 @@ def report_cos_upload_failure(request: Request, body: dict, user: dict=Depends(c
 
 @app.post("/api/uploads/discard")
 async def discard_upload(request: Request, user: dict=Depends(coupled_user)):
+    """清理尚未保存到业务记录的上传对象；被任何记录引用的图片不会删除。"""
     key=owned_key_or_error(text((await request.json()).get("key"),255) or None,couple_public_id(user["coupleId"]))
     if not key: raise AppError("缺少待删除的图片")
     if not delete_unreferenced_image(key): raise AppError("这张图片已经被使用，不能直接删除")

@@ -1,7 +1,12 @@
 const {request}=require('../../services/api'),dishesApi=require('../../services/dishes'),layout=require('../../utils/layout')
+const updates=require('../../services/updates')
 Page({
-  data:{topInset:layout.topInset(),couple:null,user:null,profileMe:null,profilePartnerAvatarUrl:'',profilePartnerInitial:'?',favoriteCount:0,unreadCount:0,coupleSubtitle:'',loading:true,error:''},
-  onShow(){this.load()},
+  data:{topInset:layout.topInset(),couple:null,user:null,profileMe:null,profilePartnerAvatarUrl:'',profilePartnerInitial:'?',favoriteCount:0,unreadCount:0,coupleSubtitle:'',loading:true,error:'',versionInfo:updates.snapshot()},
+  onShow(){this.stopVersionListener();this._stopVersionListener=updates.subscribe(versionInfo=>this.setData({versionInfo}));this.load()},
+  onHide(){this.stopVersionListener()},
+  onUnload(){this.stopVersionListener()},
+  stopVersionListener(){if(this._stopVersionListener){this._stopVersionListener();this._stopVersionListener=null}},
+  versionUpdate(){updates.open()},
   async load(){
     this.setData({loading:true,error:''})
     try{

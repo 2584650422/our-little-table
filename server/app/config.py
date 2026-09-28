@@ -1,3 +1,8 @@
+"""读取后端运行配置。
+
+配置从环境变量（本地通常放在 server/.env）读取，并在模块加载时形成
+不可变的 Settings 实例。密钥只留在后端进程里，不能返回给小程序或提交到 Git。
+"""
 import os
 from dataclasses import dataclass
 from dotenv import load_dotenv
@@ -5,6 +10,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def _integer(name: str, default: int) -> int:
+    """读取整数环境变量；配置写错时使用默认值，避免服务启动阶段崩溃。"""
     try:
         return int(os.getenv(name, str(default)))
     except ValueError:
@@ -12,6 +18,7 @@ def _integer(name: str, default: int) -> int:
 
 @dataclass(frozen=True)
 class Settings:
+    """集中保存 API、数据库、微信订阅消息和 COS 所需的配置项。"""
     environment: str = os.getenv("NODE_ENV", os.getenv("APP_ENV", "development"))
     port: int = _integer("PORT", 3000)
     jwt_secret: str = os.getenv("JWT_SECRET", "development-only-change-me-please")
@@ -45,4 +52,5 @@ class Settings:
     log_level: str = os.getenv("LOG_LEVEL", "info").upper()
     log_format: str = os.getenv("LOG_FORMAT", "pretty")
 
+# 业务代码统一引用这一份配置，避免在各模块重复读取环境变量。
 settings = Settings()

@@ -1,3 +1,10 @@
+"""订阅提醒回归测试。
+
+这些测试用 mock 替代微信网络请求和 MySQL，验证通知对象、订阅次数上限、
+发送失败后的次数处理，以及测试消息只发给当前登录人，不需要真实微信环境。
+运行：从 server 目录执行
+    .venv/bin/python -m unittest discover -s tests -v
+"""
 import asyncio
 import unittest
 from unittest.mock import AsyncMock, patch

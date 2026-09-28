@@ -45,7 +45,13 @@ python3 -m venv .venv
 
 访问 `http://127.0.0.1:3000/health` 检查数据库连接。微信开发者工具应打开 `food_project/miniprogram`。本地调试时，把 `miniprogram/config/index.js` 的 `apiBaseUrl` 改为本机可访问地址；仅本地开发可暂时关闭“校验合法域名”。真机不能用 `127.0.0.1` 指向电脑。
 
-小程序已接入微信 `UpdateManager`：当微信后台发布了新版本，客户端下载完成后会提示用户重新打开；确认后 `applyUpdate()` 重启并切换到新代码包。此流程更新的是小程序代码缓存，不清除登录态、未提交点菜单等本地业务数据。开发版和预览版没有正式版本更新流程，需在开发者工具中重新编译预览；更新弹窗应在正式发布后的客户端版本中验证。[微信小程序更新机制说明](https://intl.cloud.tencent.com/zh/document/product/1219/70913)
+小程序通过微信 `UpdateManager` 监听检查结果、下载完成和下载失败。下载就绪后提示重启；在后台就绪、弹窗显示失败或用户选择稍后更新时，下次进入会再次提示。`applyUpdate()` 仅在收到下载就绪回调后调用，切换代码包时保留登录状态和已保存的未提交菜单；正在编辑且尚未保存的表单需先自行保存。
+
+“我们 → 版本与更新”在未加入饭桌和 API 请求失败时也可使用，显示正式版/体验版/开发预览版、微信返回的版本号、代码包标识和本次更新状态。下载未就绪时，手动“重新打开”调用 `wx.restartMiniProgram`；客户端缺少接口或重启失败时提供完全关闭并重新进入的指引。重启不保证立刻得到新包，是否有新版与下载进度由微信负责，`wx.reLaunch` 和清空 Storage 都无法替换小程序代码包。[微信官方更新 API 说明](https://developers.weixin.qq.com/miniprogram/dev/api/base/update/UpdateManager.html)
+
+每次上传前更新 `miniprogram/services/updates.js` 的 `BUILD_ID`，以便确认实际加载的代码。上传、提交审核、审核通过和正式发布是不同阶段：电脑端普通入口使用正式版，手机扫码预览不会更新电脑正式版；请在微信后台版本管理中确认已正式发布。体验/预览版使用最新二维码验证；更新弹窗可在开发者工具“下次编译模拟更新”中验证，再用已包含更新监听代码的正式旧版升级到下一正式版测试。早于更新监听功能的旧包无法执行新版弹窗代码，首次需完全关闭小程序再从微信重新打开（电脑端必要时退出并重新登录微信）。
+
+本地更新流程回归检查：仓库根目录执行 `node --test tests/miniprogram-update.test.js`，覆盖后台就绪、延后更新、弹窗失败、下载过程中弹窗竞态和客户端降级。
 
 应用只向 stdout/stderr 输出日志。本地使用 Uvicorn 直接查看，或用以下命令保存到 `server/logs/dev.log`：`mkdir -p logs && .venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 3000 2>&1 | tee -a logs/dev.log`。生产 PID、重启和日志轮转交给 Docker、systemd、Supervisor 或云平台。详细说明见 [`CONFIGURATION_GUIDE.md`](CONFIGURATION_GUIDE.md#十服务端日志进程与请求追踪)。
 

@@ -1,4 +1,6 @@
 .DS_Store
+# 根目录仅用于临时生成/导入素材；小程序运行资源 miniprogram/assets 仍纳入 Git。
+/assets/
 project.private.config.json
 node_modules/
 server/node_modules/
@@ -6,6 +8,7 @@ server/node_modules/
 server/.env
 server/logs/
 server/.venv/
+server/.venv.old/
 server/__pycache__/
 server/app/__pycache__/
 *.py[cod]

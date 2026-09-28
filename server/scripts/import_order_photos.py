@@ -1,7 +1,7 @@
-"""Attach local JPEGs to existing meal-history records without changing comments.
+"""把本地 JPEG 照片关联到已有饭桌历史订单，不改动评论内容。
 
-Files must be named ``order-<id>-*.jpg``. The default is a read-only preview.
-Run inside the API environment, for example::
+文件命名格式为 order-<订单ID>-<说明>.jpg。默认只预览，不会上传或改动数据库。
+在 server/ 目录、已配置后端环境变量的运行环境中执行，例如：
 
     PYTHONPATH=. python scripts/import_order_photos.py \
       --couple-id 1 --folder /path/to/history-demo --apply
@@ -21,6 +21,7 @@ from app.db import connection, execute, fetch_all, fetch_one
 
 
 def main():
+    """校验订单属于指定饭桌且已上菜，再按需上传为饭后记录照片。"""
     parser = argparse.ArgumentParser(description="Upload photos for history orders that do not yet have one")
     parser.add_argument("--couple-id", type=int, required=True)
     parser.add_argument("--folder", type=Path, required=True)
@@ -68,6 +69,8 @@ def main():
         with path.open("rb") as body:
             client.put_object(Bucket=settings.cos_bucket, Key=key, Body=body, ContentType="image/jpeg")
         try:
+            # 上传后回读校验；随后在数据库事务里重新锁定订单并检查状态，
+            # 防止预览后订单被删除/变更，或其他人已经添加了照片。
             response = httpx.get(storage.signed_url(key), timeout=10)
             if response.status_code != 200 or len(response.content) != path.stat().st_size:
                 raise RuntimeError(f"uploaded image could not be read back: order {order_id}")

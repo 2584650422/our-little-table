@@ -50,7 +50,7 @@
 - Key 归属 `little-table/couples/<public-id>/...`；删饭桌清理前缀，菜品下架保留图片与历史快照；更换/删除图片时保护仍被历史引用的旧对象。头像旧图清理已修复。
 - 原图最大 10MB，压缩上传不超 2MB；头像裁切 1:1/最大 640px，菜品及饭后照片裁切 4:3/最大 1280px。`wx.cropImage` 需基础库 2.26.0；列表方图用 aspectFill。
 - 无图显示统一占位。生成照片是示例图，不能声称真实烹饪照片；用户允许逼真的家常风示例素材。
-- 本地历史示例图 `assets/history-demo/` 对应记录 1、3、7，已上传并关联；番茄炒蛋/宫保鸡丁新图已替换，旧对象清理已验证。
+- 历史示例图对应记录 1、3、7，已上传并关联；本地原图已于 2026-09-28 从根目录 `assets/history-demo/` 归档到 `~/Desktop/小饭桌菜品图片-2026-09-27/吃过的菜/`，不随代码提交。番茄炒蛋/宫保鸡丁新图已替换，旧对象清理已验证。
 - 排错重点：STS 签发成功不等于 PUT 上传成功；检查 **request 合法域名**、CORS PUT/Authorization/x-cos-security-token/Content-Type、STS 权限、签名时钟。失败通过 `/api/uploads/cos-failure` 上报，日志 `cos.client_upload_failed`；不要仅看 Nginx 或 `/health`。
 
 ## 生产部署与已验证结果（历史证据，非本次重新测试）

@@ -23,5 +23,12 @@
         </view>
       </view>
     </block>
+    <view class="links version-panel">
+      <view class="link-row" bindtap="versionUpdate">
+        <image class="link-icon-image" src="/assets/icons/info.png" mode="aspectFit"/>
+        <view class="version-copy"><view class="link-label">版本与更新</view><view class="version-caption">{{versionInfo.display}}</view><view class="version-caption {{versionInfo.status==='ready'?'version-ready':''}}">{{versionInfo.hint}}</view></view>
+        <text class="link-arrow">›</text>
+      </view>
+    </view>
   </view>
 </view>

@@ -1,8 +1,8 @@
-"""Fill missing dish photos from a numbered local folder; never overwrite existing ones.
+"""将本地菜品照片补到已有菜品上，默认只预览且不覆盖已有图片。
 
-Run from server/: PYTHONPATH=. .venv/bin/python scripts/import_dish_photos.py
+在 server/ 目录运行：PYTHONPATH=. .venv/bin/python scripts/import_dish_photos.py
   --couple-id 1 --folder /path/to/photos --apply
-Omit --apply for a read-only preview.
+不加 --apply 时只检查匹配结果，不会上传或修改数据库。
 """
 import argparse
 import re
@@ -18,6 +18,7 @@ from app.db import execute, fetch_all, fetch_one
 
 
 def main():
+    """校验菜品、图片名和饭桌归属，再按需上传并回写图片 key。"""
     parser = argparse.ArgumentParser(description="Upload photos only for dishes without an image")
     parser.add_argument("--couple-id", type=int, required=True)
     parser.add_argument("--folder", type=Path, required=True)
@@ -42,6 +43,7 @@ def main():
             if match.group(1) in photos:
                 parser.error(f"duplicate photo for {match.group(1)}")
             photos[match.group(1)] = path
+    # 只有缺图的菜品会默认匹配；覆盖已有照片必须通过 --replace-names 明确点名。
     pending = [(dish, photos[dish["name"]]) for dish in dishes if dish["name"] in photos and (not dish["imageKey"] or dish["name"] in replacements)]
     print(f"couple={args.couple_id} dishes={len(dishes)} missing_images={sum(not d['imageKey'] for d in dishes)} matched={len(pending)}")
     for dish, path in pending:
@@ -63,6 +65,7 @@ def main():
         with path.open("rb") as body:
             client.put_object(Bucket=settings.cos_bucket, Key=key, Body=body, ContentType="image/jpeg")
         try:
+            # 上传后先用签名 URL 回读校验，再用旧 key 条件更新，避免覆盖并发修改。
             response = httpx.get(storage.signed_url(key), timeout=10)
             if response.status_code != 200 or len(response.content) != path.stat().st_size:
                 raise RuntimeError(f"uploaded image could not be read back: {dish['name']}")

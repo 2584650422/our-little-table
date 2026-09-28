@@ -30,3 +30,8 @@ page{background:#fff}
 .unread-pill{min-width:29rpx;height:29rpx;padding:0 6rpx;border-radius:20rpx;background:#DE7F84;color:white;font-size:19rpx;line-height:29rpx;text-align:center;margin-right:13rpx}
 .us-state{margin:150rpx 28rpx 0}
 .setup{text-align:center;padding:75rpx 30rpx}.setup-mark{font-size:56rpx;color:#D98287;margin-bottom:18rpx}.setup .btn{margin-top:30rpx}.error .btn{margin-top:24rpx}
+.version-panel{margin:20rpx 58rpx 0}
+.version-panel .link-row{padding:18rpx 0}
+.version-copy{flex:1;min-width:0}
+.version-caption{font-size:22rpx;color:#938D8D;margin-top:6rpx;line-height:1.45;word-break:break-all}
+.version-ready{color:#DE7F84}
