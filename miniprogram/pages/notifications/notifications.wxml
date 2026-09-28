@@ -3,6 +3,15 @@
   <view class="prototype-title page-title">消息提醒</view>
   <view class="page-caption">点菜和上菜的消息，都留在这里。</view>
   <view class="prototype-card subscribe-card {{canSupplement?'':'subscribe-card-closed'}}" bindtap="subscribe"><view><view class="subscribe-title">补充微信提醒</view><text>{{templateHint}}</text><text wx:if="{{creditHint}}">{{creditHint}}</text></view><text class="chevron">›</text></view>
+  <view wx:if="{{configured}}" class="prototype-card test-card">
+    <view class="test-heading">测试微信提醒</view>
+    <view class="test-caption">发送给当前登录的微信账号；每次测试会消耗对应模板的一次提醒机会。没有机会时，点击后会先申请该模板授权。</view>
+    <view class="test-actions">
+      <button class="test-button" data-event="created" bindtap="sendTest" loading="{{testingEvent==='created'}}" disabled="{{!testReady || testingEvent}}">测试点菜提醒</button>
+      <button class="test-button" data-event="served" bindtap="sendTest" loading="{{testingEvent==='served'}}" disabled="{{!testReady || testingEvent}}">测试做饭完成</button>
+    </view>
+    <view class="test-caption">“已请求发送”表示微信接口已接受请求，不代表消息一定已送达或已读。</view>
+  </view>
   <view class="section-head"><text>饭桌消息</text><text wx:if="{{unreadCount}}" bindtap="markRead">全部标为已读</text></view>
   <view wx:if="{{loading}}" class="loading">正在看看有什么新消息…</view>
   <view wx:elif="{{error}}" class="prototype-card state"><view>{{error}}</view><button bindtap="load">重新试试</button></view>

@@ -37,11 +37,20 @@ class NotificationTests(unittest.TestCase):
              patch.object(main, "connection") as connection, \
              patch.object(main, "execute", side_effect=[(None, 1), (None, 1)]) as execute:
             connection.return_value.__enter__.return_value = object()
-            main.record_subscription_grants(12, ["order-template"], "request-1")
+            added = main.record_subscription_grants(12, ["order-template"], "request-1")
 
         grant_sql, grant_params, _ = execute.call_args_list[1].args
         self.assertIn("LEAST(%s,available_count+1)", grant_sql)
         self.assertEqual(grant_params[-1], 10)
+        self.assertEqual(added, {"created": 1})
+
+        with patch.object(main, "subscription_templates", return_value={"created": "order-template"}), \
+             patch.object(main, "connection") as connection, \
+             patch.object(main, "execute", side_effect=[(None, 1), (None, 0)]) as execute:
+            connection.return_value.__enter__.return_value = object()
+            added = main.record_subscription_grants(12, ["order-template"], "request-2")
+
+        self.assertEqual(added, {})
 
     def test_subscription_refunds_are_capped_at_ten(self):
         with patch.object(main, "execute") as execute:
@@ -50,6 +59,17 @@ class NotificationTests(unittest.TestCase):
         sql, params = execute.call_args.args
         self.assertIn("LEAST(%s,available_count+1)", sql)
         self.assertEqual(params[0], 10)
+
+    def test_notification_test_send_targets_the_current_user(self):
+        user = {"id": 12, "openid": "current-openid", "nickname": "测试用户", "coupleId": 3}
+        with patch.object(main, "send_subscribe", new_callable=AsyncMock, return_value={"sent": True}) as send, \
+             patch.object(main, "fetch_all", return_value=[{"event": "served", "availableCount": 2}]):
+            result = asyncio.run(main.send_notification_test({"event": "served"}, user))
+
+        self.assertTrue(result["data"]["sent"])
+        self.assertEqual(send.call_args.args[0]["openid"], "current-openid")
+        self.assertEqual(send.call_args.args[2], "served")
+        self.assertEqual(send.call_args.kwargs["page"], "pages/notifications/notifications")
 
 
 if __name__ == "__main__":

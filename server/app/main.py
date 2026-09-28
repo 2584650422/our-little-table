@@ -236,16 +236,19 @@ def valid_subscribe_template(event: str) -> bool:
 def subscription_templates() -> dict[str,str]:
     return {event:subscribe_template(event)[0] for event in ("created","served") if valid_subscribe_template(event)}
 
-def record_subscription_grants(user_id: int, template_ids: list[str], request_id: str) -> None:
+def record_subscription_grants(user_id: int, template_ids: list[str], request_id: str) -> dict[str,int]:
     available=subscription_templates()
     by_id={template_id:event for event,template_id in available.items()}
+    added={}
     with connection(transaction=True) as conn:
         for template_id in set(template_ids):
             event=by_id.get(template_id)
             if not event: continue
             _,changed=execute("INSERT IGNORE INTO wechat_subscription_grants (user_id,request_id,template_id,event) VALUES (%s,%s,%s,%s)",(user_id,request_id,template_id,event),conn)
             if changed:
-                execute("INSERT INTO wechat_subscription_credits (user_id,template_id,event,available_count) VALUES (%s,%s,%s,1) ON DUPLICATE KEY UPDATE available_count=LEAST(%s,available_count+1)",(user_id,template_id,event,SUBSCRIPTION_CREDIT_MAX),conn)
+                _,credit_changed=execute("INSERT INTO wechat_subscription_credits (user_id,template_id,event,available_count) VALUES (%s,%s,%s,1) ON DUPLICATE KEY UPDATE available_count=LEAST(%s,available_count+1)",(user_id,template_id,event,SUBSCRIPTION_CREDIT_MAX),conn)
+                if credit_changed: added[event]=added.get(event,0)+1
+    return added
 
 def reserve_subscription_credit(user_id: int, template_id: str) -> bool:
     with connection(transaction=True) as conn:
@@ -257,7 +260,7 @@ def reserve_subscription_credit(user_id: int, template_id: str) -> bool:
 def refund_subscription_credit(user_id: int, template_id: str) -> None:
     execute("UPDATE wechat_subscription_credits SET available_count=LEAST(%s,available_count+1) WHERE user_id=%s AND template_id=%s",(SUBSCRIPTION_CREDIT_MAX,user_id,template_id))
 
-async def send_subscribe(member: dict, order: dict, event: str = "created") -> dict:
+async def send_subscribe(member: dict, order: dict, event: str = "created", page: Optional[str] = None) -> dict:
     template_id,fields=subscribe_template(event)
     if not valid_subscribe_template(event):
         logger.info("wechat.subscribe_skipped event=%s orderId=%s reason=not_configured",event,order["id"])
@@ -274,7 +277,7 @@ async def send_subscribe(member: dict, order: dict, event: str = "created") -> d
             _access_token.update(value=token_data["access_token"],expires=time.time()+int(token_data.get("expires_in",7200)))
         fallbacks={"creatorName":"对方","reminderUser":"对方","dishNames":"这顿饭","message":"今天想吃这些，点开看看吧"}
         payload_data={key:{"value":str(order.get(source) or fallbacks.get(source,"-"))[:20]} for key,source in fields}
-        payload = {"touser":member["openid"],"template_id":template_id,"page":f"{settings.wechat_order_page}?id={order['id']}","data":payload_data}
+        payload = {"touser":member["openid"],"template_id":template_id,"page":page or f"{settings.wechat_order_page}?id={order['id']}","data":payload_data}
         async with httpx.AsyncClient(timeout=8) as client:
             response = await client.post(f"https://api.weixin.qq.com/cgi-bin/message/subscribe/send?access_token={_access_token['value']}", json=payload)
         result=response.json()
@@ -768,9 +771,20 @@ def register_subscriptions(request: Request, body: dict, user: dict=Depends(coup
     template_ids=body.get("templateIds") if isinstance(body.get("templateIds"),list) else []
     if not request_id: raise AppError("订阅记录编号无效")
     if len(template_ids)>2: raise AppError("一次最多记录两条提醒")
-    record_subscription_grants(user["id"],[text(item,100) for item in template_ids],request_id)
+    added=record_subscription_grants(user["id"],[text(item,100) for item in template_ids],request_id)
     credits=fetch_all("SELECT event,available_count AS availableCount FROM wechat_subscription_credits WHERE user_id=%s",(user["id"],))
-    return success({"subscriptionCredits":{row["event"]:row["availableCount"] for row in credits}})
+    return success({"subscriptionCredits":{row["event"]:row["availableCount"] for row in credits},"addedByEvent":added,"addedCount":sum(added.values())})
+
+@app.post("/api/notifications/test-send")
+async def send_notification_test(body: dict, user: dict=Depends(coupled_user)):
+    event=text(body.get("event"),16)
+    if event not in ("created","served"): raise AppError("测试提醒类型无效")
+    sample_order={"id":0,"creatorName":"订阅测试","reminderUser":"订阅测试","dishNames":"订阅提醒测试","message":"这是一条测试消息，可以忽略"}
+    result=await send_subscribe(user,sample_order,event,page="pages/notifications/notifications")
+    logger.info("wechat.subscribe_test event=%s userId=%s sent=%s reason=%s",event,user["id"],result.get("sent",False),result.get("reason",""))
+    credits=fetch_all("SELECT event,available_count AS availableCount FROM wechat_subscription_credits WHERE user_id=%s",(user["id"],))
+    balance={row["event"]:row["availableCount"] for row in credits}
+    return success({"sent":result.get("sent",False),"reason":result.get("reason"),"subscriptionCredits":balance},"微信已接受测试消息" if result.get("sent") else result.get("reason","测试消息未发送"))
 
 @app.put("/api/notifications/read")
 def read_notifications(user: dict=Depends(coupled_user)):
