@@ -8,7 +8,7 @@
   <block wx:else>
     <view wx:for="{{orders}}" wx:key="id" class="record-block">
       <view class="record-date"><text>{{item.dateLabel}}</text><text wx:if="{{tab==='history'}}" class="record-more" catchtap="showActions" data-id="{{item.id}}">···</text></view>
-      <view class="record-card" bindtap="detail" data-id="{{item.id}}">
+      <view class="record-card" bindtap="detail" data-id="{{item.id}}" data-status="{{item.status}}">
         <image wx:if="{{item.displayImage}}" class="record-image" src="{{item.displayImage}}" mode="aspectFill" lazy-load/><view wx:else class="record-image record-placeholder"><image src="/assets/icons/dish-placeholder.png" mode="aspectFit"/></view>
         <view class="record-content"><view class="record-top"><text>{{item.mealLabel}}</text><text class="status-chip {{item.status==='ready'||item.status==='completed'?'done':'waiting'}}">{{item.status==='ready'||item.status==='completed'?'已上菜':item.status==='cancelled'?'已取消':'等上菜'}}</text></view><view class="record-names"><text wx:for="{{item.items}}" wx:key="id">{{index?' · ':''}}{{item.dishName}}</text></view><view class="record-note">{{item.reviewText||item.message||item.creatorName+' 点的'}}</view></view>
       </view>

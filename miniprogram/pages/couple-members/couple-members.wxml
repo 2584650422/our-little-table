@@ -1,0 +1,32 @@
+<view class="prototype-page members-page">
+  <subpage-header/>
+  <view class="prototype-title page-title">饭桌成员</view>
+  <view class="page-caption">这张小饭桌，最多留两个位置。</view>
+  <view wx:if="{{loading}}" class="loading">正在看看谁坐在桌边…</view>
+  <view wx:elif="{{error}}" class="card error-state"><view>{{error}}</view><button class="btn secondary" bindtap="load">重新试试</button></view>
+  <block wx:else>
+    <view class="member-summary"><view class="summary-mark">♥</view><view><text>{{memberCount}} / 2</text><text>位成员正在这张饭桌</text></view></view>
+    <view class="section-heading">坐在桌边的人</view>
+    <view wx:for="{{members}}" wx:key="id" class="prototype-card member-card">
+      <view class="member-top" data-id="{{item.id}}" bindtap="toggleMember">
+        <view class="member-avatar"><image wx:if="{{item.avatarUrl}}" src="{{item.avatarUrl}}" mode="aspectFill"/><view wx:else>{{item.initial}}</view></view>
+        <view class="member-main"><view class="member-name">{{item.nickname}}<text class="relation-tag">{{item.relationText}}</text></view><text>{{item.roleText}}</text></view>
+        <text class="arrow {{expandedId==item.id?'rotate':''}}">›</text>
+      </view>
+      <view wx:if="{{expandedId==item.id}}" class="member-details">
+        <view class="detail-row"><text>称呼</text><text>{{item.nickname}}</text></view>
+        <view class="detail-row"><text>饭桌身份</text><text>{{item.roleText}}</text></view>
+        <view class="detail-row"><text>资料维护</text><text>{{item.isSelf?'由你自己修改':'由 TA 自己修改'}}</text></view>
+        <view wx:if="{{item.isSelf}}" class="edit-mine" catchtap="editMine">去修改我的头像和称呼 <text>›</text></view>
+      </view>
+    </view>
+    <view wx:if="{{needsInvite}}" class="prototype-card invite-card">
+      <view class="invite-title">给 TA 留的位置</view>
+      <view class="invite-hint">把邀请码发给另一半，坐到同一张小饭桌。</view>
+      <view wx:if="{{couple.inviteCode}}" class="invite-code">{{couple.inviteCode}}</view>
+      <view wx:if="{{couple.inviteExpireAt}}" class="expire-text">有效至 {{couple.inviteExpireAt}}</view>
+      <view class="invite-actions"><button wx:if="{{couple.inviteCode}}" bindtap="copy">复制邀请码</button><button bindtap="invite">{{couple.inviteCode?'换一个':'生成邀请码'}}</button></view>
+    </view>
+    <view class="footer-note">每个人只能修改自己的头像和称呼。</view>
+  </block>
+</view>

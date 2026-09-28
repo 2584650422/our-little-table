@@ -1,0 +1,36 @@
+.members-page{padding-bottom:100rpx}
+.page-title{font-size:54rpx;line-height:1.25;margin:2rpx 3rpx 9rpx}
+.page-caption{font-size:23rpx;color:#969097;line-height:1.5;margin:0 3rpx 29rpx}
+.member-summary{display:flex;align-items:center;gap:18rpx;background:#FFF7F5;border-radius:24rpx;padding:23rpx 26rpx;margin-bottom:36rpx}
+.summary-mark{display:flex;align-items:center;justify-content:center;width:62rpx;height:62rpx;border-radius:50%;background:#FBE7E7;color:#DE7F84;font-size:30rpx}
+.member-summary>view:last-child{display:flex;flex-direction:column;gap:3rpx}
+.member-summary text:first-child{font-size:28rpx;font-weight:700;color:#343035}
+.member-summary text:last-child{font-size:22rpx;color:#96888C}
+.section-heading{font-size:32rpx;font-weight:720;color:#29262A;margin:0 4rpx 15rpx}
+.member-card{padding:0 21rpx;margin-bottom:16rpx;border-radius:25rpx}
+.member-top{display:flex;align-items:center;gap:17rpx;min-height:128rpx}
+.member-avatar{width:86rpx;height:86rpx;flex:none;border-radius:50%;overflow:hidden;background:#F2E7E4}
+.member-avatar image,.member-avatar view{display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:#9C777B;font-size:35rpx;font-weight:600}
+.member-main{flex:1;min-width:0}
+.member-name{display:flex;align-items:center;gap:10rpx;font-size:29rpx;font-weight:680;color:#302C30}
+.relation-tag{font-size:20rpx;color:#CE777B;background:#FDF0F0;border-radius:999rpx;padding:4rpx 11rpx;font-weight:500}
+.member-main>text{display:block;font-size:22rpx;color:#9E969C;margin-top:6rpx}
+.arrow{font-size:35rpx;color:#9A969C;line-height:1;transition:transform .2s ease}
+.arrow.rotate{transform:rotate(90deg)}
+.member-details{border-top:1rpx solid #F1EDEE;padding:9rpx 0 20rpx}
+.detail-row{display:flex;align-items:center;justify-content:space-between;gap:15rpx;min-height:58rpx;font-size:23rpx}
+.detail-row text:first-child{color:#989198}
+.detail-row text:last-child{color:#4A434A;text-align:right}
+.edit-mine{display:flex;align-items:center;justify-content:space-between;margin-top:13rpx;padding:17rpx 19rpx;border-radius:16rpx;background:#FFF5F4;color:#C5727B;font-size:23rpx}
+.edit-mine text{font-size:30rpx;line-height:1}
+.invite-card{margin-top:26rpx;padding:25rpx 24rpx;border-radius:25rpx}
+.invite-title{font-size:28rpx;font-weight:680;color:#353035}
+.invite-hint{font-size:22rpx;color:#999099;margin-top:8rpx;line-height:1.5}
+.invite-code{font-size:42rpx;font-weight:700;letter-spacing:4rpx;color:#C9767F;margin-top:20rpx}
+.expire-text{font-size:21rpx;color:#A39AA0;margin-top:6rpx}
+.invite-actions{display:flex;gap:12rpx;margin-top:22rpx}
+.invite-actions button{flex:1;margin:0;background:#FAEDEF;color:#C4757D;border-radius:999rpx;font-size:23rpx}
+.invite-actions button::after{border:0}
+.footer-note{text-align:center;font-size:21rpx;color:#ABA3A8;margin-top:34rpx}
+.error-state{text-align:center;padding:55rpx 25rpx}
+.error-state .btn{margin-top:22rpx}

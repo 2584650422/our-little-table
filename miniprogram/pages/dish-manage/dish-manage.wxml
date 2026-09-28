@@ -1,29 +1,18 @@
-<view class="page">
-  <view class="manage-head"><view class="tip">按点过次数优先排列，方便整理常吃的菜。</view><view class="head-actions"><view class="search-icon" bindtap="searchToggle">⌕</view><view class="category-link" bindtap="categories">分类管理 ›</view></view></view>
-  <view wx:if="{{searchOpen}}" class="manage-search"><input focus value="{{keyword}}" placeholder="搜索想修改的菜品" bindinput="input"/><text bindtap="searchToggle">×</text></view>
-
-  <block wx:if="{{loading}}">
-    <view class="loading">正在整理菜单…</view>
-  </block>
-
+<view class="prototype-page manage-page">
+  <subpage-header/>
+  <view class="heading"><text class="prototype-title">菜单管理</text><text class="category-link" bindtap="categories">分类管理 ›</text></view>
+  <view class="manage-search"><view class="glass"></view><input value="{{keyword}}" placeholder="搜索想修改的菜" confirm-type="search" bindinput="input"/><text wx:if="{{keyword}}" class="clear" bindtap="clearSearch">×</text></view>
+  <view wx:if="{{loading}}" class="loading">正在整理菜单…</view>
+  <view wx:elif="{{error}}" class="error"><view>{{error}}</view><button class="btn secondary" bindtap="load">重新试试</button></view>
   <block wx:else>
-    <view
-      wx:for="{{dishes}}"
-      wx:key="id"
-      class="card row-item {{!item.enabled ? 'disabled' : ''}}"
-      bindtap="edit"
-      data-id="{{item.id}}"
-    >
-      <image wx:if="{{item.imageUrl}}" src="{{item.imageUrl}}" mode="aspectFill"/>
-      <view wx:else class="thumb image-placeholder">🍽️</view>
-      <view class="info">
-        <view>{{item.name}}</view>
-        <text>{{item.categoryName}} · 点过 {{item.orderedCount||0}} 次</text>
-      </view>
-      <button wx:if="{{item.enabled && item.coupleId}}" class="down" catchtap="disable" data-id="{{item.id}}">下架</button>
-      <text wx:elif="{{!item.enabled}}" class="muted">已下架</text>
+    <view wx:for="{{dishes}}" wx:key="id" class="prototype-card dish-row {{!item.enabled?'disabled':''}}" bindtap="edit" data-id="{{item.id}}">
+      <image wx:if="{{item.imageUrl}}" class="media-thumb" src="{{item.imageUrl}}" mode="aspectFill" lazy-load/>
+      <view wx:else class="media-thumb media-placeholder"><image src="/assets/icons/dish-placeholder.png" mode="aspectFit"/></view>
+      <view class="dish-copy"><view class="dish-name">{{item.name}}</view><view class="dish-meta">{{item.categoryName}} · 点过 {{item.orderedCount||0}} 次</view></view>
+      <view wx:if="{{item.enabled && item.coupleId}}" class="down" catchtap="disable" data-id="{{item.id}}">下架</view>
+      <text wx:elif="{{!item.enabled}}" class="off">已下架</text><text class="arrow">›</text>
     </view>
+    <view wx:if="{{!dishes.length}}" class="empty">{{keyword?'没有找到这道菜':'菜单还空着，先加一道喜欢的菜吧'}}</view>
   </block>
-
-  <view class="fab" bindtap="add">＋ 新增菜品</view>
+  <view class="prototype-button prototype-fixed" bindtap="add">＋ 新增菜品</view>
 </view>

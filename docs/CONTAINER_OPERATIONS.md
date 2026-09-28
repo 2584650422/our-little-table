@@ -1,0 +1,151 @@
+# 后端容器部署与日常运维
+
+本文针对当前生产环境：后端位于 `/data/software/little-table/server`，使用 Docker Compose；Nginx 和 MySQL 是服务器已有容器，API 通过 `compose_blog-network` 访问 MySQL 容器 `mysql:3306`。小程序前端由微信开发者工具上传，不由该 Compose 提供。
+
+## 首次部署前检查
+
+确认服务器已安装 Docker Compose 插件，并且已存在外部网络：
+
+```bash
+sudo docker compose version
+sudo docker network inspect compose_blog-network >/dev/null
+sudo docker ps --format 'table {{.Names}}\t{{.Status}}'
+```
+
+将本地 `server/` 代码同步到服务器时，不要覆盖服务器真实 `.env`，也不要上传本地虚拟环境：
+
+```bash
+rsync -av --delete \
+  --exclude='.env' --exclude='.venv/' --exclude='.venv.old/' \
+  --exclude='__pycache__/' --exclude='*.pyc' \
+  ./server/ ubuntu@YOUR_SERVER:/data/software/little-table/server/
+```
+
+`--delete` 会删除目标目录中源目录没有的文件。首次同步或目标目录中有手工文件时，先去掉该参数并检查差异。真实 `.env` 只在服务器上维护，权限应为 `600`；不要粘贴进聊天、工单或 Git。
+
+## 首次启动或更新
+
+```bash
+cd /data/software/little-table/server
+sudo chmod 600 .env
+sudo docker compose -f compose.production.yml config --quiet
+sudo docker compose -f compose.production.yml build api
+sudo docker compose -f compose.production.yml up -d --force-recreate api
+sudo docker compose -f compose.production.yml ps
+```
+
+若是首次部署且尚未构建镜像，`up` 可以直接带 `--build`：
+
+```bash
+sudo docker compose -f compose.production.yml up -d --build --force-recreate api
+```
+
+部署完成后验证容器内和 HTTPS 公网健康检查：
+
+```bash
+sudo docker exec little-table-api python -c \
+  "import urllib.request; print(urllib.request.urlopen('http://127.0.0.1:3000/health').read().decode())"
+curl -fsS https://YOUR_API_DOMAIN/health
+```
+
+预期返回 `status: ok` 和 `database: connected`。MySQL 是已有服务，更新 API 时不要对它执行 `docker compose down`，也不要重新导入 schema/seed。
+
+## 查看日志和时区
+
+```bash
+sudo docker compose -f compose.production.yml logs --tail=200 api
+sudo docker compose -f compose.production.yml logs -f --since=10m api
+date
+sudo docker exec little-table-api date
+```
+
+容器通过 `TZ=Asia/Shanghai` 和只读挂载 `/etc/localtime` 使用服务器本地时区。若两者仍不一致，先检查宿主机时钟和时区：
+
+```bash
+timedatectl status
+```
+
+请求日志按状态码分级：成功请求为 `INFO`，4xx 为 `WARNING`，5xx 为 `ERROR`；`/health` 和 Nginx 周期探测用的 `GET /`（预期 404）降到 `DEBUG`，Uvicorn 默认逐条 access log 已关闭，避免重复。HTTP 客户端不记录含凭证查询参数的完整 URL；COS SDK 的连接池绑定提示降为 `WARNING`，避免每次生成图片临时链接都刷屏。日志由 Docker `json-file` 驱动轮转，当前 Compose 限制为每个文件 10 MB、最多 3 个文件。
+
+排查时使用日志里的 `requestId` 关联同一次 API 调用。不要用 `docker inspect` 输出完整环境变量，也不要向聊天粘贴 `.env` 或带密钥的命令输出。
+
+## COS 图片上传排错
+
+图片链路是“小程序 → API 申请临时 STS 凭证 → 小程序直接 PUT 到 COS”。因此 API 日志出现 `cos.credential_issued` 只表示临时凭证成功签发，不代表后续 COS PUT 成功；COS 返回的 4xx/5xx 原本只在小程序端发生。
+
+新版本小程序会在直传失败后调用已登录的 `/api/uploads/cos-failure`，服务器日志记录 `cos.client_upload_failed`，包含上传用途、COS 状态码、COS Request ID（若响应头可读）和错误代码，不记录签名、临时密钥或图片内容。客户端本地调试时也可在微信开发者工具 Console 中查看 `[COS upload]` 诊断信息。
+
+如仍失败，按以下顺序核对：
+
+1. 后台确认 `cos.credential_issued` 的紧接后续是否有 `cos.client_upload_failed`。
+2. `status=403` 时，用日志中的 COS Request ID 在腾讯云 COS 请求日志/工单中查询具体拒绝原因，重点检查 STS 权限、对象 Key 范围、Region/Bucket、签名时钟与内容类型条件。
+3. `status=0` 或 `client_network_failure` 时，检查微信公众平台 `request` 合法域名包含准确的 COS 域名，以及小程序当前网络、证书和 COS CORS 规则。
+4. COS CORS 允许 `PUT`，允许请求头 `Authorization`、`x-cos-security-token`、`Content-Type`；建议暴露 `x-cos-request-id` 响应头用于排错。COS Bucket 保持私有读写。
+5. 修改 CORS 或合法域名后，重新编译小程序并真机复测。`uploadFile` 合法域名不是本项目 PUT 直传所用的配置项。
+
+`GET /` 的 404 不是图片上传错误；上传请求签发凭证后直接发往 COS，不会经过 Nginx/API 的普通路由日志。
+
+## 修改环境变量
+
+在服务器本机编辑：
+
+```bash
+cd /data/software/little-table/server
+nano .env
+sudo chmod 600 .env
+sudo docker compose -f compose.production.yml up -d --force-recreate api
+sudo docker compose -f compose.production.yml logs --tail=100 api
+```
+
+改 `.env` 后只执行 `restart` 不会把新环境变量注入已有容器；必须 recreate。比如微信 AppSecret 轮换后，应先在公众平台生成新值，再只在服务器 `.env` 更新 `WECHAT_APP_SECRET`，随后 recreate 并验证登录。不要把 AppSecret 发给协作者或写入小程序前端。
+
+## Nginx 与域名
+
+当前 API Nginx 配置位于服务器 `/data/software/compose/nginx/conf/conf.d/little-table.conf`。修改前备份目标配置，完成后执行：
+
+```bash
+sudo docker exec nginx nginx -t
+sudo docker exec nginx nginx -s reload
+curl -fsSI https://YOUR_API_DOMAIN/health
+```
+
+不要直接覆盖已备份的旧 `wechat.conf`，也不要把 API 容器的 3000 端口暴露到公网。Nginx 和 API 通过外部 Docker 网络互通。
+
+## 回滚 API 镜像
+
+更新前记录当前镜像：
+
+```bash
+sudo docker image tag little-table-api:latest little-table-api:rollback-YYYYMMDD-HHMMSS
+```
+
+需要回滚时把 `YYYYMMDD-HHMMSS` 替换为实际标签：
+
+```bash
+sudo docker image tag little-table-api:rollback-YYYYMMDD-HHMMSS little-table-api:latest
+sudo docker compose -f /data/software/little-table/server/compose.production.yml up -d --no-build --force-recreate api
+sudo docker compose -f /data/software/little-table/server/compose.production.yml ps
+```
+
+该回滚仅恢复应用镜像；若发布包含数据库迁移，需按相应迁移文档单独制定兼容/回滚方案。当前 API 更新不应自动重置或删除生产数据。
+
+## 本次饭桌背景与分类字段升级
+
+本次 `006_couple_background.sql` 只增加 `couples.background_image_key`，可在旧 API 运行期间先执行。`007_remove_category_icons.sql` 清理 `categories.icon`、`starter_categories.icon` 和始终为空的 `meal_reviews.rating`，是不可逆的删列操作，**必须先部署新版 API、验证 `/health`、`/api/categories` 与 `/api/dishes` 正常，再执行**；旧版 API 仍会查询 `categories.icon`，提前删列会让菜单接口失败。生产库不要重新执行 `schema.sql`/`seed.sql`。
+
+执行 `007` 之前应使用现有备份方案保留 MySQL 全库或至少 `categories`、`starter_categories` 的结构与数据，确认备份可恢复。之后在服务器执行：
+
+```bash
+mysql -u YOUR_DB_USER -p little_table < /data/software/little-table/database/migrations/007_remove_category_icons.sql
+```
+
+新的微信消息模板变量见 [消息通知配置](NOTIFICATIONS.md)。修改 `.env` 后要重新创建 API 容器；新版小程序应在新版 API 部署后再上传，否则消息配置接口会返回 404。
+
+### 2026-09-27 实际执行记录
+
+- 已在现有 `little_table` 库执行 `006_couple_background.sql` 与 `007_remove_category_icons.sql`，并确认 `categories.icon`、`starter_categories.icon`、`meal_reviews.rating` 不再存在。
+- 删除字段前的完整数据库备份：`/data/software/little-table/backups/little_table-20260927-115133.sql.gz`（权限 `600`；已检查压缩包可解压，包含 12 张表的结构和数据）。旧 API 源码备份为同目录 `api-source-20260927-115133.tar.gz`，旧镜像标签为 `little-table-api:rollback-20260927-115133`。
+- 新 API 已构建并重建容器；`/health`、饭桌、分类、菜品、消息与消息配置接口通过检查。真实创建/上菜测试验证两位成员均有站内消息，测试记录已删除。清理中发现并修复空评论结果导致删除接口返回 500 的问题，复测删除返回 200。
+- 当前生产 `.env` 未配置微信订阅消息 Template ID 及字段键，日志会记录 `wechat.subscribe_skipped ... reason=not_configured`；这只能证明发送分支被调用，**不能证明微信外部消息送达**。配置模板和两位成员分别授权后，再做真机送达测试。
+- 已将生产 `WECHAT_ORDER_PAGE` 从 Tab 页改为 `pages/order-detail/order-detail` 并重建容器；修改前的 `.env` 私密备份为 `/data/software/little-table/backups/server-env-20260927-115133.env`（权限 `600`，不要复制进 Git）。
+- 当前饭桌的“番茄炒蛋”“宫保鸡丁”已替换成新生成图片；新对象私有读取返回 200，旧对象返回 404，且没有订单图片快照引用旧图。最后一次通知联调测试订单 `11` 在两位成员处均验证了“已下单”和“已上菜”站内消息，随后已删除；当前容器日志保留了这次事件的四条 `wechat.subscribe_skipped` 记录。

@@ -35,7 +35,7 @@ Page({
       return keyword?searchable.includes(normalize(keyword)):(!categoryId||String(item.categoryId)===categoryId)
     })
     const categories=sourceCategories||this.data.categories,active=categories.find(item=>String(item.id)===categoryId)
-    this.setData({dishes,activeCategoryName:keyword?`“${this.data.keyword.trim()}” 的搜索结果`:(active?`${active.icon||''} ${active.name}`:'全部菜品')})
+    this.setData({dishes,activeCategoryName:keyword?`“${this.data.keyword.trim()}” 的搜索结果`:(active?active.name:'全部菜品')})
   },
   chooseCategory(e){if(this.foldForInteraction())return;this.setData({categoryId:e.currentTarget.dataset.id||''},()=>this.applyFilters())},
   input(e){this.setData({keyword:e.detail.value},()=>this.applyFilters())},

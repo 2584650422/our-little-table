@@ -15,7 +15,7 @@ from typing import Any, Optional
 
 import httpx
 import jwt
-from fastapi import Depends, FastAPI, Request
+from fastapi import BackgroundTasks, Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -25,6 +25,11 @@ from . import storage
 
 logging.basicConfig(level=getattr(logging, settings.log_level, logging.INFO),
                     format="%(asctime)s %(levelname)s pid=%(process)d %(message)s")
+# httpx logs full request URLs at INFO, and WeChat code2session URLs contain
+# AppSecret and one-time login codes in query parameters. Never emit those URLs.
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
+logging.getLogger("qcloud_cos").setLevel(logging.WARNING)
 logger = logging.getLogger("little_table")
 app = FastAPI(title="两个人的小饭桌 API", docs_url=None, redoc_url=None)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=False,
@@ -95,7 +100,10 @@ async def app_error_handler(request: Request, error: AppError):
 
 @app.exception_handler(Exception)
 async def unhandled_error_handler(request: Request, error: Exception):
-    logger.exception("http.request.failed requestId=%s path=%s", getattr(request.state, "request_id", ""), request.url.path)
+    # Avoid dumping exception strings/tracebacks from outbound HTTP clients;
+    # those can contain URLs with credentials in their query parameters.
+    logger.error("http.request.failed requestId=%s path=%s errorType=%s",
+                 getattr(request.state, "request_id", ""), request.url.path, type(error).__name__)
     return JSONResponse(status_code=500, content={"code": 500, "message": "服务开了个小差，请稍后再试",
         "data": {"requestId": getattr(request.state, "request_id", "")}})
 
@@ -105,8 +113,10 @@ async def request_log(request: Request, call_next):
     started = time.perf_counter()
     response = await call_next(request)
     response.headers["X-Request-Id"] = request.state.request_id
-    logger.info("http.request.completed requestId=%s method=%s path=%s status=%s durationMs=%.1f",
-                request.state.request_id, request.method, request.url.path, response.status_code, (time.perf_counter()-started)*1000)
+    benign_probe = request.url.path == "/health" or (request.method == "GET" and request.url.path == "/" and response.status_code == 404)
+    log = logger.error if response.status_code >= 500 else logger.debug if benign_probe else logger.warning if response.status_code >= 400 else logger.info
+    log("http.request.completed requestId=%s method=%s path=%s status=%s durationMs=%.1f",
+        request.state.request_id, request.method, request.url.path, response.status_code, (time.perf_counter()-started)*1000)
     return response
 
 def ensure_menu(couple_id: int) -> None:
@@ -119,7 +129,7 @@ def ensure_menu(couple_id: int) -> None:
         try:
             exists = fetch_one("SELECT COUNT(*) AS count FROM categories WHERE couple_id=%s", (couple_id,), conn)
             if not exists["count"]:
-                execute("INSERT INTO categories (couple_id,name,icon,sort_order,enabled) SELECT %s,name,icon,sort_order,enabled FROM starter_categories WHERE enabled=1", (couple_id,), conn)
+                execute("INSERT INTO categories (couple_id,name,sort_order,enabled) SELECT %s,name,sort_order,enabled FROM starter_categories WHERE enabled=1", (couple_id,), conn)
                 execute("""INSERT INTO dishes (couple_id,category_id,name,description,image_key,image_url,calorie_kcal,calorie_unit,calorie_note,serving_note,cook_time_minutes,difficulty,spicy_level,tags,enabled,sort_order,created_by)
                     SELECT %s,own_category.id,d.name,d.description,d.image_key,d.image_url,d.calorie_kcal,d.calorie_unit,d.calorie_note,d.serving_note,d.cook_time_minutes,d.difficulty,d.spicy_level,d.tags,d.enabled,d.sort_order,NULL
                     FROM starter_dishes d JOIN starter_categories starter_category ON starter_category.id=d.category_id
@@ -142,7 +152,7 @@ def normalize_dish(row: dict) -> dict:
     row["isFavorite"] = bool(row.get("isFavorite")); row["enabled"] = bool(row.get("enabled"))
     return hydrate_image(row)
 
-DISH_SELECT = """SELECT d.id,d.name,d.description,d.image_key AS imageKey,d.image_url AS imageUrl,d.calorie_kcal AS calorieKcal,d.calorie_unit AS calorieUnit,d.calorie_note AS calorieNote,d.serving_note AS servingNote,d.cook_time_minutes AS cookTimeMinutes,d.difficulty,d.spicy_level AS spicyLevel,d.tags,d.enabled,d.couple_id AS coupleId,d.sort_order AS sortOrder,c.id AS categoryId,c.name AS categoryName,c.icon AS categoryIcon,
+DISH_SELECT = """SELECT d.id,d.name,d.description,d.image_key AS imageKey,d.image_url AS imageUrl,d.calorie_kcal AS calorieKcal,d.calorie_unit AS calorieUnit,d.calorie_note AS calorieNote,d.serving_note AS servingNote,d.cook_time_minutes AS cookTimeMinutes,d.difficulty,d.spicy_level AS spicyLevel,d.tags,d.enabled,d.couple_id AS coupleId,d.sort_order AS sortOrder,c.id AS categoryId,c.name AS categoryName,
 EXISTS(SELECT 1 FROM favorites f WHERE f.dish_id=d.id AND f.user_id=%s) AS isFavorite,
 (SELECT COUNT(DISTINCT oi.order_id) FROM order_items oi JOIN orders oo ON oo.id=oi.order_id WHERE oo.couple_id=%s AND oo.status<>'cancelled' AND (oi.dish_id=d.id OR oi.dish_name=d.name)) AS orderedCount FROM dishes d JOIN categories c ON c.id=d.category_id"""
 
@@ -167,7 +177,8 @@ def delete_unreferenced_image(key: Optional[str]) -> bool:
         (SELECT COUNT(*) FROM dishes WHERE image_key=%s)+
         (SELECT COUNT(*) FROM users WHERE avatar_key=%s)+
         (SELECT COUNT(*) FROM order_items WHERE dish_image_key=%s)+
-        (SELECT COUNT(*) FROM meal_reviews WHERE image_key=%s) AS count""",(key,key,key,key))
+        (SELECT COUNT(*) FROM meal_reviews WHERE image_key=%s)+
+        (SELECT COUNT(*) FROM couples WHERE background_image_key=%s) AS count""",(key,key,key,key,key))
     if references["count"]:
         return False
     storage.delete_keys([key])
@@ -212,34 +223,87 @@ async def code2session(code: str) -> dict:
     return data
 
 _access_token = {"value":"", "expires":0.0}
-async def send_subscribe(openid: str, order: dict) -> dict:
-    keys = [settings.wechat_meal_key,settings.wechat_dish_key,settings.wechat_message_key,settings.wechat_date_key]
-    if not settings.wechat_template_id or not settings.wechat_app_secret or not all(keys): return {"sent":False,"reason":"微信提醒暂未配置"}
-    if _access_token["expires"] < time.time()+60:
+def subscribe_template(event: str) -> tuple[str,list[tuple[str,str]]]:
+    if event == "served":
+        return settings.wechat_served_template_id,[(settings.wechat_served_user_key,"reminderUser"),(settings.wechat_served_dish_name_key,"dishNames")]
+    return settings.wechat_template_id,[(settings.wechat_template_user_key,"creatorName"),(settings.wechat_dish_key,"dishNames"),(settings.wechat_message_key,"message")]
+
+def valid_subscribe_template(event: str) -> bool:
+    template_id,fields=subscribe_template(event)
+    return bool(template_id and settings.wechat_app_id and settings.wechat_app_secret and all(key for key,_ in fields))
+
+def subscription_templates() -> dict[str,str]:
+    return {event:subscribe_template(event)[0] for event in ("created","served") if valid_subscribe_template(event)}
+
+def record_subscription_grants(user_id: int, template_ids: list[str], request_id: str) -> None:
+    available=subscription_templates()
+    by_id={template_id:event for event,template_id in available.items()}
+    with connection(transaction=True) as conn:
+        for template_id in set(template_ids):
+            event=by_id.get(template_id)
+            if not event: continue
+            _,changed=execute("INSERT IGNORE INTO wechat_subscription_grants (user_id,request_id,template_id,event) VALUES (%s,%s,%s,%s)",(user_id,request_id,template_id,event),conn)
+            if changed:
+                execute("INSERT INTO wechat_subscription_credits (user_id,template_id,event,available_count) VALUES (%s,%s,%s,1) ON DUPLICATE KEY UPDATE available_count=available_count+1",(user_id,template_id,event),conn)
+
+def reserve_subscription_credit(user_id: int, template_id: str) -> bool:
+    with connection(transaction=True) as conn:
+        row=fetch_one("SELECT available_count FROM wechat_subscription_credits WHERE user_id=%s AND template_id=%s FOR UPDATE",(user_id,template_id),conn)
+        if not row or row["available_count"]<1: return False
+        execute("UPDATE wechat_subscription_credits SET available_count=available_count-1 WHERE user_id=%s AND template_id=%s",(user_id,template_id),conn)
+        return True
+
+def refund_subscription_credit(user_id: int, template_id: str) -> None:
+    execute("UPDATE wechat_subscription_credits SET available_count=available_count+1 WHERE user_id=%s AND template_id=%s",(user_id,template_id))
+
+async def send_subscribe(member: dict, order: dict, event: str = "created") -> dict:
+    template_id,fields=subscribe_template(event)
+    if not valid_subscribe_template(event):
+        logger.info("wechat.subscribe_skipped event=%s orderId=%s reason=not_configured",event,order["id"])
+        return {"sent":False,"reason":"微信提醒暂未配置"}
+    if not reserve_subscription_credit(member["id"],template_id):
+        logger.info("wechat.subscribe_skipped event=%s orderId=%s userId=%s reason=no_subscription_credit",event,order["id"],member["id"])
+        return {"sent":False,"reason":"对方暂时没有可用的微信提醒次数"}
+    try:
+        if _access_token["expires"] < time.time()+60:
+            async with httpx.AsyncClient(timeout=8) as client:
+                response = await client.get("https://api.weixin.qq.com/cgi-bin/token", params={"grant_type":"client_credential","appid":settings.wechat_app_id,"secret":settings.wechat_app_secret})
+            token_data = response.json()
+            if token_data.get("errcode") or not token_data.get("access_token"): raise RuntimeError(token_data.get("errmsg","access token unavailable"))
+            _access_token.update(value=token_data["access_token"],expires=time.time()+int(token_data.get("expires_in",7200)))
+        fallbacks={"creatorName":"对方","reminderUser":"对方","dishNames":"这顿饭","message":"今天想吃这些，点开看看吧"}
+        payload_data={key:{"value":str(order.get(source) or fallbacks.get(source,"-"))[:20]} for key,source in fields}
+        payload = {"touser":member["openid"],"template_id":template_id,"page":f"{settings.wechat_order_page}?id={order['id']}","data":payload_data}
         async with httpx.AsyncClient(timeout=8) as client:
-            response = await client.get("https://api.weixin.qq.com/cgi-bin/token", params={"grant_type":"client_credential","appid":settings.wechat_app_id,"secret":settings.wechat_app_secret})
-        token_data = response.json()
-        if token_data.get("errcode") or not token_data.get("access_token"): raise RuntimeError(token_data.get("errmsg","access token unavailable"))
-        _access_token.update(value=token_data["access_token"],expires=time.time()+int(token_data.get("expires_in",7200)))
-    payload = {"touser":openid,"template_id":settings.wechat_template_id,"page":f"{settings.wechat_order_page}?id={order['id']}","data":{
-        settings.wechat_meal_key:{"value":order["title"][:20]},settings.wechat_dish_key:{"value":order["dishNames"][:20]},settings.wechat_message_key:{"value":(order.get("message") or "来看看今天的小菜单吧")[:20]},settings.wechat_date_key:{"value":order["mealDate"]}}}
-    async with httpx.AsyncClient(timeout=8) as client:
-        response = await client.post(f"https://api.weixin.qq.com/cgi-bin/message/subscribe/send?access_token={_access_token['value']}", json=payload)
-    result=response.json()
-    if result.get("errcode"): raise RuntimeError(result.get("errmsg","subscribe message failed"))
-    return {"sent":True}
+            response = await client.post(f"https://api.weixin.qq.com/cgi-bin/message/subscribe/send?access_token={_access_token['value']}", json=payload)
+        result=response.json()
+        if result.get("errcode"):
+            if result.get("errcode")==43101:
+                execute("UPDATE wechat_subscription_credits SET available_count=0 WHERE user_id=%s AND template_id=%s",(member["id"],template_id))
+            else:
+                refund_subscription_credit(member["id"],template_id)
+            logger.warning("wechat.subscribe_rejected event=%s orderId=%s userId=%s errcode=%s",event,order["id"],member["id"],result.get("errcode"))
+            return {"sent":False,"reason":"微信提醒未送达，站内消息已送达","errcode":result.get("errcode")}
+        return {"sent":True}
+    except Exception:
+        refund_subscription_credit(member["id"],template_id)
+        raise
 
 async def notify_created(creator: dict, target: Optional[dict], order: dict) -> dict:
     execute("INSERT INTO notifications (user_id,type,title,content,order_id) VALUES (%s,'order_created',%s,%s,%s)", (creator["id"],"点菜成功啦",f"已提交：{order['dishNames']}",order["id"]))
-    if not target: return {"creator":{"sent":True,"channel":"in_app"},"target":{"sent":False,"reason":"另一位成员尚未加入"}}
-    execute("INSERT INTO notifications (user_id,type,title,content,order_id) VALUES (%s,'new_order',%s,%s,%s)", (target["id"],"今天想吃这些",order["dishNames"],order["id"]))
-    try: target_result=await send_subscribe(target["openid"],order)
-    except Exception: target_result={"sent":False,"reason":"微信提醒发送失败，小程序内提醒已送达"}
-    return {"creator":{"sent":True,"channel":"in_app"},"target":target_result}
+    if target: execute("INSERT INTO notifications (user_id,type,title,content,order_id) VALUES (%s,'new_order',%s,%s,%s)", (target["id"],"今天想吃这些",order["dishNames"],order["id"]))
+    return {"creator":{"sent":True,"channel":"in_app"},"target":{"sent":bool(target),"channel":"in_app" if target else None}}
+
+async def deliver_wechat(recipients: list[dict], order: dict, event: str):
+    for member in recipients:
+        try: await send_subscribe(member,order,event)
+        except Exception as error: logger.warning("wechat.subscribe_failed event=%s orderId=%s userId=%s errorType=%s",event,order["id"],member["id"],type(error).__name__)
 
 async def notify_served(order: dict, served_by: int):
-    members=fetch_all("SELECT user_id AS userId FROM couple_members WHERE couple_id=%s AND left_at IS NULL AND user_id<>%s",(order["coupleId"],served_by))
-    for member in members: execute("INSERT INTO notifications (user_id,type,title,content,order_id) VALUES (%s,'order_served',%s,%s,%s)",(member["userId"],"上菜成功啦",order["dishNames"],order["id"]))
+    members=fetch_all("SELECT u.id,u.openid FROM couple_members cm JOIN users u ON u.id=cm.user_id WHERE cm.couple_id=%s AND cm.left_at IS NULL",(order["coupleId"],))
+    for member in members:
+        execute("INSERT INTO notifications (user_id,type,title,content,order_id) VALUES (%s,'order_served',%s,%s,%s)",(member["id"],"上菜成功啦",order["dishNames"],order["id"]))
+    return members
 
 @app.get("/health")
 def health(request: Request):
@@ -280,7 +344,18 @@ async def update_me(request: Request, user: dict=Depends(current_user)):
     avatar_key = owned_key_or_error(text(avatar_key, 255) or None, public_id) if public_id else None
     # Legacy avatarUrl is only kept if there is no object key, so historical data still displays.
     avatar = None if avatar_key else (text(body.get("avatarUrl", user.get("avatarUrl")), 500) or None)
-    execute("UPDATE users SET nickname=%s,avatar_key=%s,avatar_url=%s WHERE id=%s",(nickname,avatar_key,avatar,user["id"]))
+    with connection(transaction=True) as conn:
+        current=fetch_one("SELECT avatar_key AS avatarKey FROM users WHERE id=%s FOR UPDATE",(user["id"],),conn)
+        old_key=current.get("avatarKey") if current else None
+        execute("UPDATE users SET nickname=%s,avatar_key=%s,avatar_url=%s WHERE id=%s",(nickname,avatar_key,avatar,user["id"]),conn)
+    if old_key and old_key != avatar_key:
+        try:
+            deleted=delete_unreferenced_image(old_key)
+            logger.info("cos.avatar_old_image_cleanup userId=%s deleted=%s key=%s",user["id"],deleted,old_key)
+        except Exception:
+            # The new avatar is already saved; a COS cleanup failure must not
+            # make the client retry the profile update or lose the new image.
+            logger.error("cos.avatar_cleanup_failed userId=%s key=%s",user["id"],old_key)
     user.update(nickname=nickname,avatarKey=avatar_key,avatarUrl=storage.signed_url(avatar_key,avatar)); return success(user,"称呼记住啦")
 
 @app.get("/api/couples/mine")
@@ -326,7 +401,8 @@ def switch_couple(couple_id: int, user: dict=Depends(current_user)):
 @app.get("/api/couples/current")
 def current_couple(user: dict=Depends(coupled_user)):
     ensure_menu(user["coupleId"])
-    couple=fetch_one("SELECT id,public_id AS publicId,name,invite_code AS inviteCode,DATE_FORMAT(invite_expire_at,'%Y-%m-%d %H:%i') AS inviteExpireAt,DATE_FORMAT(anniversary,'%Y-%m-%d') AS anniversary,home_title AS homeTitle,home_subtitle AS homeSubtitle,created_by AS createdBy,DATE_FORMAT(created_at,'%Y-%m-%d %H:%i') AS createdAt FROM couples WHERE id=%s",(user["coupleId"],))
+    couple=fetch_one("SELECT id,public_id AS publicId,name,invite_code AS inviteCode,DATE_FORMAT(invite_expire_at,'%Y-%m-%d %H:%i') AS inviteExpireAt,DATE_FORMAT(anniversary,'%Y-%m-%d') AS anniversary,home_title AS homeTitle,home_subtitle AS homeSubtitle,background_image_key AS backgroundImageKey,created_by AS createdBy,DATE_FORMAT(created_at,'%Y-%m-%d %H:%i') AS createdAt FROM couples WHERE id=%s",(user["coupleId"],))
+    couple["backgroundImageUrl"]=storage.signed_url(couple.get("backgroundImageKey"))
     members=fetch_all("SELECT u.id,u.nickname,u.avatar_key AS avatarKey,u.avatar_url AS avatarUrl FROM couple_members cm JOIN users u ON u.id=cm.user_id WHERE cm.couple_id=%s AND cm.left_at IS NULL ORDER BY cm.joined_at,u.id",(user["coupleId"],))
     for member in members: hydrate_avatar(member)
     stats=fetch_one("""SELECT COUNT(*) AS meals,
@@ -341,8 +417,16 @@ async def update_couple(request: Request, user: dict=Depends(coupled_user)):
     body=await request.json(); name=text(body.get("name"),50)
     if not name: raise AppError("小饭桌也要有个名字呀")
     anniversary=body.get("anniversary") or None; title=text(body.get("homeTitle"),80,"今天想吃什么？") or "今天想吃什么？"; subtitle=text(body.get("homeSubtitle"),120,"和你一起吃饭，就是好日子") or "和你一起吃饭，就是好日子"
-    execute("UPDATE couples SET name=%s,anniversary=%s,home_title=%s,home_subtitle=%s WHERE id=%s",(name,anniversary,title,subtitle,user["coupleId"]))
-    return success({"name":name,"anniversary":anniversary,"homeTitle":title,"homeSubtitle":subtitle},"小饭桌更新好啦")
+    public_id=couple_public_id(user["coupleId"])
+    with connection(transaction=True) as conn:
+        previous=fetch_one("SELECT background_image_key AS backgroundImageKey FROM couples WHERE id=%s FOR UPDATE",(user["coupleId"],),conn)
+        old_key=previous.get("backgroundImageKey")
+        new_key=owned_key_or_error(text(body.get("backgroundImageKey"),255) or None,public_id) if "backgroundImageKey" in body else old_key
+        execute("UPDATE couples SET name=%s,anniversary=%s,home_title=%s,home_subtitle=%s,background_image_key=%s WHERE id=%s",(name,anniversary,title,subtitle,new_key,user["coupleId"]),conn)
+    if old_key and old_key!=new_key:
+        try: delete_unreferenced_image(old_key)
+        except Exception as error: logger.error("cos.background_cleanup_failed coupleId=%s errorType=%s",user["coupleId"],type(error).__name__)
+    return success({"name":name,"anniversary":anniversary,"homeTitle":title,"homeSubtitle":subtitle,"backgroundImageKey":new_key,"backgroundImageUrl":storage.signed_url(new_key)},"小饭桌更新好啦")
 
 @app.post("/api/couples/invite")
 def create_invite(user: dict=Depends(coupled_user)):
@@ -376,13 +460,13 @@ def delete_couple(user: dict=Depends(coupled_user)):
 
 @app.get("/api/categories")
 def categories(user: dict=Depends(coupled_user)):
-    ensure_menu(user["coupleId"]); return success(fetch_all("SELECT id,name,icon,sort_order AS sortOrder FROM categories WHERE couple_id=%s AND enabled=1 ORDER BY sort_order,id",(user["coupleId"],)))
+    ensure_menu(user["coupleId"]); return success(fetch_all("SELECT id,name,sort_order AS sortOrder FROM categories WHERE couple_id=%s AND enabled=1 ORDER BY sort_order,id",(user["coupleId"],)))
 
 @app.post("/api/categories")
 async def create_category(request: Request, user: dict=Depends(coupled_user)):
-    body=await request.json(); name=text(body.get("name"),30); icon=text(body.get("icon"),16,"🍽️") or "🍽️"
+    body=await request.json(); name=text(body.get("name"),30)
     if not name: raise AppError("分类名称不能为空")
-    try: category_id,_=execute("INSERT INTO categories (couple_id,name,icon,sort_order,created_by) VALUES (%s,%s,%s,%s,%s)",(user["coupleId"],name,icon,int(number(body.get("sortOrder"),0) or 0),user["id"]))
+    try: category_id,_=execute("INSERT INTO categories (couple_id,name,sort_order,created_by) VALUES (%s,%s,%s,%s)",(user["coupleId"],name,int(number(body.get("sortOrder"),0) or 0),user["id"]))
     except Exception as error:
         if getattr(error,"args",[None])[0]==1062: raise AppError("已经有同名分类啦")
         raise
@@ -403,9 +487,9 @@ async def reorder_categories(request: Request, user: dict=Depends(coupled_user))
 
 @app.put("/api/categories/{category_id}")
 async def update_category(category_id: int, request: Request, user: dict=Depends(coupled_user)):
-    body=await request.json(); name=text(body.get("name"),30); icon=text(body.get("icon"),16,"🍽️") or "🍽️"
+    body=await request.json(); name=text(body.get("name"),30)
     if not name: raise AppError("分类名称不能为空")
-    try: _, count=execute("UPDATE categories SET name=%s,icon=%s,sort_order=%s WHERE id=%s AND couple_id=%s AND enabled=1",(name,icon,int(number(body.get("sortOrder"),0) or 0),category_id,user["coupleId"]))
+    try: _, count=execute("UPDATE categories SET name=%s,sort_order=%s WHERE id=%s AND couple_id=%s AND enabled=1",(name,int(number(body.get("sortOrder"),0) or 0),category_id,user["coupleId"]))
     except Exception as error:
         if getattr(error,"args",[None])[0]==1062: raise AppError("已经有同名分类啦")
         raise
@@ -500,7 +584,7 @@ def recommendations(request: Request, user: dict=Depends(coupled_user)):
     return success([hydrate_image(row) for row in sorted(rows,key=score,reverse=True)[:count]])
 
 @app.post("/api/orders")
-async def create_order(request: Request, user: dict=Depends(coupled_user)):
+async def create_order(request: Request, background_tasks: BackgroundTasks, user: dict=Depends(coupled_user)):
     ensure_menu(user["coupleId"]); body=await request.json(); raw=body.get("items") if isinstance(body.get("items"),list) else []
     if not raw or len(raw)>30: raise AppError("先选一道想吃的吧")
     quantities={}
@@ -514,11 +598,39 @@ async def create_order(request: Request, user: dict=Depends(coupled_user)):
     meal_type=body.get("mealType") if body.get("mealType") in ("breakfast","lunch","dinner","late_night","snack","casual") else "dinner"; meal_date=body.get("mealDate") if re.fullmatch(r"\d{4}-\d{2}-\d{2}",str(body.get("mealDate",""))) else date.today().isoformat()
     total=sum((dish.get("calorieKcal") or 0)*quantities[dish["id"]] for dish in dishes_rows) or None
     target=fetch_one("SELECT u.id,u.openid FROM couple_members cm JOIN users u ON u.id=cm.user_id WHERE cm.couple_id=%s AND cm.left_at IS NULL AND u.id<>%s LIMIT 1",(user["coupleId"],user["id"]))
+    merged=False
     with connection(transaction=True) as conn:
-        order_id,_=execute("INSERT INTO orders (order_no,couple_id,creator_user_id,target_user_id,meal_type,meal_date,message,total_calories) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",(f"LT{int(time.time()*1000)}{random.randint(100,999)}",user["coupleId"],user["id"],target["id"] if target else None,meal_type,meal_date,text(body.get("message"),300) or None,total),conn)
-        for dish in dishes_rows: execute("INSERT INTO order_items (order_id,dish_id,dish_name,dish_image_key,dish_image_url,dish_calorie_kcal,dish_calorie_unit,quantity,note) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,NULL)",(order_id,dish["id"],dish["name"],dish.get("imageKey"),None,dish["calorieKcal"],dish["calorieUnit"],quantities[dish["id"]]),conn)
-    labels={"breakfast":"早餐","lunch":"午餐","dinner":"晚餐","late_night":"夜宵","snack":"零食","casual":"随便吃点"}; notification=await notify_created(user,target,{"id":order_id,"title":labels[meal_type],"dishNames":"、".join(d["name"] for d in dishes_rows),"message":body.get("message"),"mealDate":meal_date})
-    return success({"id":order_id,"notification":notification},"点菜成功啦")
+        # Serialize submissions within the couple so two quick taps cannot create
+        # duplicate active menus for the same person and meal.
+        fetch_one("SELECT id FROM couples WHERE id=%s FOR UPDATE",(user["coupleId"],),conn)
+        existing=fetch_one("SELECT id FROM orders WHERE couple_id=%s AND meal_type=%s AND meal_date=%s AND status IN ('pending','accepted','preparing') ORDER BY created_at DESC LIMIT 1 FOR UPDATE",(user["coupleId"],meal_type,meal_date),conn)
+        if existing:
+            order_id=existing["id"]; merged=True
+            execute("UPDATE orders SET message=COALESCE(%s,message),total_calories=COALESCE(total_calories,0)+COALESCE(%s,0) WHERE id=%s",(text(body.get("message"),300) or None,total,order_id),conn)
+            for dish in dishes_rows:
+                existing_item=fetch_one("SELECT id FROM order_items WHERE order_id=%s AND dish_id=%s ORDER BY id LIMIT 1 FOR UPDATE",(order_id,dish["id"]),conn)
+                if existing_item:
+                    execute("UPDATE order_items SET quantity=LEAST(quantity+%s,20) WHERE id=%s",(quantities[dish["id"]],existing_item["id"]),conn)
+                else:
+                    execute("INSERT INTO order_items (order_id,dish_id,dish_name,dish_image_key,dish_image_url,dish_calorie_kcal,dish_calorie_unit,quantity,note) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,NULL)",(order_id,dish["id"],dish["name"],dish.get("imageKey"),None,dish["calorieKcal"],dish["calorieUnit"],quantities[dish["id"]]),conn)
+            execute("UPDATE orders SET total_calories=(SELECT SUM(COALESCE(dish_calorie_kcal,0)*quantity) FROM order_items WHERE order_id=%s) WHERE id=%s",(order_id,order_id),conn)
+        else:
+            order_id,_=execute("INSERT INTO orders (order_no,couple_id,creator_user_id,target_user_id,meal_type,meal_date,message,total_calories) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",(f"LT{int(time.time()*1000)}{random.randint(100,999)}",user["coupleId"],user["id"],target["id"] if target else None,meal_type,meal_date,text(body.get("message"),300) or None,total),conn)
+            for dish in dishes_rows: execute("INSERT INTO order_items (order_id,dish_id,dish_name,dish_image_key,dish_image_url,dish_calorie_kcal,dish_calorie_unit,quantity,note) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,NULL)",(order_id,dish["id"],dish["name"],dish.get("imageKey"),None,dish["calorieKcal"],dish["calorieUnit"],quantities[dish["id"]]),conn)
+    labels={"breakfast":"早餐","lunch":"午餐","dinner":"晚餐","late_night":"夜宵","snack":"零食","casual":"随便吃点"}
+    if merged:
+        full_dishes=fetch_all("SELECT dish_name AS dishName FROM order_items WHERE order_id=%s ORDER BY id",(order_id,))
+        dish_names="、".join(dish["dishName"] for dish in full_dishes)
+        summary={"id":order_id,"title":labels[meal_type],"dishNames":dish_names,"message":body.get("message"),"mealDate":meal_date,"creatorName":user["nickname"]}
+        if target: execute("INSERT INTO notifications (user_id,type,title,content,order_id) VALUES (%s,'menu_updated',%s,%s,%s)",(target["id"],"菜单有更新",dish_names,order_id))
+        return success({"id":order_id,"merged":True},"已加到这顿饭的菜单")
+    summary={"id":order_id,"title":labels[meal_type],"dishNames":"、".join(d["name"] for d in dishes_rows),"message":body.get("message"),"mealDate":meal_date,"creatorName":user["nickname"]}
+    try: notification=await notify_created(user,target,summary)
+    except Exception as error:
+        logger.error("notification.in_app_failed event=created orderId=%s errorType=%s",order_id,type(error).__name__)
+        notification={"sent":False,"reason":"站内提醒暂时未保存"}
+    if target: background_tasks.add_task(deliver_wechat,[target],summary,"created")
+    return success({"id":order_id,"merged":False,"notification":notification},"点菜成功啦")
 
 ORDER_COLUMNS="""o.id,o.order_no AS orderNo,o.couple_id AS coupleId,o.creator_user_id AS creatorUserId,o.target_user_id AS targetUserId,o.meal_type AS mealType,DATE_FORMAT(o.meal_date,'%Y-%m-%d') AS mealDate,o.message,o.status,o.total_calories AS totalCalories,DATE_FORMAT(o.created_at,'%Y-%m-%d %H:%i') AS createdAt,DATE_FORMAT(o.ready_at,'%Y-%m-%d %H:%i') AS readyAt,u.nickname AS creatorName,t.nickname AS targetName"""
 
@@ -537,25 +649,51 @@ def order_detail(order_id: int, user: dict=Depends(coupled_user)):
     return success(order_hydrate([row])[0])
 
 @app.put("/api/orders/{order_id}/status")
-async def update_order_status(order_id: int, request: Request, user: dict=Depends(coupled_user)):
+async def update_order_status(order_id: int, request: Request, background_tasks: BackgroundTasks, user: dict=Depends(coupled_user)):
     order=fetch_one("SELECT status FROM orders WHERE id=%s AND couple_id=%s",(order_id,user["coupleId"]))
     if not order: raise AppError("订单找不到啦",404)
     next_status=(await request.json()).get("status"); transitions={"pending":["ready","cancelled"],"accepted":["ready","cancelled"],"preparing":["ready","cancelled"],"ready":["cancelled"],"completed":[],"cancelled":[]}
     if next_status not in transitions.get(order["status"],[]): raise AppError("现在还不能切换到这个状态")
     column={"ready":"ready_at","completed":"completed_at","cancelled":"cancelled_at"}.get(next_status)
-    execute(f"UPDATE orders SET status=%s,{column}=NOW() WHERE id=%s AND couple_id=%s",(next_status,order_id,user["coupleId"]))
+    _,changed=execute(f"UPDATE orders SET status=%s,{column}=NOW() WHERE id=%s AND couple_id=%s AND status=%s",(next_status,order_id,user["coupleId"],order["status"]))
+    if not changed: raise AppError("这顿饭的状态已经变化，请刷新后再试",409)
+    if next_status=="ready":
+        detail=fetch_one("SELECT creator_user_id AS creatorUserId,meal_type AS mealType,DATE_FORMAT(meal_date,'%Y-%m-%d') AS mealDate FROM orders WHERE id=%s",(order_id,))
+        dishes=fetch_all("SELECT dish_name AS dishName FROM order_items WHERE order_id=%s",(order_id,))
+        labels={"breakfast":"早餐","lunch":"午餐","dinner":"晚餐","late_night":"夜宵","snack":"零食","casual":"随便吃点"}
+        summary={"id":order_id,"coupleId":user["coupleId"],"title":labels.get(detail["mealType"],"开饭"),"dishNames":"、".join(row["dishName"] for row in dishes),"mealDate":detail["mealDate"],"reminderUser":user["nickname"]}
+        try:
+            members=await notify_served(summary,user["id"])
+            recipient=fetch_one("SELECT id,openid FROM users WHERE id=%s",(detail["creatorUserId"],)) if detail["creatorUserId"]!=user["id"] else None
+            if recipient: background_tasks.add_task(deliver_wechat,[recipient],summary,"served")
+        except Exception as error: logger.error("notification.in_app_failed event=served orderId=%s errorType=%s",order_id,type(error).__name__)
     return success({"status":next_status},"上菜成功啦" if next_status=="ready" else "状态更新好啦")
 
 @app.post("/api/orders/{order_id}/serve")
-async def serve_order(order_id: int, request: Request, user: dict=Depends(coupled_user)):
+async def serve_order(order_id: int, request: Request, background_tasks: BackgroundTasks, user: dict=Depends(coupled_user)):
     body=await request.json(); public_id=couple_public_id(user["coupleId"]); image_key=owned_key_or_error(text(body.get("imageKey"),255) or None,public_id); image_url=None
+    old_review_key=None
     with connection(transaction=True) as conn:
-        order=fetch_one("SELECT status,couple_id AS coupleId FROM orders WHERE id=%s AND couple_id=%s FOR UPDATE",(order_id,user["coupleId"]),conn)
+        order=fetch_one("SELECT status,couple_id AS coupleId,creator_user_id AS creatorUserId FROM orders WHERE id=%s AND couple_id=%s FOR UPDATE",(order_id,user["coupleId"]),conn)
         if not order: raise AppError("订单找不到啦",404)
         if order["status"] not in ("pending","accepted","preparing"): raise AppError("这顿饭已经上过菜啦")
         execute("UPDATE orders SET status='ready',ready_at=NOW() WHERE id=%s AND couple_id=%s",(order_id,user["coupleId"]),conn)
-        if image_key: execute("INSERT INTO meal_reviews (order_id,user_id,image_key,image_url) VALUES (%s,%s,%s,%s) ON DUPLICATE KEY UPDATE image_key=VALUES(image_key),image_url=VALUES(image_url)",(order_id,user["id"],image_key,image_url),conn)
-    dishes_rows=fetch_all("SELECT dish_name AS dishName FROM order_items WHERE order_id=%s",(order_id,)); await notify_served({"id":order_id,"coupleId":order["coupleId"],"dishNames":"、".join(row["dishName"] for row in dishes_rows)},user["id"])
+        if image_key:
+            old_review=fetch_one("SELECT image_key AS imageKey FROM meal_reviews WHERE order_id=%s AND user_id=%s",(order_id,user["id"]),conn)
+            old_review_key=(old_review or {}).get("imageKey")
+            execute("INSERT INTO meal_reviews (order_id,user_id,image_key,image_url) VALUES (%s,%s,%s,%s) ON DUPLICATE KEY UPDATE image_key=VALUES(image_key),image_url=VALUES(image_url)",(order_id,user["id"],image_key,image_url),conn)
+    if old_review_key and old_review_key != image_key:
+        try: delete_unreferenced_image(old_review_key)
+        except Exception as error: logger.error("cos.review_old_image_cleanup_failed orderId=%s errorType=%s",order_id,type(error).__name__)
+    dishes_rows=fetch_all("SELECT dish_name AS dishName FROM order_items WHERE order_id=%s",(order_id,))
+    detail=fetch_one("SELECT meal_type AS mealType,DATE_FORMAT(meal_date,'%Y-%m-%d') AS mealDate FROM orders WHERE id=%s",(order_id,))
+    labels={"breakfast":"早餐","lunch":"午餐","dinner":"晚餐","late_night":"夜宵","snack":"零食","casual":"随便吃点"}
+    summary={"id":order_id,"coupleId":order["coupleId"],"title":labels.get(detail["mealType"],"开饭"),"dishNames":"、".join(row["dishName"] for row in dishes_rows),"mealDate":detail["mealDate"],"reminderUser":user["nickname"]}
+    try:
+        members=await notify_served(summary,user["id"])
+        recipient=fetch_one("SELECT id,openid FROM users WHERE id=%s",(order["creatorUserId"],)) if order["creatorUserId"]!=user["id"] else None
+        if recipient: background_tasks.add_task(deliver_wechat,[recipient],summary,"served")
+    except Exception as error: logger.error("notification.in_app_failed event=served orderId=%s errorType=%s",order_id,type(error).__name__)
     return success({"status":"ready","imageUrl":image_url},"上菜成功啦")
 
 @app.put("/api/orders/{order_id}/review")
@@ -570,6 +708,10 @@ async def update_review(order_id: int, request: Request, user: dict=Depends(coup
     image_url=None if image_key else ((existing or {}).get("imageUrl"))
     if not comment and not image_key and not image_url: raise AppError("写一句感受或上传一张照片吧")
     execute("INSERT INTO meal_reviews (order_id,user_id,comment,image_key,image_url) VALUES (%s,%s,%s,%s,%s) ON DUPLICATE KEY UPDATE comment=VALUES(comment),image_key=VALUES(image_key),image_url=VALUES(image_url),created_at=NOW()",(order_id,user["id"],comment,image_key,image_url))
+    old_key=(existing or {}).get("imageKey")
+    if old_key and old_key != image_key:
+        try: delete_unreferenced_image(old_key)
+        except Exception as error: logger.error("cos.review_old_image_cleanup_failed orderId=%s errorType=%s",order_id,type(error).__name__)
     return success(message="照片保存好啦" if uploaded_key else "评论保存好啦")
 
 @app.delete("/api/orders/{order_id}/review")
@@ -577,9 +719,9 @@ def delete_review(order_id: int, user: dict=Depends(coupled_user)):
     order=fetch_one("SELECT status FROM orders WHERE id=%s AND couple_id=%s",(order_id,user["coupleId"]))
     if not order: raise AppError("记录找不到啦",404)
     if order["status"] not in ("ready","completed"): raise AppError("上菜后才能编辑饭后记录")
-    review=fetch_one("SELECT id,comment,image_url AS imageUrl FROM meal_reviews WHERE order_id=%s AND user_id=%s",(order_id,user["id"]))
+    review=fetch_one("SELECT id,comment,image_key AS imageKey,image_url AS imageUrl FROM meal_reviews WHERE order_id=%s AND user_id=%s",(order_id,user["id"]))
     if not review or not review.get("comment"): raise AppError("这条评论已经不存在啦")
-    if review.get("imageUrl"): execute("UPDATE meal_reviews SET comment=NULL,created_at=NOW() WHERE id=%s",(review["id"],))
+    if review.get("imageKey") or review.get("imageUrl"): execute("UPDATE meal_reviews SET comment=NULL,created_at=NOW() WHERE id=%s",(review["id"],))
     else: execute("DELETE FROM meal_reviews WHERE id=%s",(review["id"],))
     return success(message="评论已删除")
 
@@ -588,7 +730,13 @@ def delete_order(order_id: int, user: dict=Depends(coupled_user)):
     order=fetch_one("SELECT status FROM orders WHERE id=%s AND couple_id=%s",(order_id,user["coupleId"]))
     if not order: raise AppError("记录找不到啦",404)
     if order["status"] not in ("ready","completed","cancelled"): raise AppError("正在等待上菜的点单不能删除")
-    execute("DELETE FROM orders WHERE id=%s AND couple_id=%s",(order_id,user["coupleId"])); return success(message="这条饭饭记录已删除")
+    item_keys=fetch_all("SELECT dish_image_key AS imageKey FROM order_items WHERE order_id=%s AND dish_image_key IS NOT NULL",(order_id,))
+    review_keys=fetch_all("SELECT image_key AS imageKey FROM meal_reviews WHERE order_id=%s AND image_key IS NOT NULL",(order_id,))
+    execute("DELETE FROM orders WHERE id=%s AND couple_id=%s",(order_id,user["coupleId"]))
+    for key in {row["imageKey"] for row in [*item_keys,*review_keys]}:
+        try: delete_unreferenced_image(key)
+        except Exception as error: logger.error("cos.order_image_cleanup_failed orderId=%s errorType=%s",order_id,type(error).__name__)
+    return success(message="这条饭饭记录已删除")
 
 @app.post("/api/orders/{order_id}/reorder")
 def reorder(order_id: int, user: dict=Depends(coupled_user)):
@@ -601,7 +749,25 @@ def reorder(order_id: int, user: dict=Depends(coupled_user)):
 def notifications(user: dict=Depends(coupled_user)):
     items=fetch_all("SELECT id,type,title,content,order_id AS orderId,DATE_FORMAT(read_at,'%Y-%m-%d %H:%i') AS readAt,DATE_FORMAT(created_at,'%Y-%m-%d %H:%i') AS createdAt FROM notifications WHERE user_id=%s ORDER BY created_at DESC LIMIT 50",(user["id"],))
     unread=fetch_one("SELECT COUNT(*) AS unreadCount FROM notifications WHERE user_id=%s AND read_at IS NULL",(user["id"],))
-    return success({"items":items,"unreadCount":unread["unreadCount"]})
+    credits=fetch_all("SELECT event,available_count AS availableCount FROM wechat_subscription_credits WHERE user_id=%s",(user["id"],))
+    balance={row["event"]:row["availableCount"] for row in credits}
+    return success({"items":items,"unreadCount":unread["unreadCount"],"subscriptionCredits":balance})
+
+@app.get("/api/notifications/config")
+def notification_config(user: dict=Depends(coupled_user)):
+    # Template IDs are public identifiers; secrets and template field mappings stay server-side.
+    templates=subscription_templates()
+    return success({"orderTemplateId":templates.get("created",""),"servedTemplateId":templates.get("served","")})
+
+@app.post("/api/notifications/subscriptions")
+def register_subscriptions(request: Request, body: dict, user: dict=Depends(coupled_user)):
+    request_id=text(body.get("requestId"),80)
+    template_ids=body.get("templateIds") if isinstance(body.get("templateIds"),list) else []
+    if not request_id: raise AppError("订阅记录编号无效")
+    if len(template_ids)>2: raise AppError("一次最多记录两条提醒")
+    record_subscription_grants(user["id"],[text(item,100) for item in template_ids],request_id)
+    credits=fetch_all("SELECT event,available_count AS availableCount FROM wechat_subscription_credits WHERE user_id=%s",(user["id"],))
+    return success({"subscriptionCredits":{row["event"]:row["availableCount"] for row in credits}})
 
 @app.put("/api/notifications/read")
 def read_notifications(user: dict=Depends(coupled_user)):
@@ -614,7 +780,7 @@ async def cos_credential(request: Request, user: dict=Depends(coupled_user)):
     if not all([settings.cos_secret_id,settings.cos_secret_key,settings.cos_bucket,settings.cos_region]): raise AppError("图片上传暂未配置",503)
     try:
         from sts.sts import Sts
-        purpose=body.get("purpose") if body.get("purpose") in ("avatar","meal") else "dish"; folder={"avatar":"avatars","meal":"meal-images","dish":"dish-images"}[purpose]
+        purpose=body.get("purpose") if body.get("purpose") in ("avatar","meal","background") else "dish"; folder={"avatar":"avatars","meal":"meal-images","dish":"dish-images","background":"backgrounds"}[purpose]
         public_id=couple_public_id(user["coupleId"])
         key=f"{storage.couple_prefix(public_id)}{folder}/{datetime.now().year}/{datetime.now().month:02d}/{uuid.uuid4()}.{allowed[mime]}"
         # COS policy resources must use the complete Bucket name, including its APPID suffix.
@@ -625,11 +791,24 @@ async def cos_credential(request: Request, user: dict=Depends(coupled_user)):
     except ImportError:
         raise AppError("COS 临时凭证组件未安装，请重新安装 requirements.txt",503)
     except Exception as error:
-        logger.warning("cos.credential_failed: %s",error); raise AppError("图片上传凭证获取失败",503)
+        logger.error("cos.credential_failed requestId=%s errorType=%s",request.state.request_id,type(error).__name__); raise AppError("图片上传凭证获取失败",503)
     # This URL is for the editor's immediate preview only. It is never stored in MySQL.
     url=storage.signed_url(key)
     logger.info("cos.credential_issued requestId=%s purpose=%s key=%s size=%s", request.state.request_id, purpose, key, int(size))
     return success({"credentials":credential["credentials"],"startTime":credential["startTime"],"expiredTime":credential["expiredTime"],"bucket":settings.cos_bucket,"region":settings.cos_region,"key":key,"url":url})
+
+@app.post("/api/uploads/cos-failure")
+def report_cos_upload_failure(request: Request, body: dict, user: dict=Depends(coupled_user)):
+    """Record sanitized diagnostics for client-to-COS PUT failures."""
+    purpose=body.get("purpose") if body.get("purpose") in ("avatar","meal","dish","background") else "unknown"
+    status=int(clamp(int(number(body.get("statusCode"),0) or 0),0,599))
+    raw_request_id=text(body.get("cosRequestId"),100)
+    cos_request_id=re.sub(r"[^A-Za-z0-9_.:-]","",raw_request_id)
+    raw_error=text(body.get("errorCode"),80)
+    error_code=re.sub(r"[^A-Za-z0-9_.:-]","_",raw_error) or "unknown"
+    logger.warning("cos.client_upload_failed requestId=%s purpose=%s status=%s cosRequestId=%s errorCode=%s userId=%s",
+        request.state.request_id,purpose,status,cos_request_id or "-",error_code,user["id"])
+    return success(message="上传诊断已记录")
 
 @app.post("/api/uploads/discard")
 async def discard_upload(request: Request, user: dict=Depends(coupled_user)):

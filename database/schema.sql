@@ -11,6 +11,7 @@ CREATE TABLE couples (
   anniversary DATE NULL,
   home_title VARCHAR(80) NOT NULL DEFAULT '今天想吃什么？',
   home_subtitle VARCHAR(120) NOT NULL DEFAULT '和你一起吃饭，就是好日子',
+  background_image_key VARCHAR(255) NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
@@ -46,7 +47,6 @@ CREATE TABLE couple_members (
 CREATE TABLE starter_categories (
   id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
   name VARCHAR(30) NOT NULL UNIQUE,
-  icon VARCHAR(16) NULL,
   sort_order INT NOT NULL DEFAULT 0,
   enabled TINYINT(1) NOT NULL DEFAULT 1
 ) ENGINE=InnoDB;
@@ -76,7 +76,6 @@ CREATE TABLE categories (
   id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
   couple_id BIGINT UNSIGNED NOT NULL,
   name VARCHAR(30) NOT NULL,
-  icon VARCHAR(16) NULL,
   sort_order INT NOT NULL DEFAULT 0,
   enabled TINYINT(1) NOT NULL DEFAULT 1,
   created_by BIGINT UNSIGNED NULL,
@@ -180,11 +179,31 @@ CREATE TABLE notifications (
   INDEX idx_notifications_unread (user_id, read_at, created_at)
 ) ENGINE=InnoDB;
 
+CREATE TABLE wechat_subscription_grants (
+  id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  user_id BIGINT UNSIGNED NOT NULL,
+  request_id VARCHAR(80) NOT NULL,
+  template_id VARCHAR(128) NOT NULL,
+  event VARCHAR(16) NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_wechat_grants_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  UNIQUE KEY uk_wechat_grant_request (user_id, request_id, template_id)
+) ENGINE=InnoDB;
+
+CREATE TABLE wechat_subscription_credits (
+  user_id BIGINT UNSIGNED NOT NULL,
+  template_id VARCHAR(128) NOT NULL,
+  event VARCHAR(16) NOT NULL,
+  available_count INT UNSIGNED NOT NULL DEFAULT 0,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (user_id, template_id),
+  CONSTRAINT fk_wechat_credits_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 CREATE TABLE meal_reviews (
   id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
   order_id BIGINT UNSIGNED NOT NULL,
   user_id BIGINT UNSIGNED NOT NULL,
-  rating TINYINT UNSIGNED NULL,
   comment VARCHAR(300) NULL,
   image_key VARCHAR(255) NULL,
   image_url VARCHAR(500) NULL,

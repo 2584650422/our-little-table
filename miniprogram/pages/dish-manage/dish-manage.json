@@ -1,1 +1,1 @@
-{"navigationBarTitleText":"菜单管理","usingComponents":{"empty-state":"/components/empty-state/empty-state"}}
+{"navigationStyle":"custom","usingComponents":{"subpage-header":"/components/subpage-header/subpage-header"}}

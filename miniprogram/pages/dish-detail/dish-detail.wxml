@@ -1,24 +1,17 @@
-<view wx:if="{{loading}}" class="loading">正在看看这道菜…</view>
-<view wx:elif="{{error}}" class="error">{{error}}</view>
-<view wx:else class="page detail">
-  <image wx:if="{{dish.imageUrl}}" class="cover" src="{{dish.imageUrl}}" mode="aspectFill" bindtap="preview"/>
-  <view wx:else class="cover image-placeholder">🍽️</view>
-  <view class="card info-card">
-    <view class="dish-heading">
-      <view class="heading-copy"><view class="dish-title">{{dish.name}}</view><view class="dish-category">{{dish.categoryIcon}} {{dish.categoryName}}</view></view>
-      <view class="heart" bindtap="favorite">{{dish.isFavorite?'♥':'♡'}}</view>
-    </view>
+<view class="prototype-page detail-page">
+  <subpage-header/>
+  <view wx:if="{{loading}}" class="loading">正在看看这道菜…</view>
+  <view wx:elif="{{error}}" class="error">{{error}}</view>
+  <block wx:else>
+    <view class="media-hero cover" bindtap="preview"><image wx:if="{{dish.imageUrl}}" src="{{dish.imageUrl}}" mode="aspectFill"/><view wx:else class="media-placeholder"><image src="/assets/icons/dish-placeholder.png" mode="aspectFit"/></view><view wx:if="{{dish.imageUrl}}" class="expand">⤢</view></view>
+    <view class="title-row"><view class="dish-title">{{dish.name}}</view><view class="heart" bindtap="favorite">{{dish.isFavorite?'♥':'♡'}}</view></view>
+    <view class="dish-category">{{dish.categoryName}}</view>
     <view class="desc">{{dish.description||'这道菜还没有写介绍，喜欢就点它吧。'}}</view>
-    <view class="wrap"><text wx:for="{{dish.tags}}" wx:key="*this" class="tag">{{item}}</text></view>
-  </view>
-  <view class="card grid">
-    <view><text>大致热量</text><text class="value">{{dish.calorieKcal?'约 '+dish.calorieKcal+' kcal':'暂未记录'}}</text><text class="small">{{dish.calorieKcal?'/ '+dish.calorieUnit:''}}</text></view>
-    <view><text>烹饪时间</text><text class="value">{{dish.cookTimeMinutes?dish.cookTimeMinutes+' 分钟':'不用开火'}}</text></view>
-    <view><text>难度</text><text class="value">{{dish.difficultyLabel}}</text></view>
-    <view><text>辣度</text><text class="value">{{dish.spicyLevel?'辣度 '+dish.spicyLevel+'/5':'不辣'}}</text></view>
-  </view>
-  <view class="card history"><view>最近吃过</view><text>{{dish.lastEatenLabel}}</text><view>一起吃过</view><text>{{dish.eatenCount}} 次</text></view>
-  <view wx:if="{{dish.calorieKcal}}" class="note">热量为家庭做法估算，会因食材和份量不同而变化。</view>
-  <button class="btn fixed" bindtap="add">+ 放进今天的小菜单</button>
-  <view wx:if="{{previewImageUrl}}" class="preview-mask" style="position:fixed;z-index:60;left:0;right:0;top:0;bottom:0;background:rgba(24,19,21,.84);display:flex;align-items:center;justify-content:center;padding:52rpx;box-sizing:border-box" catchtap="closePreview"><view style="width:100%;position:relative" catchtap="noop"><image style="width:100%;max-height:78vh;border-radius:22rpx" src="{{previewImageUrl}}" mode="aspectFit"/><text style="position:absolute;right:-8rpx;top:-64rpx;width:56rpx;height:56rpx;text-align:center;line-height:50rpx;border-radius:50%;background:rgba(255,255,255,.2);color:#fff;font-size:48rpx" catchtap="closePreview">×</text></view></view>
+    <view class="tags"><text wx:for="{{dish.tags}}" wx:key="*this" class="tag">{{item}}</text></view>
+    <view class="prototype-card metric-card"><view class="metric"><view>{{dish.calorieLabel}}</view><text>热量</text></view><view class="metric"><view>{{dish.cookTimeMinutes?dish.cookTimeMinutes+' 分钟':'不用开火'}}</view><text>烹饪时间</text></view><view class="metric"><view>{{dish.difficultyLabel}}</view><text>难度</text></view><view class="metric"><view>{{dish.spicyLevel?'辣度 '+dish.spicyLevel+'/5':'不辣'}}</view><text>口味</text></view></view>
+    <view class="history">一起吃过 {{dish.eatenCount||0}} 次 <text wx:if="{{dish.lastEatenAt}}">· 上次是 {{dish.lastEatenLabel}}</text></view>
+    <view wx:if="{{dish.calorieKcal}}" class="calorie-note">热量是家庭做法的估算值，会因食材和份量而变化。</view>
+    <view class="prototype-button prototype-fixed" bindtap="add">＋ 放进今天的小菜单</view>
+  </block>
+  <view wx:if="{{previewImageUrl}}" class="preview-mask" catchtap="closePreview"><view class="preview-content" catchtap="noop"><image src="{{previewImageUrl}}" mode="aspectFit"/><text catchtap="closePreview">×</text></view></view>
 </view>

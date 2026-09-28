@@ -9,6 +9,7 @@ App({
     return auth.ensureLogin().then(data => {
       this.globalData.token = data.token
       this.globalData.user = data.user
+      require('./services/notifications').warmConfig()
       return data
     }).catch(error => { this.globalData.loginError = error.message; console.warn('login pending:', error.message); return null })
   },

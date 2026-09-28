@@ -1,0 +1,1 @@
+<view class="subpage-nav" style="padding-top:{{statusBarHeight}}px"><view class="back" bindtap="back" aria-label="返回"><view class="chevron"></view></view><text class="nav-title">{{title}}</text></view>

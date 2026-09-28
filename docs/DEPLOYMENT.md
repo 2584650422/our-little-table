@@ -19,7 +19,7 @@ mysql -u root -p little_table < database/migrations/004_couple_memberships.sql
 mysql -u root -p little_table < database/migrations/005_private_cos_object_keys.sql
 ```
 
-全新安装不要执行这些迁移，因为最新 `schema.sql` 已包含相应字段和索引。旧库应严格按编号执行；`002` 增加饭桌级首页主副标题，`003` 将初始化模板与真实饭桌菜单分表并收紧 `couple_id` 非空约束，`004` 增加饭桌稳定 UUID 和可保留多张饭桌关联的成员表，`005` 为私有 COS 增加 Object Key 字段。
+全新安装不要执行这些迁移，因为最新 `schema.sql` 已包含相应字段和索引。旧库应严格按编号执行；`002` 增加饭桌级首页主副标题，`003` 将初始化模板与真实饭桌菜单分表并收紧 `couple_id` 非空约束，`004` 增加饭桌稳定 UUID 和可保留多张饭桌关联的成员表，`005` 为私有 COS 增加 Object Key 字段，`008` 记录微信一次性订阅授权机会。
 
 生产环境建议为 `little_table` 单独创建只拥有该库 DML 权限的用户，不要让应用使用 root。
 
@@ -30,7 +30,7 @@ cd server
 cp .env.example .env
 ```
 
-首次测试不需要一次填完所有集成。每个字段的来源、示例、必填阶段、验证命令和故障排查见 [`CONFIGURATION_GUIDE.md`](CONFIGURATION_GUIDE.md)。`JWT_SECRET` 请使用至少 32 字节的随机值。微信订阅模板的字段键必须逐项从模板详情复制到四个 `WECHAT_TEMPLATE_*_KEY`，代码不会猜测模板字段。
+首次测试不需要一次填完所有集成。每个字段的来源、示例、必填阶段、验证命令和故障排查见 [`CONFIGURATION_GUIDE.md`](CONFIGURATION_GUIDE.md)。`JWT_SECRET` 请使用至少 32 字节的随机值。微信订阅模板的字段键必须逐项按后台模板详情配置。
 
 ## 3. 本地启动
 
@@ -73,6 +73,8 @@ docker compose -f compose.production.yml logs --tail=100 api
 
 `server/little-table.nginx.conf` 是独立的反向代理配置样例。新增或替换服务器上的 Nginx 配置前，先备份原配置、运行 `nginx -t`，通过后再 reload。切换现有域名会改变该域名原先承载的网站内容。
 
+服务器首次部署、更新、查看日志、排错、回滚和环境变量变更的完整流程见 [`CONTAINER_OPERATIONS.md`](CONTAINER_OPERATIONS.md)。
+
 ## 5. Nginx HTTPS 反向代理
 
 ```nginx
@@ -109,12 +111,11 @@ server {
 
 在后端 `.env` 填 `WECHAT_APP_ID` 和 `WECHAT_APP_SECRET`。AppSecret 绝不能放进小程序目录。
 
-订阅消息需在“功能 → 订阅消息”选择适合的点菜/待办类模板，将真实 Template ID 同时填入：
+订阅消息使用“做饭提醒”和“做饭完成提醒”。服务端 `.env` 填两个 Template ID 和各自真实字段键；详见 [消息通知配置](NOTIFICATIONS.md)。前端从后端读取公开的 Template ID，不再需要写入小程序配置。页面中的剩余次数是预计值。未配置或微信发送失败时，下单、上菜和站内提醒照常工作。
 
-- 服务端 `.env` 的 `WECHAT_ORDER_TEMPLATE_ID`；
-- 小程序 `miniprogram/config/index.js` 的 `wechatOrderTemplateId`（Template ID 可公开，用于拉起授权）。
+数据库升级分两步：先执行 `database/migrations/006_couple_background.sql`（只加列，可在旧后端运行时做）；部署并验证新版 Python API 后再备份数据库、执行 `database/migrations/007_remove_category_icons.sql`（删列，不可在旧后端运行时提前执行）。详见 [容器运维](CONTAINER_OPERATIONS.md)。
 
-再把模板详情中的四个真实字段键填入服务端 `WECHAT_TEMPLATE_MEAL_KEY`、`WECHAT_TEMPLATE_DISH_KEY`、`WECHAT_TEMPLATE_MESSAGE_KEY`、`WECHAT_TEMPLATE_DATE_KEY`。若模板字段类型/长度不同，需要同步调整 `server/app/main.py` 的值格式。用户必须主动点击“开启点菜提醒”授权；一次性订阅通常一次授权对应一次下发机会。
+启用微信订阅次数记录时，在发布读取该表的 API 前执行 `database/migrations/008_wechat_subscription_credits.sql`。该迁移只新增两张表；全新安装的 `database/schema.sql` 已包含它们。已迁移过的库不要重复运行。
 
 ## 7. 腾讯云 COS
 

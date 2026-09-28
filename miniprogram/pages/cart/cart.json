@@ -1,1 +1,1 @@
-{"navigationBarTitleText":"今天的小菜单","usingComponents":{"empty-state":"/components/empty-state/empty-state"}}
+{"navigationStyle":"custom","usingComponents":{"subpage-header":"/components/subpage-header/subpage-header","empty-state":"/components/empty-state/empty-state"}}

@@ -1,12 +1,27 @@
-<view class="page us-page" style="padding-top:{{topInset}}px">
-  <view wx:if="{{loading}}" class="loading">正在收拾小饭桌…</view>
-  <view wx:elif="{{error}}" class="card error"><view>{{error}}</view><button class="btn secondary" bindtap="load">重新试试</button></view>
-  <view wx:elif="{{!couple}}" class="card setup"><view class="setup-mark">♡</view><view class="title">桌边还缺一个位置</view><view class="subtitle">创建或加入一个只属于你们的小饭桌</view><button class="btn" bindtap="couple">开始布置</button></view>
-  <block wx:else>
-    <view class="us-top"><image class="us-settings" src="/assets/icons/settings.png" mode="aspectFit" bindtap="coupleSettings"/></view>
-    <view class="couple-profile"><view class="avatars"><view class="person"><image wx:if="{{couple.members[0].avatarUrl}}" src="{{couple.members[0].avatarUrl}}" mode="aspectFill"/><view wx:else class="avatar">{{couple.members[0].nickname[0]||'饭'}}</view></view><view class="couple-heart">♥</view><view wx:if="{{couple.members[1]}}" class="person"><image wx:if="{{couple.members[1].avatarUrl}}" src="{{couple.members[1].avatarUrl}}" mode="aspectFill"/><view wx:else class="avatar second-avatar">{{couple.members[1].nickname[0]||'饭'}}</view></view><view wx:else class="person"><view class="avatar second-avatar">?</view></view></view><view class="couple-name">{{couple.name}}</view><view class="couple-subtitle">{{coupleSubtitle}}</view></view>
-    <view class="stats"><view bindtap="meals"><text class="stat-number">{{couple.stats.meals||0}}</text><text>一起吃过</text></view><view bindtap="meals"><text class="stat-number">{{couple.stats.monthlyMeals||0}}</text><text>本月吃过</text></view><view bindtap="favorites"><text class="stat-number">{{favoriteCount}}</text><text>收藏菜谱</text></view></view>
-    <view class="links"><view class="link-row" bindtap="favorites"><image class="link-icon-image" src="/assets/icons/heart.png" mode="aspectFit"/><text class="link-label">我们喜欢的菜</text><text class="link-arrow">›</text></view><view class="link-row" bindtap="manage"><image class="link-icon-image" src="/assets/icons/document.png" mode="aspectFit"/><text class="link-label">菜单管理</text><text class="link-arrow">›</text></view><view class="link-row" bindtap="meals"><image class="link-icon-image" src="/assets/icons/calendar.png" mode="aspectFit"/><text class="link-label">饮食小记录</text><text class="link-arrow">›</text></view><view class="link-row" bindtap="subscribe"><image class="link-icon-image" src="/assets/icons/bell.png" mode="aspectFit"/><text class="link-label">提醒设置</text><text class="link-arrow">›</text></view></view>
-    <view class="links secondary-links"><view class="link-row" bindtap="members"><image class="link-icon-image" src="/assets/icons/members.png" mode="aspectFit"/><text class="link-label">成员管理</text><text class="link-arrow">›</text></view><view class="link-row" bindtap="about"><image class="link-icon-image" src="/assets/icons/info.png" mode="aspectFit"/><text class="link-label">关于我们</text><text class="link-arrow">›</text></view></view>
-  </block>
+<view class="us-page">
+  <view class="us-hero"><image src="{{couple&&couple.backgroundImageUrl||'/assets/images/us-hero.jpg'}}" mode="aspectFill"/><view class="hero-wash"></view></view>
+  <view class="us-body" style="padding-top:{{topInset}}px">
+    <view wx:if="{{loading}}" class="loading us-state">正在收拾小饭桌…</view>
+    <view wx:elif="{{error}}" class="card error us-state"><view>{{error}}</view><button class="btn secondary" bindtap="load">重新试试</button></view>
+    <view wx:elif="{{!couple}}" class="card setup us-state"><view class="setup-mark">♡</view><view class="title">桌边还缺一个位置</view><view class="subtitle">创建或加入一个只属于你们的小饭桌</view><button class="btn" bindtap="couple">开始布置</button></view>
+    <block wx:else>
+      <view class="hero-gap"></view>
+      <view class="profile-panel">
+        <view class="avatar-line">
+          <view class="profile-person"><view class="avatar-frame"><image wx:if="{{profileMe.avatarUrl}}" src="{{profileMe.avatarUrl}}" mode="aspectFill"/><view wx:else class="avatar-fallback">{{profileMe.initial}}</view></view><text>我</text></view>
+          <view class="couple-heart">♥</view>
+          <view class="profile-person"><view class="avatar-frame partner-avatar"><image wx:if="{{profilePartnerAvatarUrl}}" src="{{profilePartnerAvatarUrl}}" mode="aspectFill"/><view wx:else class="avatar-fallback">{{profilePartnerInitial}}</view></view><text>TA</text></view>
+        </view>
+        <view class="couple-name">{{couple.name}}</view>
+        <view class="couple-subtitle">{{coupleSubtitle}}</view>
+        <view class="stats"><view bindtap="meals"><text class="stat-number">{{couple.stats.meals||0}}</text><text>一起吃过</text></view><view bindtap="meals"><text class="stat-number">{{couple.stats.monthlyMeals||0}}</text><text>本月吃过</text></view><view bindtap="favorites"><text class="stat-number">{{favoriteCount}}</text><text>收藏菜谱</text></view></view>
+        <view class="links">
+          <view class="link-row" bindtap="coupleSettings"><image class="link-icon-image" src="/assets/icons/settings.png" mode="aspectFit"/><text class="link-label">设置</text><text class="link-arrow">›</text></view>
+          <view class="link-row" bindtap="notifications"><image class="link-icon-image" src="/assets/icons/bell.png" mode="aspectFit"/><text class="link-label">消息提醒</text><text wx:if="{{unreadCount}}" class="unread-pill">{{unreadCount}}</text><text class="link-arrow">›</text></view>
+          <view class="link-row" bindtap="meals"><image class="link-icon-image" src="/assets/icons/heart.png" mode="aspectFit"/><text class="link-label">我们的小记录</text><text class="link-arrow">›</text></view>
+          <view class="link-row" bindtap="about"><image class="link-icon-image" src="/assets/icons/info.png" mode="aspectFit"/><text class="link-label">关于</text><text class="link-arrow">›</text></view>
+        </view>
+      </view>
+    </block>
+  </view>
 </view>

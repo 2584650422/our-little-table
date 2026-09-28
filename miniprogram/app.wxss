@@ -8,3 +8,21 @@ page{background:#FFFCFB;color:#29272A}
 .btn.ghost{color:#BD6C74;border-color:#F1DCDA}
 .tag{background:#FFF0EE;color:#B96E75}
 .image-placeholder{background:#F8F3F0;color:#BDAEA5}
+
+/* Detail and management pages share the approved prototype's scale and palette. */
+.prototype-page{min-height:100vh;box-sizing:border-box;background:#fff;color:#242326;padding:0 28rpx 180rpx}
+.prototype-title{font-size:47rpx;line-height:1.25;letter-spacing:-1rpx;font-weight:760;color:#171719}
+.prototype-caption{font-size:24rpx;line-height:1.5;color:#89888D}
+.prototype-card{background:#fff;border:1rpx solid #F0EDEB;border-radius:25rpx;box-shadow:0 10rpx 26rpx rgba(44,32,34,.035)}
+.prototype-button{background:#DD7E80;color:#fff;border-radius:999rpx;font-size:28rpx;font-weight:600;display:flex;align-items:center;justify-content:center;border:0;box-sizing:border-box}
+.prototype-button::after{border:0}
+.prototype-button:active{opacity:.88;transform:scale(.987)}
+.prototype-fixed{position:fixed;left:28rpx;right:28rpx;bottom:calc(30rpx + env(safe-area-inset-bottom));height:86rpx;z-index:8;box-shadow:0 10rpx 25rpx rgba(221,126,128,.12)}
+.prototype-soft{background:#F8F6F5;border-radius:20rpx}
+.prototype-divider{height:1rpx;background:#F0EDEC}
+.media-thumb{width:112rpx;height:112rpx;flex-shrink:0;border-radius:18rpx;overflow:hidden;background:#F3EEEB}
+.media-hero{width:100%;aspect-ratio:4/3;border-radius:24rpx;overflow:hidden;background:#F3EEEB}
+.media-avatar{width:100%;height:100%;border-radius:50%;overflow:hidden;background:#F3EEEB}
+.media-placeholder{display:flex;align-items:center;justify-content:center;background:#F3EEEB}
+.media-placeholder image{width:40%;height:40%;opacity:.65}
+.prototype-page>subpage-header{display:block;margin:0 -28rpx}

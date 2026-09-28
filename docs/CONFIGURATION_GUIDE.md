@@ -12,7 +12,7 @@
 | 后端 API 冒烟测试，不打开小程序 | 上一项，加 `DEV_LOGIN_ENABLED=true` | 微信、COS、订阅消息 |
 | 微信开发者工具跑通核心闭环 | MySQL、JWT、`WECHAT_APP_ID`、`WECHAT_APP_SECRET` | COS、订阅消息 |
 | 测试菜品图片上传和显示 | 上一项，加全部 COS 配置 | 订阅消息 |
-| 测试微信消息送达 | 上一项，加 Template ID 和四个模板字段键 | 无 |
+| 测试微信消息送达 | 上一项，加两个 Template ID 和截图中的五个字段键 | 无 |
 
 因此，第一次打开小程序并测试“登录 → 创建饭桌 → 菜单 → 收藏 → 点菜 → 状态 → 历史”时，推荐先填：
 
@@ -32,11 +32,14 @@ WECHAT_APP_ID=wx1e35ad5c79849fc0
 WECHAT_APP_SECRET=<微信小程序后台的 AppSecret>
 
 WECHAT_ORDER_TEMPLATE_ID=
-WECHAT_ORDER_PAGE=pages/orders/orders
-WECHAT_TEMPLATE_MEAL_KEY=
+WECHAT_SERVED_TEMPLATE_ID=
+WECHAT_ORDER_PAGE=pages/order-detail/order-detail
+WECHAT_TEMPLATE_USER_KEY=
 WECHAT_TEMPLATE_DISH_KEY=
 WECHAT_TEMPLATE_MESSAGE_KEY=
-WECHAT_TEMPLATE_DATE_KEY=
+WECHAT_SERVED_USER_KEY=
+WECHAT_SERVED_DISH_KEY=
+WECHAT_SERVED_DISH_NAME_KEY=
 
 COS_SECRET_ID=
 COS_SECRET_KEY=
@@ -272,15 +275,17 @@ DEV_LOGIN_ENABLED=false
 
 ## 五、微信订阅消息：首次核心测试全部可留空
 
-以下六项只影响微信外部提醒，不影响登录、创建饭桌、菜单、收藏、点菜、状态和历史记录：
+以下配置只影响微信外部提醒，不影响登录、创建饭桌、菜单、收藏、点菜、状态、站内消息和历史记录：
 
 ```ini
 WECHAT_ORDER_TEMPLATE_ID=
-WECHAT_ORDER_PAGE=pages/orders/orders
-WECHAT_TEMPLATE_MEAL_KEY=
-WECHAT_TEMPLATE_DISH_KEY=
-WECHAT_TEMPLATE_MESSAGE_KEY=
-WECHAT_TEMPLATE_DATE_KEY=
+WECHAT_SERVED_TEMPLATE_ID=
+WECHAT_ORDER_PAGE=pages/order-detail/order-detail
+WECHAT_TEMPLATE_USER_KEY=thing6
+WECHAT_TEMPLATE_DISH_KEY=thing1
+WECHAT_TEMPLATE_MESSAGE_KEY=thing4
+WECHAT_SERVED_USER_KEY=thing1
+WECHAT_SERVED_DISH_NAME_KEY=thing2
 ```
 
 配置缺失时，订单仍会创建，并给对方生成小程序内部未读提醒；服务端会把订阅消息结果标记为“微信提醒暂未配置”。
@@ -295,79 +300,64 @@ WECHAT_TEMPLATE_DATE_KEY=
 WECHAT_ORDER_TEMPLATE_ID=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
-同一个值还要填写到：
-
-```text
-miniprogram/config/index.js
-```
-
-例如：
-
-```javascript
-module.exports = {
-  apiBaseUrl: 'http://127.0.0.1:3000',
-  wechatOrderTemplateId: '这里填同一个 Template ID'
-}
-```
-
-前端需要它调用 `wx.requestSubscribeMessage`，后端需要它调用订阅消息发送接口。
+前端会调用后端的 `/api/notifications/config` 获取公开的 Template ID，无须再改 `miniprogram/config/index.js`。上菜另配 `WECHAT_SERVED_TEMPLATE_ID` 与两个上菜字段键；完整流程见 [消息通知配置](NOTIFICATIONS.md)。
 
 ### `WECHAT_ORDER_PAGE`
 
 填写用户点击订阅消息后打开的小程序页面路径，不要以 `/` 开头：
 
 ```ini
-WECHAT_ORDER_PAGE=pages/orders/orders
+WECHAT_ORDER_PAGE=pages/order-detail/order-detail
 ```
 
 当前默认值已经有效，一般不需要改。服务端发送时会在后面添加订单参数：
 
 ```text
-pages/orders/orders?id=<订单ID>
+pages/order-detail/order-detail?id=<订单ID>
 ```
 
 页面路径必须已经声明在 `miniprogram/app.json` 中，不能填写网页 URL、服务器 URL 或不存在的页面。
 
-### 四个 `WECHAT_TEMPLATE_*_KEY`
+### 真实模板字段键
 
 这些值必须来自你选中的那一个模板详情。它们不是你自由命名的英文变量，也不是“餐次”“菜品”这样的中文标题。
 
-后台模板详情通常会把字段显示成类似：
+后台模板详情会把字段显示成 `thing1.DATA` 这类键。当前选用的模板详情为：
 
 ```text
-餐次：thing1.DATA
-菜品：thing2.DATA
-留言：thing3.DATA
-日期：date4.DATA
+做饭提醒：thing6（提交用户）、thing1（菜品）、thing4（备注）
+做饭完成提醒：thing1（提醒方）、thing2（菜品名称）
 ```
 
-如果你的真实模板恰好如此，则填写：
+在 `server/.env` 中填写与字段对应的键：
 
 ```ini
-WECHAT_TEMPLATE_MEAL_KEY=thing1
-WECHAT_TEMPLATE_DISH_KEY=thing2
-WECHAT_TEMPLATE_MESSAGE_KEY=thing3
-WECHAT_TEMPLATE_DATE_KEY=date4
+WECHAT_TEMPLATE_USER_KEY=thing6
+WECHAT_TEMPLATE_DISH_KEY=thing1
+WECHAT_TEMPLATE_MESSAGE_KEY=thing4
+WECHAT_SERVED_USER_KEY=thing1
+WECHAT_SERVED_DISH_NAME_KEY=thing2
 ```
 
-上面只是格式示例，不能原样照抄。不同模板的编号和字段类型可能完全不同。
+模板 ID 和字段键只配置在服务端，不要写入小程序或 Git。替换模板时，先按新模板详情调整映射代码和环境变量。
 
 当前服务端发送的数据映射是：
 
 | 环境变量 | 当前发送内容 | 当前代码限制 |
 | --- | --- | --- |
-| `WECHAT_TEMPLATE_MEAL_KEY` | 早餐、午餐、晚餐等餐次 | 最多截取 20 个字符 |
-| `WECHAT_TEMPLATE_DISH_KEY` | 多个菜名，用顿号连接 | 最多截取 20 个字符 |
+| `WECHAT_TEMPLATE_USER_KEY` | 提交用户昵称 | 最多截取 20 个字符 |
+| `WECHAT_TEMPLATE_DISH_KEY` | 本顿菜单菜名 | 最多截取 20 个字符 |
 | `WECHAT_TEMPLATE_MESSAGE_KEY` | 点菜留言或默认提示 | 最多截取 20 个字符 |
-| `WECHAT_TEMPLATE_DATE_KEY` | 用餐日期 | `YYYY-MM-DD` |
+| `WECHAT_SERVED_USER_KEY` | 点击上菜的成员昵称 | 最多截取 20 个字符 |
+| `WECHAT_SERVED_DISH_NAME_KEY` | 本顿菜单菜名 | 最多截取 20 个字符 |
 
-你选模板时应尽量找到语义和字段类型都能匹配上述四项的模板。如果后台模板没有四个合适字段，不要硬填；应根据真实模板调整：
+当前两个模板的字段数不同，服务端已按各自的实际结构分别生成数据。若更换模板，应按真实模板调整字段映射：
 
 ```text
 server/app/main.py
 ```
 
-配置完成后，两个人都需要分别在自己的微信账号中主动点击“开启点菜提醒”。订阅授权属于当前 OpenID，A 授权不会自动替 B 授权。拒绝授权或发送失败都不影响订单主流程。
+提交、查看未上菜菜单和点击上菜时，当前操作者都可顺带为自己的账号累积两个模板的订阅机会。发送给对方时消耗对方已同意的机会；A 的授权不会替 B 授权。页面展示的次数是本系统根据授权与发送记录计算的预计值，微信未提供准确余额查询。拒绝授权或发送失败都不影响订单主流程。
 
 ## 六、腾讯云 COS：不测试图片上传时全部可留空
 
@@ -482,11 +472,13 @@ WECHAT_APP_ID=wx1e35ad5c79849fc0
 WECHAT_APP_SECRET=<你的小程序 AppSecret>
 
 WECHAT_ORDER_TEMPLATE_ID=
-WECHAT_ORDER_PAGE=pages/orders/orders
-WECHAT_TEMPLATE_MEAL_KEY=
-WECHAT_TEMPLATE_DISH_KEY=
-WECHAT_TEMPLATE_MESSAGE_KEY=
-WECHAT_TEMPLATE_DATE_KEY=
+WECHAT_SERVED_TEMPLATE_ID=
+WECHAT_ORDER_PAGE=pages/order-detail/order-detail
+WECHAT_TEMPLATE_USER_KEY=thing6
+WECHAT_TEMPLATE_DISH_KEY=thing1
+WECHAT_TEMPLATE_MESSAGE_KEY=thing4
+WECHAT_SERVED_USER_KEY=thing1
+WECHAT_SERVED_DISH_NAME_KEY=thing2
 
 COS_SECRET_ID=
 COS_SECRET_KEY=

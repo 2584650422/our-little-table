@@ -12,7 +12,9 @@
     "pages/dish-manage/dish-manage",
     "pages/dish-edit/dish-edit",
     "pages/category-manage/category-manage",
-    "pages/couple-settings/couple-settings"
+    "pages/couple-settings/couple-settings",
+    "pages/couple-members/couple-members",
+    "pages/notifications/notifications"
   ],
   "window": {
     "navigationBarTextStyle": "black",

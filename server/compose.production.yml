@@ -14,8 +14,11 @@ services:
       MYSQL_HOST: mysql
       MYSQL_PORT: "3306"
       DEV_LOGIN_ENABLED: "false"
+      TZ: Asia/Shanghai
     expose:
       - "3000"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
     networks:
       - blog
     healthcheck:
