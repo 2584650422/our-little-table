@@ -8,4 +8,4 @@
 - Orders store dish snapshots. Dish deletion is soft (`enabled = 0`). Calories are estimates and hidden when unset.
 - Visual language: cream pink `#FFF7FA`, primary `#FF8FAE`, white cards, 20–32rpx radius, subtle shadows, natural Chinese copy.
 - Keep dependencies and architecture small. Do not add pricing, payment, delivery, inventory, coupons, merchants, AI, or enterprise infrastructure.
-- Canonical design: `docs/PRODUCT_DESIGN.md`; architecture and security: `docs/ARCHITECTURE.md`; deployment: `docs/DEPLOYMENT.md`.
+- Canonical design: `docs/product-design.md`; architecture and security: `docs/architecture.md`; deployment: `docs/deployment.md`.

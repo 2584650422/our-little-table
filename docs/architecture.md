@@ -25,12 +25,12 @@
 - `server/app/db.py`：参数化查询与事务。
 - `server/app/storage.py`：COS 临时上传凭证、对象归属和短时读取链接。
 
-后端负责向微信发送订阅消息。接收人需要事先主动授权，预计机会按用户和模板分别记录；微信送达失败不应让点菜或上菜失败。小程序内消息留在数据库中，详见[消息通知](NOTIFICATIONS.md)。
+后端负责向微信发送订阅消息。接收人需要事先主动授权，预计机会按用户和模板分别记录；微信送达失败不应让点菜或上菜失败。小程序内消息留在数据库中，详见[消息通知](notifications.md)。
 
 ## 图片和密钥
 
-小程序向后端申请限定对象路径与时效的 COS 临时凭证，然后直接上传至私有 Bucket；数据库保存 Object Key，读取时由后端签短时 URL。永久 COS 密钥、微信 AppSecret、数据库密码和 JWT 密钥只在后端环境变量中。小程序只保存 API 地址；上传限制和裁切规则见[图片规范](IMAGE_POLICY.md)。
+小程序向后端申请限定对象路径与时效的 COS 临时凭证，然后直接上传至私有 Bucket；数据库保存 Object Key，读取时由后端签短时 URL。永久 COS 密钥、微信 AppSecret、数据库密码和 JWT 密钥只在后端环境变量中。小程序只保存 API 地址；上传限制和裁切规则见[图片规范](image-policy.md)。
 
 ## 部署边界
 
-公共 MySQL、Nginx、Typecho PHP 由 `compose/docker-compose.yml` 管理；小饭桌 API 使用 `server/compose.production.yml`，通过外部 `compose_blog-network` 与它们通信。生产目录和命令见[部署说明](DEPLOYMENT.md)。
+服务器公共 MySQL、Nginx、Typecho PHP 由独立的 `/data/software/compose/docker-compose.yml` 管理；小饭桌 API 使用 `server/compose.production.yml`，通过外部 `compose_blog-network` 与它们通信。生产目录和命令见[部署说明](deployment.md)。

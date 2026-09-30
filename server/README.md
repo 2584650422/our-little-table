@@ -14,7 +14,7 @@
 
 ## 本机运行
 
-先按[配置指南](../docs/CONFIGURATION_GUIDE.md)准备 MySQL。在 `server/` 目录执行：
+先按[配置指南](../docs/configuration.md)准备 MySQL。在 `server/` 目录执行：
 
 ```bash
 cp .env.example .env
@@ -34,4 +34,4 @@ make test    # 运行 tests/ 下的 unittest 回归测试
 
 本机运行时，`app/config.py` 调用 `python-dotenv` 的 `load_dotenv()`，再用 `os.getenv()` 读取配置。生产容器由 `compose.production.yml` 的 `env_file: .env` 把同目录服务器 `.env` 注入进程，`config.py` 仍通过 `os.getenv()` 读取。服务器文件在 `/data/software/compose/little-table/server/.env`，只保存在服务器，权限应为 `600`。改动后要执行 `docker compose -f compose.production.yml up -d --force-recreate api`；单纯 `restart` 不会更新容器里的环境变量。
 
-部署、更新和日志命令见[容器运维](../docs/CONTAINER_OPERATIONS.md)；各配置项的用途见[配置指南](../docs/CONFIGURATION_GUIDE.md)。
+部署、更新和日志命令见[容器运维](../docs/operations.md)；各配置项的用途见[配置指南](../docs/configuration.md)。

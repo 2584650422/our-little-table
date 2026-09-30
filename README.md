@@ -8,18 +8,18 @@
 
 | 想做什么 | 阅读 |
 | --- | --- |
-| 本机启动后端、填写环境变量 | [配置指南](docs/CONFIGURATION_GUIDE.md)、[后端说明](server/README.md) |
-| 在服务器部署或更新 API | [部署说明](docs/DEPLOYMENT.md)、[容器运维](docs/CONTAINER_OPERATIONS.md) |
-| 理解微信提醒与预计次数 | [消息通知](docs/NOTIFICATIONS.md) |
-| 了解页面和业务规则 | [产品设计](docs/PRODUCT_DESIGN.md)、[技术架构](docs/ARCHITECTURE.md) |
-| 管理图片或查看页面视觉稿 | [图片规范](docs/IMAGE_POLICY.md)、[页面原型](docs/prototypes/README.md) |
+| 本机启动后端、填写环境变量 | [配置指南](docs/configuration.md)、[后端说明](server/README.md) |
+| 在服务器部署或更新 API | [部署说明](docs/deployment.md)、[容器运维](docs/operations.md) |
+| 理解微信提醒与预计次数 | [消息通知](docs/notifications.md) |
+| 了解页面和业务规则 | [产品设计](docs/product-design.md)、[技术架构](docs/architecture.md) |
+| 管理图片或查看页面视觉稿 | [图片规范](docs/image-policy.md)、[页面原型](docs/prototypes/README.md) |
 
 ## 代码在哪里
 
 - `miniprogram/`：原生微信小程序，可直接用微信开发者工具打开。API 地址在 `miniprogram/config/index.js`。
 - `server/`：Python 3.9+、FastAPI、PyMySQL 后端；`server/README.md` 介绍代码与测试。
 - `database/`：全新数据库用 `schema.sql`、`seed.sql`；已有数据库的增量脚本在 `migrations/`。
-- `compose/`：服务器公共 MySQL、Nginx 和 Typecho PHP 的 Compose 配置。小饭桌 API 使用 `server/compose.production.yml` 独立管理。
+- `server/compose.production.yml`：小饭桌 API 专用 Compose；服务器公共 MySQL、Nginx、PHP 配置不属于本仓库。
 - `docs/`：产品、配置、部署及运维说明。
 
 ## 本机快速运行
@@ -41,9 +41,9 @@ make install
 make dev
 ```
 
-另开终端运行 `curl http://127.0.0.1:3000/health`，确认返回 `database: connected`。用微信开发者工具打开 **`miniprogram/` 目录**，并把 `miniprogram/config/index.js` 的 API 地址改成当前后端地址。真机访问本机服务时不能使用 `127.0.0.1`；正式环境必须使用微信后台登记的 HTTPS 域名。详细步骤见[配置指南](docs/CONFIGURATION_GUIDE.md)。
+另开终端运行 `curl http://127.0.0.1:3000/health`，确认返回 `database: connected`。用微信开发者工具打开 **`miniprogram/` 目录**，并把 `miniprogram/config/index.js` 的 API 地址改成当前后端地址。真机访问本机服务时不能使用 `127.0.0.1`；正式环境必须使用微信后台登记的 HTTPS 域名。详细步骤见[配置指南](docs/configuration.md)。
 
-已有数据库不要重新导入 `schema.sql` 或 `seed.sql`。先确认已执行到哪个迁移编号，再依次执行**尚未执行**的 `database/migrations/` 脚本；删列迁移 `007` 尤其要先备份并核对新旧 API 的兼容性。服务器现有部署和备份操作见[容器运维](docs/CONTAINER_OPERATIONS.md)。
+已有数据库不要重新导入 `schema.sql` 或 `seed.sql`。先确认已执行到哪个迁移编号，再依次执行**尚未执行**的 `database/migrations/` 脚本；删列迁移 `007` 尤其要先备份并核对新旧 API 的兼容性。服务器现有部署和备份操作见[容器运维](docs/operations.md)。
 
 ## 日常检查
 
