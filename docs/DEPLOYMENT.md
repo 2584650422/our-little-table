@@ -68,16 +68,16 @@ MySQL 使用已有实例，因此项目不强制提供或启动新的 MySQL 容�
 
 ### 使用现有 Nginx / MySQL Compose 网络部署
 
-如果服务器已有 `compose_blog-network` 网络，并且数据库容器在该网络中的服务名为 `mysql`，可将 `server/` 中的构建文件和源码上传到 `/data/software/little-table/server/`，将仓库中的 `compose/little-table-api/compose.yml` 单独放到 `/data/software/compose/little-table-api/compose.yml`。真实环境文件只放在服务器 `/data/software/little-table/server/.env`（权限 `600`）。随后执行：
+如果服务器已有 `compose_blog-network` 网络，并且数据库容器在该网络中的服务名为 `mysql`，可将 `server/` 中的 Dockerfile、依赖清单、源码与 `compose.production.yml` 一起上传到 `/data/software/little-table/server/`。真实环境文件只放在服务器 `/data/software/little-table/server/.env`（权限 `600`）。随后执行：
 
 ```bash
-cd /data/software/compose/little-table-api
-docker compose -f compose.yml up -d --build
-docker compose -f compose.yml ps
-docker compose -f compose.yml logs --tail=100 api
+cd /data/software/little-table/server
+docker compose -f compose.production.yml up -d --build
+docker compose -f compose.production.yml ps
+docker compose -f compose.production.yml logs --tail=100 api
 ```
 
-此 Compose 不发布数据库端口或后端端口到公网；Nginx 与 API 通过 `compose_blog-network` 通信，API 通过网络别名 `mysql:3306` 连接现有 MySQL。生产 Compose 会强制关闭 `DEV_LOGIN_ENABLED`。
+小饭桌 Compose 只管理 API，不发布后端端口到公网；MySQL、Nginx 和 Typecho PHP 由服务器 `/data/software/compose/docker-compose.yml` 管理。Nginx 与 API 通过 `compose_blog-network` 通信，API 通过网络别名 `mysql:3306` 连接现有 MySQL。生产 Compose 会强制关闭 `DEV_LOGIN_ENABLED`。
 
 `server/little-table.nginx.conf` 是独立的反向代理配置样例。新增或替换服务器上的 Nginx 配置前，先备份原配置、运行 `nginx -t`，通过后再 reload。切换现有域名会改变该域名原先承载的网站内容。
 

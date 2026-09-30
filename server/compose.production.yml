@@ -3,13 +3,13 @@ name: server
 services:
   api:
     build:
-      context: /data/software/little-table/server
+      context: .
       dockerfile: Dockerfile
     image: little-table-api:latest
     container_name: little-table-api
     restart: unless-stopped
     env_file:
-      - /data/software/little-table/server/.env
+      - .env
     environment:
       APP_ENV: production
       PORT: "3000"
