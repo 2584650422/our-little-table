@@ -1,6 +1,6 @@
 # 后端容器部署与日常运维
 
-本文针对当前生产环境：后端位于 `/data/software/little-table/server`，使用 Docker Compose；Nginx 和 MySQL 是服务器已有容器，API 通过 `compose_blog-network` 访问 MySQL 容器 `mysql:3306`。小程序前端由微信开发者工具上传，不由该 Compose 提供。
+本文针对当前生产环境：后端 Dockerfile 和源码位于 `/data/software/little-table/server`，API 专用 Compose 文件位于 `/data/software/compose/little-table-api/compose.yml`；Nginx 和 MySQL 是服务器已有容器，API 通过 `compose_blog-network` 访问 MySQL 容器 `mysql:3306`。小程序前端由微信开发者工具上传，不由该 Compose 提供。
 
 ## 首次部署前检查
 
@@ -12,34 +12,36 @@ sudo docker network inspect compose_blog-network >/dev/null
 sudo docker ps --format 'table {{.Names}}\t{{.Status}}'
 ```
 
-服务器的 `server/` 只保留构建和运行 API 所需的文件。同步时分别上传构建文件与应用源码，不覆盖服务器真实 `.env`，也不上传本地虚拟环境、测试、导入脚本及旧备份：
+服务器的 `server/` 只保留构建和运行 API 所需的文件；Compose 文件单独放在 `/data/software/compose/little-table-api/`，不并入该目录下管理 MySQL 的 `docker-compose.yml`。同步时不覆盖服务器真实 `.env`，也不上传本地虚拟环境、测试、导入脚本及旧备份：
 
 ```bash
 rsync -av \
-  ./server/Dockerfile ./server/requirements.txt ./server/compose.production.yml \
+  ./server/Dockerfile ./server/requirements.txt \
   lyc:/data/software/little-table/server/
 rsync -av --delete --delete-excluded \
   --exclude='__pycache__/' --exclude='*.pyc' \
   ./server/app/ lyc:/data/software/little-table/server/app/
+scp ./compose/little-table-api/compose.yml lyc:~/little-table-api.compose.yml
+ssh lyc 'sudo install -d -m 755 /data/software/compose/little-table-api && sudo install -m 644 ~/little-table-api.compose.yml /data/software/compose/little-table-api/compose.yml && rm ~/little-table-api.compose.yml'
 ```
 
-以上示例使用本机 SSH 别名 `lyc`；其他机器需替换为自己的主机名。`--delete` 只作用于服务器的 `app/` 目录，首次同步或目录中有手工文件时，先去掉该参数并检查差异。真实 `.env` 只在服务器上维护，权限应为 `600`；不要粘贴进聊天、工单或 Git。
+以上示例使用本机 SSH 别名 `lyc`；其他机器需替换为自己的主机名。`--delete` 只作用于服务器的 `app/` 目录，首次同步或目录中有手工文件时，先去掉该参数并检查差异。Compose 中的 `name: server` 沿用既有容器的项目名，避免迁移配置文件时产生第二套项目。真实 `.env` 只在服务器上维护，权限应为 `600`；不要粘贴进聊天、工单或 Git。
 
 ## 首次启动或更新
 
 ```bash
-cd /data/software/little-table/server
-sudo chmod 600 .env
-sudo docker compose -f compose.production.yml config --quiet
-sudo docker compose -f compose.production.yml build api
-sudo docker compose -f compose.production.yml up -d --force-recreate api
-sudo docker compose -f compose.production.yml ps
+sudo chmod 600 /data/software/little-table/server/.env
+cd /data/software/compose/little-table-api
+sudo docker compose -f compose.yml config --quiet
+sudo docker compose -f compose.yml build api
+sudo docker compose -f compose.yml up -d --force-recreate api
+sudo docker compose -f compose.yml ps
 ```
 
 若是首次部署且尚未构建镜像，`up` 可以直接带 `--build`：
 
 ```bash
-sudo docker compose -f compose.production.yml up -d --build --force-recreate api
+sudo docker compose -f /data/software/compose/little-table-api/compose.yml up -d --build --force-recreate api
 ```
 
 部署完成后验证容器内和 HTTPS 公网健康检查：
@@ -55,8 +57,8 @@ curl -fsS https://YOUR_API_DOMAIN/health
 ## 查看日志和时区
 
 ```bash
-sudo docker compose -f compose.production.yml logs --tail=200 api
-sudo docker compose -f compose.production.yml logs -f --since=10m api
+sudo docker compose -f /data/software/compose/little-table-api/compose.yml logs --tail=200 api
+sudo docker compose -f /data/software/compose/little-table-api/compose.yml logs -f --since=10m api
 date
 sudo docker exec little-table-api date
 ```
@@ -95,8 +97,8 @@ timedatectl status
 cd /data/software/little-table/server
 nano .env
 sudo chmod 600 .env
-sudo docker compose -f compose.production.yml up -d --force-recreate api
-sudo docker compose -f compose.production.yml logs --tail=100 api
+sudo docker compose -f /data/software/compose/little-table-api/compose.yml up -d --force-recreate api
+sudo docker compose -f /data/software/compose/little-table-api/compose.yml logs --tail=100 api
 ```
 
 改 `.env` 后只执行 `restart` 不会把新环境变量注入已有容器；必须 recreate。比如微信 AppSecret 轮换后，应先在公众平台生成新值，再只在服务器 `.env` 更新 `WECHAT_APP_SECRET`，随后 recreate 并验证登录。不要把 AppSecret 发给协作者或写入小程序前端。
@@ -125,8 +127,8 @@ sudo docker image tag little-table-api:latest little-table-api:rollback-YYYYMMDD
 
 ```bash
 sudo docker image tag little-table-api:rollback-YYYYMMDD-HHMMSS little-table-api:latest
-sudo docker compose -f /data/software/little-table/server/compose.production.yml up -d --no-build --force-recreate api
-sudo docker compose -f /data/software/little-table/server/compose.production.yml ps
+sudo docker compose -f /data/software/compose/little-table-api/compose.yml up -d --no-build --force-recreate api
+sudo docker compose -f /data/software/compose/little-table-api/compose.yml ps
 ```
 
 该回滚仅恢复应用镜像；若发布包含数据库迁移，需按相应迁移文档单独制定兼容/回滚方案。当前 API 更新不应自动重置或删除生产数据。
