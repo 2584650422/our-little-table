@@ -4,6 +4,21 @@
 
 两位饭桌成员共享菜单、点菜记录、饭桌背景与首页文案；收藏、头像和称呼各自管理。提交点菜后，对方可收到提醒；上菜后，点菜人可收到完成提醒。小程序内消息会保留，微信订阅消息则取决于接收人是否有可用的一次性授权机会。
 
+## 页面原型预览
+
+下面的原型图展示菜单管理、菜品编辑、点菜和饭桌设置的页面方向。点击图片可查看原尺寸；图中菜品与数据仅作示意。
+
+<table>
+  <tr>
+    <td align="center"><a href="docs/prototypes/01-menu-category-management.png"><img src="docs/prototypes/01-menu-category-management.png" width="380" alt="菜单与分类管理原型"></a><br><sub>菜单与分类管理</sub></td>
+    <td align="center"><a href="docs/prototypes/02-category-editor-dish-editor.png"><img src="docs/prototypes/02-category-editor-dish-editor.png" width="380" alt="分类和菜品编辑原型"></a><br><sub>分类和菜品编辑</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><a href="docs/prototypes/03-dish-detail-order-draft.png"><img src="docs/prototypes/03-dish-detail-order-draft.png" width="380" alt="菜品详情与点菜单原型"></a><br><sub>菜品详情与点菜单</sub></td>
+    <td align="center"><a href="docs/prototypes/04-order-detail-couple-settings.png"><img src="docs/prototypes/04-order-detail-couple-settings.png" width="380" alt="订单详情与饭桌设置原型"></a><br><sub>订单详情与饭桌设置</sub></td>
+  </tr>
+</table>
+
 ## 从哪里开始
 
 | 想做什么 | 阅读 |
