@@ -1,6 +1,6 @@
 # 后端容器部署与日常运维
 
-本文针对当前生产环境：小饭桌后端 Dockerfile、源码和独立 Compose 文件均位于 `/data/software/little-table/server`；MySQL、Nginx 和 Typecho PHP 使用 `/data/software/compose/docker-compose.yml` 统一管理。API 通过 `compose_blog-network` 访问 MySQL 容器 `mysql:3306`。小程序前端由微信开发者工具上传，不由 Compose 提供。
+本文针对当前生产环境：小饭桌后端 Dockerfile、源码和独立 Compose 文件均位于 `/data/software/compose/little-table/server`；MySQL、Nginx 和 Typecho PHP 使用 `/data/software/compose/docker-compose.yml` 统一管理。API 通过 `compose_blog-network` 访问 MySQL 容器 `mysql:3306`。小程序前端由微信开发者工具上传，不由 Compose 提供。
 
 ## 首次部署前检查
 
@@ -17,10 +17,10 @@ sudo docker ps --format 'table {{.Names}}\t{{.Status}}'
 ```bash
 rsync -av \
   ./server/Dockerfile ./server/requirements.txt ./server/compose.production.yml \
-  lyc:/data/software/little-table/server/
+  lyc:/data/software/compose/little-table/server/
 rsync -av --delete --delete-excluded \
   --exclude='__pycache__/' --exclude='*.pyc' \
-  ./server/app/ lyc:/data/software/little-table/server/app/
+  ./server/app/ lyc:/data/software/compose/little-table/server/app/
 ```
 
 以上示例使用本机 SSH 别名 `lyc`；其他机器需替换为自己的主机名。`--delete` 只作用于服务器的 `app/` 目录，首次同步或目录中有手工文件时，先去掉该参数并检查差异。Compose 中的 `name: server` 沿用既有容器的项目名。真实 `.env` 只在服务器上维护，权限应为 `600`；不要粘贴进聊天、工单或 Git。
@@ -28,7 +28,7 @@ rsync -av --delete --delete-excluded \
 ## 首次启动或更新
 
 ```bash
-cd /data/software/little-table/server
+cd /data/software/compose/little-table/server
 sudo chmod 600 .env
 sudo docker compose -f compose.production.yml config --quiet
 sudo docker compose -f compose.production.yml build api
@@ -39,7 +39,7 @@ sudo docker compose -f compose.production.yml ps
 若是首次部署且尚未构建镜像，`up` 可以直接带 `--build`：
 
 ```bash
-sudo docker compose -f /data/software/little-table/server/compose.production.yml up -d --build --force-recreate api
+sudo docker compose -f /data/software/compose/little-table/server/compose.production.yml up -d --build --force-recreate api
 ```
 
 部署完成后验证容器内和 HTTPS 公网健康检查：
@@ -55,8 +55,8 @@ curl -fsS https://YOUR_API_DOMAIN/health
 ## 查看日志和时区
 
 ```bash
-sudo docker compose -f /data/software/little-table/server/compose.production.yml logs --tail=200 api
-sudo docker compose -f /data/software/little-table/server/compose.production.yml logs -f --since=10m api
+sudo docker compose -f /data/software/compose/little-table/server/compose.production.yml logs --tail=200 api
+sudo docker compose -f /data/software/compose/little-table/server/compose.production.yml logs -f --since=10m api
 date
 sudo docker exec little-table-api date
 ```
@@ -92,11 +92,11 @@ timedatectl status
 在服务器本机编辑：
 
 ```bash
-cd /data/software/little-table/server
+cd /data/software/compose/little-table/server
 nano .env
 sudo chmod 600 .env
-sudo docker compose -f /data/software/little-table/server/compose.production.yml up -d --force-recreate api
-sudo docker compose -f /data/software/little-table/server/compose.production.yml logs --tail=100 api
+sudo docker compose -f /data/software/compose/little-table/server/compose.production.yml up -d --force-recreate api
+sudo docker compose -f /data/software/compose/little-table/server/compose.production.yml logs --tail=100 api
 ```
 
 改 `.env` 后只执行 `restart` 不会把新环境变量注入已有容器；必须 recreate。比如微信 AppSecret 轮换后，应先在公众平台生成新值，再只在服务器 `.env` 更新 `WECHAT_APP_SECRET`，随后 recreate 并验证登录。不要把 AppSecret 发给协作者或写入小程序前端。
@@ -125,8 +125,8 @@ sudo docker image tag little-table-api:latest little-table-api:rollback-YYYYMMDD
 
 ```bash
 sudo docker image tag little-table-api:rollback-YYYYMMDD-HHMMSS little-table-api:latest
-sudo docker compose -f /data/software/little-table/server/compose.production.yml up -d --no-build --force-recreate api
-sudo docker compose -f /data/software/little-table/server/compose.production.yml ps
+sudo docker compose -f /data/software/compose/little-table/server/compose.production.yml up -d --no-build --force-recreate api
+sudo docker compose -f /data/software/compose/little-table/server/compose.production.yml ps
 ```
 
 该回滚仅恢复应用镜像；若发布包含数据库迁移，需按相应迁移文档单独制定兼容/回滚方案。当前 API 更新不应自动重置或删除生产数据。
@@ -142,8 +142,13 @@ sudo docker compose -f /data/software/little-table/server/compose.production.yml
 ### 2026-09-27 实际执行记录
 
 - 已在现有 `little_table` 库执行 `006_couple_background.sql` 与 `007_remove_category_icons.sql`，并确认 `categories.icon`、`starter_categories.icon`、`meal_reviews.rating` 不再存在。
-- 删除字段前的完整数据库备份：`/data/software/little-table/backups/little_table-20260927-115133.sql.gz`（权限 `600`；已检查压缩包可解压，包含 12 张表的结构和数据）。旧 API 源码备份为同目录 `api-source-20260927-115133.tar.gz`。当时创建的 `little-table-api:rollback-20260927-115133` 镜像标签已在 2026-09-30 清理；需要该历史版本时可从源码备份重新构建。
+- 删除字段前曾保留完整数据库备份、旧 API 源码备份和 `little-table-api:rollback-20260927-115133` 镜像。它们均已于 2026-09-30 清理；当前源码以 Git 为准，数据库恢复点见下方目录整理记录。
 - 新 API 已构建并重建容器；`/health`、饭桌、分类、菜品、消息与消息配置接口通过检查。真实创建/上菜测试验证两位成员均有站内消息，测试记录已删除。清理中发现并修复空评论结果导致删除接口返回 500 的问题，复测删除返回 200。
 - 当时生产 `.env` 尚未配置微信订阅消息 Template ID 及字段键，日志记录了 `wechat.subscribe_skipped ... reason=not_configured`；这只能证明发送分支被调用，**不能证明微信外部消息送达**。这是 2026-09-27 的历史状态，现行配置以服务器环境和真机测试结果为准。
-- 已将生产 `WECHAT_ORDER_PAGE` 从 Tab 页改为 `pages/order-detail/order-detail` 并重建容器；修改前的 `.env` 私密备份为 `/data/software/little-table/backups/server-env-20260927-115133.env`（权限 `600`，不要复制进 Git）。
-- 当前饭桌的“番茄炒蛋”“宫保鸡丁”已替换成新生成图片；新对象私有读取返回 200，旧对象返回 404，且没有订单图片快照引用旧图。最后一次通知联调测试订单 `11` 在两位成员处均验证了“已下单”和“已上菜”站内消息，随后已删除；当前容器日志保留了这次事件的四条 `wechat.subscribe_skipped` 记录。
+- 已将生产 `WECHAT_ORDER_PAGE` 从 Tab 页改为 `pages/order-detail/order-detail` 并重建容器；当时的 `.env` 私密备份已在 2026-09-30 清理，现行环境文件只保留在服务器 `server/.env`，不要复制进 Git。
+- 当时饭桌的“番茄炒蛋”“宫保鸡丁”已替换成新生成图片；新对象私有读取返回 200，旧对象返回 404，且没有订单图片快照引用旧图。通知联调测试订单 `11` 在两位成员处均验证了“已下单”和“已上菜”站内消息，随后已删除；当时容器日志记录了四条 `wechat.subscribe_skipped`。
+
+### 2026-09-30 目录整理
+
+- 小饭桌完整目录迁至 `/data/software/compose/little-table/`，API 继续使用独立的 `server/compose.production.yml`；公共 MySQL、Nginx、PHP 仍由 `/data/software/compose/docker-compose.yml` 管理。
+- 已验证并删除旧的 `/data/software/little-table/backups/`、2026-08-17 服务器迁移快照和未挂载的 MySQL 原始数据副本。当前全库逻辑备份为 `/data/software/compose/backups/mysql-all-20260930-110347.sql.gz`，权限 `600`，已验证压缩文件可完整读取。恢复前应先确认备份时间和数据库版本。

@@ -68,10 +68,10 @@ MySQL 使用已有实例，因此项目不强制提供或启动新的 MySQL 容�
 
 ### 使用现有 Nginx / MySQL Compose 网络部署
 
-如果服务器已有 `compose_blog-network` 网络，并且数据库容器在该网络中的服务名为 `mysql`，可将 `server/` 中的 Dockerfile、依赖清单、源码与 `compose.production.yml` 一起上传到 `/data/software/little-table/server/`。真实环境文件只放在服务器 `/data/software/little-table/server/.env`（权限 `600`）。随后执行：
+如果服务器已有 `compose_blog-network` 网络，并且数据库容器在该网络中的服务名为 `mysql`，可将 `server/` 中的 Dockerfile、依赖清单、源码与 `compose.production.yml` 一起上传到 `/data/software/compose/little-table/server/`。真实环境文件只放在服务器 `/data/software/compose/little-table/server/.env`（权限 `600`）。随后执行：
 
 ```bash
-cd /data/software/little-table/server
+cd /data/software/compose/little-table/server
 docker compose -f compose.production.yml up -d --build
 docker compose -f compose.production.yml ps
 docker compose -f compose.production.yml logs --tail=100 api

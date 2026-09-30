@@ -55,7 +55,7 @@
 
 ## 生产部署与已验证结果（历史证据，非本次重新测试）
 
-- API 地址现为 `https://aaa.imlyc.cn`；云端目录 `/data/software/little-table`；API Docker 容器/镜像 `little-table-api`，现有 MySQL 库 `little_table`。Nginx 配置 `/data/software/compose/nginx/conf/conf.d/little-table.conf`，旧 `wechat.conf` 已备份。
+- API 地址现为 `https://aaa.imlyc.cn`；云端目录 `/data/software/compose/little-table`；API Docker 容器/镜像 `little-table-api`，现有 MySQL 库 `little_table`。Nginx 配置 `/data/software/compose/nginx/conf/conf.d/little-table.conf`，旧 `wechat.conf` 已备份。
 - 用户曾明确授权个人服务器操作，通过 otty 第二标签页连接；下次使用前确认当前实际连接，不能把历史终端状态当成仍有效。
 - 当前 API 使用外部 Docker 网络与 Nginx 通信，不暴露 3000 到公网；应用结构化日志 stdout/stderr，requestId、PID、状态/耗时，容器上海时区、Docker 日志轮转。
 - `.env` 变更后要 `up -d --force-recreate api`，仅 restart 不更新环境；不要重新导入生产 schema/seed，不要为更新 API 停掉已有 MySQL。
