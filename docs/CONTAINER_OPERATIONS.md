@@ -12,16 +12,18 @@ sudo docker network inspect compose_blog-network >/dev/null
 sudo docker ps --format 'table {{.Names}}\t{{.Status}}'
 ```
 
-将本地 `server/` 代码同步到服务器时，不要覆盖服务器真实 `.env`，也不要上传本地虚拟环境：
+服务器的 `server/` 只保留构建和运行 API 所需的文件。同步时分别上传构建文件与应用源码，不覆盖服务器真实 `.env`，也不上传本地虚拟环境、测试、导入脚本及旧备份：
 
 ```bash
-rsync -av --delete \
-  --exclude='.env' --exclude='.venv/' --exclude='.venv.old/' \
+rsync -av \
+  ./server/Dockerfile ./server/requirements.txt ./server/compose.production.yml \
+  lyc:/data/software/little-table/server/
+rsync -av --delete --delete-excluded \
   --exclude='__pycache__/' --exclude='*.pyc' \
-  ./server/ ubuntu@YOUR_SERVER:/data/software/little-table/server/
+  ./server/app/ lyc:/data/software/little-table/server/app/
 ```
 
-`--delete` 会删除目标目录中源目录没有的文件。首次同步或目标目录中有手工文件时，先去掉该参数并检查差异。真实 `.env` 只在服务器上维护，权限应为 `600`；不要粘贴进聊天、工单或 Git。
+以上示例使用本机 SSH 别名 `lyc`；其他机器需替换为自己的主机名。`--delete` 只作用于服务器的 `app/` 目录，首次同步或目录中有手工文件时，先去掉该参数并检查差异。真实 `.env` 只在服务器上维护，权限应为 `600`；不要粘贴进聊天、工单或 Git。
 
 ## 首次启动或更新
 
@@ -133,19 +135,15 @@ sudo docker compose -f /data/software/little-table/server/compose.production.yml
 
 本次 `006_couple_background.sql` 只增加 `couples.background_image_key`，可在旧 API 运行期间先执行。`007_remove_category_icons.sql` 清理 `categories.icon`、`starter_categories.icon` 和始终为空的 `meal_reviews.rating`，是不可逆的删列操作，**必须先部署新版 API、验证 `/health`、`/api/categories` 与 `/api/dishes` 正常，再执行**；旧版 API 仍会查询 `categories.icon`，提前删列会让菜单接口失败。生产库不要重新执行 `schema.sql`/`seed.sql`。
 
-执行 `007` 之前应使用现有备份方案保留 MySQL 全库或至少 `categories`、`starter_categories` 的结构与数据，确认备份可恢复。之后在服务器执行：
-
-```bash
-mysql -u YOUR_DB_USER -p little_table < /data/software/little-table/database/migrations/007_remove_category_icons.sql
-```
+执行 `007` 之前应使用现有备份方案保留 MySQL 全库或至少 `categories`、`starter_categories` 的结构与数据，确认备份可恢复。迁移脚本保留在本地 Git 仓库的 `database/migrations/`，不再常驻服务器；下方记录表明这两项迁移已经执行，不要重复运行。
 
 新的微信消息模板变量见 [消息通知配置](NOTIFICATIONS.md)。修改 `.env` 后要重新创建 API 容器；新版小程序应在新版 API 部署后再上传，否则消息配置接口会返回 404。
 
 ### 2026-09-27 实际执行记录
 
 - 已在现有 `little_table` 库执行 `006_couple_background.sql` 与 `007_remove_category_icons.sql`，并确认 `categories.icon`、`starter_categories.icon`、`meal_reviews.rating` 不再存在。
-- 删除字段前的完整数据库备份：`/data/software/little-table/backups/little_table-20260927-115133.sql.gz`（权限 `600`；已检查压缩包可解压，包含 12 张表的结构和数据）。旧 API 源码备份为同目录 `api-source-20260927-115133.tar.gz`，旧镜像标签为 `little-table-api:rollback-20260927-115133`。
+- 删除字段前的完整数据库备份：`/data/software/little-table/backups/little_table-20260927-115133.sql.gz`（权限 `600`；已检查压缩包可解压，包含 12 张表的结构和数据）。旧 API 源码备份为同目录 `api-source-20260927-115133.tar.gz`。当时创建的 `little-table-api:rollback-20260927-115133` 镜像标签已在 2026-09-30 清理；需要该历史版本时可从源码备份重新构建。
 - 新 API 已构建并重建容器；`/health`、饭桌、分类、菜品、消息与消息配置接口通过检查。真实创建/上菜测试验证两位成员均有站内消息，测试记录已删除。清理中发现并修复空评论结果导致删除接口返回 500 的问题，复测删除返回 200。
-- 当前生产 `.env` 未配置微信订阅消息 Template ID 及字段键，日志会记录 `wechat.subscribe_skipped ... reason=not_configured`；这只能证明发送分支被调用，**不能证明微信外部消息送达**。配置模板和两位成员分别授权后，再做真机送达测试。
+- 当时生产 `.env` 尚未配置微信订阅消息 Template ID 及字段键，日志记录了 `wechat.subscribe_skipped ... reason=not_configured`；这只能证明发送分支被调用，**不能证明微信外部消息送达**。这是 2026-09-27 的历史状态，现行配置以服务器环境和真机测试结果为准。
 - 已将生产 `WECHAT_ORDER_PAGE` 从 Tab 页改为 `pages/order-detail/order-detail` 并重建容器；修改前的 `.env` 私密备份为 `/data/software/little-table/backups/server-env-20260927-115133.env`（权限 `600`，不要复制进 Git）。
 - 当前饭桌的“番茄炒蛋”“宫保鸡丁”已替换成新生成图片；新对象私有读取返回 200，旧对象返回 404，且没有订单图片快照引用旧图。最后一次通知联调测试订单 `11` 在两位成员处均验证了“已下单”和“已上菜”站内消息，随后已删除；当前容器日志保留了这次事件的四条 `wechat.subscribe_skipped` 记录。
