@@ -4,7 +4,7 @@
 
 仓库只保存 Compose、PHP Dockerfile 和说明。数据库数据、Nginx 证书与站点文件、`php/config.inc.php`、服务器 `/data/software/compose/.env` 等运行数据或密钥均留在服务器，不复制进 Git。`.env` 权限应为 `600`，其中提供 `MYSQL_ROOT_PASSWORD`。
 
-服务器当前 MySQL 全库逻辑备份保存在 `/data/software/compose/backups/`，不随仓库同步。历史迁移镜像包及未挂载的原始数据副本已清理。
+服务器 MySQL 全库逻辑备份保存在 `/data/software/compose/backups/`，不随仓库同步。公共 `.env` 由 Docker Compose 自动读取，用于展开 `docker-compose.yml` 中的 `${MYSQL_ROOT_PASSWORD}`；小饭桌 API 的 `.env` 在 `little-table/server/`，由其独立 Compose 的 `env_file` 注入容器。两份文件用途不同，均不进 Git。
 
 从仓库根目录同步公共配置时，先上传到普通用户目录，再安装到服务器的运维目录：
 

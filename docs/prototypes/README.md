@@ -17,7 +17,7 @@
 - 二级、三级页面使用返回入口，不重复显示四栏底部导航。
 - 头像、菜品照片和订单照片都用现有的真实上传链路；视觉稿照片不作为项目素材使用。
 
-二级、三级页面已经按这组视觉稿改造；分类图标不再显示，也不能在小程序中编辑。数据库中的 `categories.icon` 和 `starter_categories.icon` 暂时作为兼容字段保留，当前版本无需执行数据库迁移。后续如要彻底删列，应在前后端全部版本完成升级后另做迁移。图片比例、压缩和已有图片的处理方式见 [IMAGE_POLICY.md](../IMAGE_POLICY.md)。
+二级、三级页面已经按这组视觉稿改造；分类图标不再显示，也不能在小程序中编辑。旧的 `categories.icon` 和 `starter_categories.icon` 已通过 `007_remove_category_icons.sql` 从现有生产库移除；新库的 `schema.sql` 也不再定义这些列。已有旧库升级前应先核对迁移记录与 API 版本。图片比例、压缩和已有图片的处理方式见 [IMAGE_POLICY.md](../IMAGE_POLICY.md)。
 
 ## 生成说明
 
