@@ -1,0 +1,18 @@
+<view class="life-page home-edit-page">
+  <view class="life-eyebrow">让首页写下你们自己的话</view>
+  <view class="life-title">我们的首页</view>
+  <view wx:if="{{loading}}" class="life-empty">正在翻开我们的故事…</view>
+  <block wx:else>
+    <view class="home-space-name">{{name||'我们的时光'}}</view>
+    <view class="life-subtitle">空间名称可在「我们 → 共同空间设置」修改。</view>
+    <view class="life-label">首页的一句话</view>
+    <textarea class="life-input tagline-input" value="{{tagline}}" maxlength="60" placeholder="例如：把日子慢慢过。" data-field="tagline" bindinput="input"/>
+    <view class="life-label">在一起的那一天</view>
+    <picker mode="date" start="1901-01-01" end="{{today}}" value="{{anniversary}}" bindchange="chooseDate"><view class="life-input">{{anniversary||'选择日期'}}</view></picker>
+    <view wx:if="{{anniversary}}" class="life-link" bindtap="clearDate">清除这一天</view>
+    <view class="life-subtitle">开始当天算第 1 天；数字、每百日节点和周年会自动更新。</view>
+    <view class="home-edit-preview"><view class="life-eyebrow">首页预览</view><view class="preview-name">{{name||'我们的时光'}}，</view><view class="preview-tagline">{{tagline||'把日子慢慢过。'}}</view></view>
+    <view wx:if="{{error}}" class="life-error">{{error}}</view>
+    <button class="life-button save-button" bindtap="save" loading="{{saving}}" disabled="{{saving}}">保存我们的首页</button>
+  </block>
+</view>

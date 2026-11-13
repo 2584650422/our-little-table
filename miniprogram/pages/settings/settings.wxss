@@ -1,37 +1,202 @@
-page{background:#fff}
-.us-page{position:relative;min-height:100vh;box-sizing:border-box;background:#fff;overflow:hidden;padding-bottom:calc(135rpx + env(safe-area-inset-bottom))}
-.us-hero{position:absolute;top:0;left:0;right:0;height:550rpx;overflow:hidden;background:#F4EDE5}
-.us-hero image{width:100%;height:100%}
-.hero-wash{position:absolute;top:0;right:0;bottom:0;left:0;background:linear-gradient(180deg,rgba(255,255,255,.05) 0%,rgba(255,255,255,.1) 65%,rgba(255,255,255,.7) 100%)}
-.us-body{position:relative;z-index:1}
-.hero-gap{height:320rpx}
-.profile-panel{background:#fff;border-radius:42rpx 42rpx 0 0;padding:0 58rpx 40rpx;text-align:center;min-height:700rpx}
-.avatar-line{display:flex;align-items:flex-start;justify-content:center;gap:20rpx;transform:translateY(-62rpx);margin-bottom:-48rpx}
-.profile-person{display:flex;flex-direction:column;align-items:center;min-width:138rpx}
-.avatar-frame{width:140rpx;height:140rpx;border-radius:50%;border:5rpx solid #fff;box-sizing:border-box;overflow:hidden;background:#EDE8E5;box-shadow:0 5rpx 14rpx rgba(62,48,43,.08)}
-.avatar-frame image,.avatar-fallback{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
-.avatar-fallback{background:#EDE7E2;color:#8B7774;font-size:48rpx;font-weight:600}
-.partner-avatar .avatar-fallback{background:#F1E6E0;color:#A77B7D}
-.profile-person text{font-size:23rpx;color:#5D5758;margin-top:8rpx}
-.couple-heart{font-size:38rpx;color:#DE7F84;line-height:140rpx;padding:0 2rpx}
-.couple-name{font-size:43rpx;line-height:1.35;font-weight:750;letter-spacing:.5rpx;color:#222124;margin-top:40rpx}
-.couple-subtitle{font-size:24rpx;line-height:1.5;color:#918B88;margin-top:10rpx}
-.stats{display:flex;align-items:stretch;background:#fff;border:1rpx solid #F6F2F0;border-radius:28rpx;padding:26rpx 6rpx;margin:43rpx 0 26rpx;box-shadow:0 10rpx 35rpx rgba(88,62,51,.06)}
-.stats>view{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:90rpx}
-.stats>view+view::before{content:'';position:absolute;left:0;top:10rpx;bottom:10rpx;width:1rpx;background:#EEE9E6}
-.stats text{display:block;font-size:22rpx;color:#938D8D;margin-top:8rpx}
-.stats .stat-number{font-size:39rpx;font-weight:700;color:#272528;margin-top:0}
-.links{background:#fff;border:1rpx solid #F5F0EE;border-radius:27rpx;box-shadow:0 10rpx 35rpx rgba(88,62,51,.055);padding:0 26rpx;text-align:left}
-.link-row{display:flex;align-items:center;min-height:103rpx;border-bottom:1rpx solid #F1ECEA}
-.link-row:last-child{border-bottom:0}
-.link-icon-image{width:38rpx;height:38rpx;flex-shrink:0;margin-right:26rpx}
-.link-label{font-size:28rpx;color:#323033;font-weight:550;flex:1}
-.link-arrow{font-size:38rpx;color:#A09B9C;font-weight:300;line-height:1}
-.unread-pill{min-width:29rpx;height:29rpx;padding:0 6rpx;border-radius:20rpx;background:#DE7F84;color:white;font-size:19rpx;line-height:29rpx;text-align:center;margin-right:13rpx}
-.us-state{margin:150rpx 28rpx 0}
-.setup{text-align:center;padding:75rpx 30rpx}.setup-mark{font-size:56rpx;color:#D98287;margin-bottom:18rpx}.setup .btn{margin-top:30rpx}.error .btn{margin-top:24rpx}
-.version-panel{margin:20rpx 58rpx 0}
-.version-panel .link-row{padding:18rpx 0}
-.version-copy{flex:1;min-width:0}
-.version-caption{font-size:22rpx;color:#938D8D;margin-top:6rpx;line-height:1.45;word-break:break-all}
-.version-ready{color:#DE7F84}
+page {
+  background: #f7f5ee;
+}
+.us-page {
+  padding-bottom: 180rpx;
+}
+.us-page .life-title {
+  margin-bottom: 30rpx;
+}
+.us-story {
+  padding: 36rpx;
+  border-radius: 36rpx;
+  background: #e7ecdd;
+  color: #283b34;
+}
+.us-story-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.us-story-label {
+  font-family: Georgia, serif;
+  font-size: 20rpx;
+  letter-spacing: 3rpx;
+  color: #798279;
+}
+
+.us-name {
+  font:
+    500 48rpx/1.35 Georgia,
+    'Songti SC',
+    serif;
+  margin-top: 28rpx;
+}
+.us-tagline {
+  font-size: 25rpx;
+  color: #617267;
+  margin-top: 9rpx;
+}
+.us-people {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 36rpx;
+  margin: 34rpx 0 32rpx;
+}
+.us-person {
+  min-width: 145rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 23rpx;
+  color: #526658;
+}
+.us-avatar {
+  width: 110rpx;
+  height: 110rpx;
+  border: 5rpx solid #fffef9;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #f7f5ee;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  margin-bottom: 9rpx;
+}
+.us-avatar image {
+  width: 100%;
+  height: 100%;
+}
+.us-avatar text {
+  font:
+    42rpx Georgia,
+    'Songti SC',
+    serif;
+  color: #42664f;
+}
+.us-heart {
+  font:
+    46rpx Georgia,
+    serif;
+  color: #42664f;
+}
+.us-since {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 22rpx 24rpx;
+  border-radius: 22rpx;
+  background: #fffef9;
+  font-size: 27rpx;
+}
+.us-since-label {
+  display: block;
+  color: #798279;
+  font-size: 21rpx;
+  margin-bottom: 5rpx;
+}
+.us-since > text {
+  font-size: 42rpx;
+  color: #42664f;
+}
+.us-section-title {
+  font:
+    500 34rpx Georgia,
+    'Songti SC',
+    serif;
+  margin: 42rpx 4rpx 20rpx;
+}
+.us-shortcuts {
+  display: flex;
+  gap: 18rpx;
+}
+.us-shortcuts > view {
+  flex: 1;
+  min-width: 0;
+  padding: 24rpx;
+  border-radius: 26rpx;
+  background: #fffef9;
+}
+.us-shortcuts image {
+  display: block;
+  width: 42rpx;
+  height: 42rpx;
+  margin-bottom: 20rpx;
+}
+.us-shortcuts text {
+  display: block;
+  font-size: 27rpx;
+  color: #283b34;
+}
+.us-shortcuts view view {
+  font-size: 22rpx;
+  color: #798279;
+  margin-top: 6rpx;
+}
+.us-list {
+  padding: 2rpx 24rpx;
+  border-radius: 28rpx;
+  background: #fffef9;
+}
+.us-list-row {
+  display: flex;
+  align-items: center;
+  min-height: 104rpx;
+  gap: 12rpx;
+  border-bottom: 1rpx solid #e5e6dc;
+}
+.us-list-row:last-child {
+  border-bottom: 0;
+}
+.us-list-row > view {
+  flex: 1;
+  min-width: 0;
+}
+.us-list-row > view > text {
+  font-size: 27rpx;
+  color: #283b34;
+}
+.us-list-row > view > view {
+  font-size: 21rpx;
+  color: #798279;
+  margin-top: 5rpx;
+  line-height: 1.4;
+}
+.us-list-row > text:last-child {
+  font-size: 40rpx;
+  color: #798279;
+}
+.us-unread {
+  min-width: 33rpx;
+  height: 33rpx;
+  line-height: 33rpx;
+  padding: 0 5rpx;
+  border-radius: 99rpx;
+  text-align: center;
+  background: #b97461;
+  color: #fffef9;
+  font-size: 20rpx;
+}
+.us-food-note {
+  margin: 34rpx 0 0;
+  color: #42664f;
+  font-size: 24rpx;
+  text-align: center;
+}
+.us-empty {
+  padding: 70rpx 25rpx;
+  text-align: center;
+  background: #fffef9;
+  border-radius: 30rpx;
+}
+.us-empty-mark {
+  font:
+    72rpx Georgia,
+    serif;
+  color: #42664f;
+}
+.us-empty .life-button {
+  margin: 28rpx auto 0;
+}

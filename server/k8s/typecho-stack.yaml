@@ -1,0 +1,115 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  namespace: homelab
+spec:
+  type: ClusterIP
+  ports:
+    - name: mysql
+      port: 3306
+      protocol: TCP
+---
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: mysql-docker
+  namespace: homelab
+  labels:
+    kubernetes.io/service-name: mysql
+addressType: IPv4
+ports:
+  - name: mysql
+    protocol: TCP
+    port: 53306
+endpoints:
+  - addresses:
+      - 10.2.0.7
+    conditions:
+      ready: true
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: typecho-php
+  namespace: homelab
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: typecho-php
+  template:
+    metadata:
+      labels:
+        app: typecho-php
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: lyc-server
+      imagePullSecrets:
+        - name: little-table-acr
+      containers:
+        - name: php-fpm
+          image: crpi-6okhrwjmx6tg1zpc.cn-beijing.personal.cr.aliyuncs.com/docker-images-lyc/typecho-php@sha256:bf3aca6804b26e42b4631096c4d4e49a4cec54bd2079f18c054c019cddde5ad9
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: fastcgi
+              containerPort: 9000
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          startupProbe:
+            tcpSocket:
+              port: fastcgi
+            periodSeconds: 5
+            failureThreshold: 18
+          readinessProbe:
+            tcpSocket:
+              port: fastcgi
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: fastcgi
+            periodSeconds: 30
+          volumeMounts:
+            - name: site
+              mountPath: /usr/share/nginx/html
+            - name: typecho-config
+              mountPath: /usr/share/nginx/html/config.inc.php
+              readOnly: true
+            - name: php-ini
+              mountPath: /usr/local/etc/php/conf.d/typecho.ini
+              readOnly: true
+      volumes:
+        - name: site
+          hostPath:
+            path: /data/software/compose/nginx/html
+            type: Directory
+        - name: typecho-config
+          hostPath:
+            path: /data/software/compose/php/config.inc.php
+            type: File
+        - name: php-ini
+          hostPath:
+            path: /data/software/compose/php/php.ini
+            type: File
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: typecho-php
+  namespace: homelab
+spec:
+  type: ClusterIP
+  selector:
+    app: typecho-php
+  ports:
+    - name: fastcgi
+      port: 9000
+      targetPort: fastcgi

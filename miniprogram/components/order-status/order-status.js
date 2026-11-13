@@ -1,1 +1,17 @@
-const map={pending:'等待上菜',accepted:'等待上菜',preparing:'等待上菜',ready:'已上菜',completed:'已上菜',cancelled:'已取消'};Component({properties:{status:String},data:{},observers:{status(v){this.setData({label:map[v]||v})}}})
+const map = {
+  pending: '等待上菜',
+  accepted: '等待上菜',
+  preparing: '等待上菜',
+  ready: '已上菜',
+  completed: '已上菜',
+  cancelled: '已取消',
+}
+Component({
+  properties: { status: String },
+  data: {},
+  observers: {
+    status(v) {
+      this.setData({ label: map[v] || v })
+    },
+  },
+})

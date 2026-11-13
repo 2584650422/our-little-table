@@ -1,0 +1,455 @@
+<!doctype html><meta charset="utf-8"><style>body{margin:0;background:#ecebe4;color:#42664f;font-family:-apple-system,'PingFang SC',sans-serif;padding:26px 25px}h1{font-size:22px;margin:0 0 8px}p{font-size:12px;color:#7c857a;margin:0 0 24px}.row{display:flex;gap:24px}.label{font-size:14px;margin:0 0 12px 5px}iframe{border:1px solid #dfdfd4;border-radius:24px;width:390px;height:1100px;background:#f7f5ee;box-shadow:0 6px 20px #283b3409}</style><h1>我们的时光 · 提醒与日历联动</h1><p>布局提案 · 延续当前页面样式 · 消息、次数与人物为示意数据</p><div class="row"><div><div class="label">统一管理 · 各类额度分别记录</div><iframe srcdoc="<!doctype html><meta charset=&quot;utf-8&quot;><style> palette: sage, warm paper, generous quiet spacing. */
+body {
+  background: #f7f5ee;
+  color: #283b34;
+}
+.life-page {
+  padding: 16.64px 20.8px 33.28px;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+.life-eyebrow {
+  font-size: 11.44px;
+  letter-spacing: 1.56px;
+  color: #798279;
+}
+.life-title {
+  font-size: 28.08px;
+  line-height: 1.4;
+  font-weight: 500;
+  font-family: Georgia, 'Songti SC', serif;
+  margin: 8.32px 0 12.48px;
+}
+.life-subtitle {
+  font-size: 12.48px;
+  color: #798279;
+  line-height: 1.7;
+}
+.life-card {
+  background: #fffef9;
+  border-radius: 16.64px;
+  padding: 14.56px;
+  margin: 10.4px 0;
+}
+.life-hero {
+  background: #e7ecdd;
+  border-radius: 20.8px;
+  padding: 20.8px;
+  margin: 16.64px 0;
+}
+.life-number {
+  font-family: Georgia, serif;
+  font-size: 56.16px;
+  line-height: 1.3;
+  color: #42664f;
+}
+.life-number span {
+  font-family: sans-serif;
+  font-size: 13.52px;
+  margin-left: 6.24px;
+}
+.life-heading {
+  font-size: 17.68px;
+  font-weight: 500;
+  margin: 18.72px 0 10.4px;
+}
+.life-button {
+  background: #42664f;
+  color: #fff;
+  border: 0;
+  border-radius: 11.44px;
+  font-size: 13.52px;
+  padding: 9.36px 14.56px;
+  line-height: 1.6;
+  margin: 0;
+}
+.life-button::after {
+  border: 0;
+}
+.life-link {
+  color: #42664f;
+  font-size: 12.48px;
+  padding: 8.32px 0;
+}
+.life-event {
+  display: flex;
+  justify-content: space-between;
+  gap: 10.4px;
+  align-items: center;
+  background: #fffef9;
+  border-radius: 14.56px;
+  padding: 13.52px;
+  margin: 9.36px 0;
+}
+.life-date {
+  background: #f7f5ee;
+  border-radius: 9.36px;
+  min-width: 37.44px;
+  text-align: center;
+  padding: 5.2px;
+  font:
+    19.76px Georgia,
+    serif;
+}
+.life-date span {
+  display: block;
+  font: 10.4px sans-serif;
+  color: #798279;
+}
+.life-event-copy {
+  flex: 1;
+}
+.life-count {
+  color: #b97461;
+  font-size: 14.56px;
+}
+.life-photo {
+  display: block;
+  width: 100%;
+  border-radius: 13.52px;
+  background: #e7ecdd;
+}
+.life-input {
+  background: #fffef9;
+  border: 0.52px solid #e5e6dc;
+  padding: 12.48px;
+  border-radius: 10.4px;
+  margin: 6.24px 0 14.56px;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 46.8px;
+  font-size: 15.6px;
+}
+.life-label {
+  font-size: 13.52px;
+  color: #798279;
+  margin-top: 13.52px;
+}
+.life-empty {
+  padding: 31.2px 10.4px;
+  text-align: center;
+  color: #798279;
+  line-height: 1.8;
+}
+.life-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8.32px;
+}
+.life-error {
+  color: #a44839;
+  padding: 12.48px 0;
+}
+.btn,
+.fab {
+  background: #42664f;
+}
+.btn.secondary {
+  background: #e7ecdd;
+  color: #42664f;
+}
+
+/* Keep shared date cards and hero numerals on stable baselines. */
+.life-number {
+  font-family: 'Times New Roman', serif;
+  display: flex;
+  align-items: baseline;
+  gap: 6.24px;
+  font-variant-numeric: lining-nums tabular-nums;
+  line-height: 1.15;
+  padding: 6.24px 0;
+}
+.life-number span {
+  margin-left: 0;
+  line-height: 1;
+}
+.life-date {
+  font-family: 'Times New Roman', serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 37.44px;
+  font-variant-numeric: lining-nums tabular-nums;
+  line-height: 1.2;
+}
+.life-date span {
+  line-height: 1.4;
+  margin-bottom: 2.08px;
+}
+.life-event-copy {
+  min-width: 0;
+  word-break: break-word;
+}
+.life-count {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.4;
+}
+.modules {
+  display: flex;
+  gap: 8.32px;
+  margin: 14.56px 0;
+}
+.modules > div {
+  flex: 1;
+  background: #fffef9;
+  border-radius: 12.48px;
+  padding: 13.52px 8.32px;
+  font-size: 14.04px;
+}
+.modules image {
+  display: block;
+  width: 20.8px;
+  height: 20.8px;
+  margin-bottom: 10.4px;
+}
+.modules span {
+  display: block;
+  font-size: 11.44px;
+  color: #798279;
+  margin-top: 3.12px;
+}
+
+.hero-progress {
+  height: 3.64px;
+  background: #fffef9;
+  border-radius: 5.2px;
+  overflow: hidden;
+  margin: 12.48px 0 8.32px;
+}
+.hero-progress > div {
+  height: 100%;
+  background: #42664f;
+}
+*{box-sizing:border-box}body{margin:0;background:#f7f5ee;color:#283b34;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif;font-size:15px}img{object-fit:contain}button{font-family:inherit;cursor:pointer}.status{height:34px;padding:13px 25px 0;display:flex;justify-content:space-between;font-size:12px}.nav{height:44px;display:flex;align-items:center;justify-content:center;font-size:16px;position:relative}.capsule{position:absolute;right:12px;border:1px solid #deded8;border-radius:24px;font-size:15px;padding:5px 9px}.back{position:absolute;left:22px;font-size:30px}.life-page{min-height:0;padding-bottom:100px}.life-row{gap:8px}.life-eyebrow{white-space:nowrap;font-size:11px}.life-number span{font:14px sans-serif;margin-left:6px}.life-hero{font-size:15px}.modules{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}.modules>div{background:#fffef9;border-radius:12.48px;padding:13.52px 6px;font-size:14.04px;white-space:nowrap;min-width:0}.modules img{display:block;width:20.8px;height:20.8px;margin-bottom:10.4px}.modules span{display:block;font-size:11.44px;color:#798279;margin-top:3.12px}.tabs{position:fixed;bottom:0;width:100%;height:76px;background:#fffef9;display:flex;align-items:flex-start;padding-top:12px;justify-content:space-around;border-top:1px solid #eeeee6;z-index:2}.tabs>div{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;color:#798279}.tabs img{height:25px;width:25px}.tabs:after{content:'';position:absolute;bottom:8px;width:120px;height:4px;border-radius:5px;background:#242e28}.small-button,.send{border:0;background:#42664f;color:#fffef9;border-radius:10px;padding:11px 15px;font-size:14px}.filters{display:flex;gap:10px;margin:10px 0 28px;color:#798279;font-size:13px}.filters span{padding:7px 15px;border-radius:18px}.filters .chosen{background:#e7ecdd;color:#42664f}.history-date{font-size:14px;color:#798279;margin:22px 0 12px}.history-card{background:#fffef9;border-radius:17px;padding:17px;margin:12px 0}.sender{display:flex;gap:11px;align-items:center;font-size:14px}.avatar{width:38px;height:38px;background:#dce8df;color:#42664f;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}.avatar.other{background:#e9e0d5;color:#79634e}.muted{font-size:11px;color:#879286;margin-top:4px}.receipt{margin-left:auto;font-size:11px;color:#798279}.message{margin:16px 0 0 49px;font-size:15px;line-height:1.6}.settings-row{display:flex;justify-content:space-between;margin-top:34px;padding:18px 3px;border-top:1px solid #e4e7dc;font-size:14px}.shade{position:fixed;inset:0;background:#26332a69;z-index:5}.sheet{position:fixed;bottom:0;left:0;right:0;background:#fffef9;border-radius:25px 25px 0 0;padding:12px 23px 27px;z-index:6}.sheet-handle{width:30px;height:4px;background:#dfdfd7;border-radius:4px;margin:0 auto 20px}.panel-title{font-size:21px;font-weight:600}.dismiss{font-size:25px;color:#798279}.people{display:flex;align-items:center;justify-content:center;gap:22px;color:#b2b9ac;margin:22px 0}.people .avatar{width:44px;height:44px}.editbox{height:125px;border:1px solid #dfe2d8;border-radius:13px;padding:16px;font-size:15px;position:relative;line-height:1.6}.counter{position:absolute;right:12px;bottom:10px;font-size:11px;color:#879286}.caret{display:inline-block;width:1px;height:17px;background:#42664f;vertical-align:middle;margin-left:2px}.chips{display:flex;gap:8px;margin:14px 0 23px}.chips span{background:#f4f1e9;border:1px solid #e8e6dc;border-radius:18px;padding:8px 13px;font-size:13px}.send{width:100%;padding:13px;font-size:16px}.footnote{text-align:center;color:#879286;font-size:11px;margin-top:13px}.popup{position:fixed;top:36%;left:24px;right:24px;background:#fffef9;border-radius:24px;padding:29px 23px 24px;z-index:6}.popup-close{position:absolute;right:17px;top:10px;font-size:23px;color:#879286}.received-message{background:#f7f5ee;border-radius:13px;padding:22px 16px;margin:24px 0;font-size:18px;line-height:1.6}.actions{display:flex;gap:12px}.actions button{flex:1;border:1px solid #c9d2c4;color:#42664f;background:transparent;border-radius:10px;padding:12px;font-size:14px}.actions .primary{background:#42664f;color:#fffef9;border-color:#42664f}</style><style> .sheet{z-index:30}.shade{z-index:20}.notice{color:#879286;font-size:12px;line-height:1.7;margin:12px 0 24px}.group-label{font-size:15px;font-weight:600;margin:26px 0 13px}.quota-card{background:#fffef9;padding:18px;border-radius:17px}.quota-row{display:flex;align-items:center;justify-content:space-between;font-size:14px;padding:13px 0}.quota-row+.quota-row{border-top:1px solid #eceee4}.quota-count{font-size:12px;color:#879286;margin-top:6px}.switch{width:35px;height:21px;border-radius:15px;background:#42664f;padding:3px}.switch:after{content:'';display:block;width:15px;height:15px;border-radius:50%;background:#fff;margin-left:14px}.top-summary{background:#e7ecdd;border-radius:18px;padding:18px;margin:6px 0 24px}.top-summary .sender{font-size:13px}.recent-state{font-size:12px;color:#68776f;margin-top:13px}.reply{background:#f7f5ee;border-radius:10px;padding:12px;margin:14px 0 0 49px;font-size:13px;color:#56655d;line-height:1.7}.reply .muted{margin-top:2px}.hint-row{display:flex;justify-content:space-between;font-size:12px;color:#798279;padding:14px 0;margin-top:12px}.calendar-misses{border-top:1px solid #e4e7dc;margin:18px 0;padding:16px 3px;font-size:13px}.calendar-misses .life-row{font-size:14px;color:#42664f}.calendar-misses p{font-size:12px;color:#879286;margin:8px 0 0}.readonly-title{font-size:13px;color:#879286;margin:8px 0 20px}.calendar-summary{padding:13px 0;border-bottom:1px solid #eceee4}.calendar-summary .message{margin-left:49px}.jump{display:block;text-align:center;font-size:14px;color:#42664f;padding:18px 0 0}.sheet .history-card{padding:8px 0;background:none}.sheet .history-card+.history-card{border-top:1px solid #e4e7dc;padding-top:18px}.sheet .reply{margin-left:49px}</style><div class=&quot;status&quot;><b>9:41</b><span>●●● ▰</span></div><div class=&quot;nav&quot;><span class=&quot;back&quot;>‹</span>消息提醒<span class=&quot;capsule&quot;>••• │ ◉</span></div><div class=&quot;life-page&quot;><div class=&quot;life-title&quot;>消息提醒</div><div class=&quot;notice&quot;>管理接收的微信提醒与站内消息</div><button class=&quot;send&quot;>补充可用提醒</button><div class=&quot;notice&quot;>仅申请未满额的类型，可分别选择是否接收。</div><div class=&quot;group-label&quot;>小饭桌</div><div class=&quot;quota-card&quot;><div class=&quot;quota-row&quot;><div>点菜提醒<div class=&quot;quota-count&quot;>预计可用 3 次 / 10 次</div></div><div class=&quot;switch&quot;></div></div><div class=&quot;quota-row&quot;><div>做饭完成<div class=&quot;quota-count&quot;>预计可用 5 次 / 10 次</div></div><div class=&quot;switch&quot;></div></div></div><div class=&quot;group-label&quot;>想你了</div><div class=&quot;quota-card&quot;><div class=&quot;quota-row&quot;><div>想念提醒<div class=&quot;quota-count&quot;>预计可用 2 次 / 10 次</div></div><div class=&quot;switch&quot;></div></div></div><div class=&quot;notice&quot;>次数分别记录；微信未提醒时，站内记录仍可查看。</div><div class=&quot;settings-row&quot;><span>饭桌消息</span><span class=&quot;muted&quot;>全部标为已读</span></div><div class=&quot;history-card&quot;><div class=&quot;sender&quot;><div class=&quot;avatar&quot;>辰</div><div><b>阿辰点好菜了</b><div class=&quot;muted&quot;>今天 12:08 · 未读</div></div></div><div class=&quot;message&quot;>今晚想吃番茄炒蛋。</div><div class=&quot;hint-row&quot;><span>你 · 未读</span><span>阿辰 · 已读</span></div></div></div>"></iframe></div><div><div class="label">想你了 · 留言与回应归在一起</div><iframe srcdoc="<!doctype html><meta charset=&quot;utf-8&quot;><style> palette: sage, warm paper, generous quiet spacing. */
+body {
+  background: #f7f5ee;
+  color: #283b34;
+}
+.life-page {
+  padding: 16.64px 20.8px 33.28px;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+.life-eyebrow {
+  font-size: 11.44px;
+  letter-spacing: 1.56px;
+  color: #798279;
+}
+.life-title {
+  font-size: 28.08px;
+  line-height: 1.4;
+  font-weight: 500;
+  font-family: Georgia, 'Songti SC', serif;
+  margin: 8.32px 0 12.48px;
+}
+.life-subtitle {
+  font-size: 12.48px;
+  color: #798279;
+  line-height: 1.7;
+}
+.life-card {
+  background: #fffef9;
+  border-radius: 16.64px;
+  padding: 14.56px;
+  margin: 10.4px 0;
+}
+.life-hero {
+  background: #e7ecdd;
+  border-radius: 20.8px;
+  padding: 20.8px;
+  margin: 16.64px 0;
+}
+.life-number {
+  font-family: Georgia, serif;
+  font-size: 56.16px;
+  line-height: 1.3;
+  color: #42664f;
+}
+.life-number span {
+  font-family: sans-serif;
+  font-size: 13.52px;
+  margin-left: 6.24px;
+}
+.life-heading {
+  font-size: 17.68px;
+  font-weight: 500;
+  margin: 18.72px 0 10.4px;
+}
+.life-button {
+  background: #42664f;
+  color: #fff;
+  border: 0;
+  border-radius: 11.44px;
+  font-size: 13.52px;
+  padding: 9.36px 14.56px;
+  line-height: 1.6;
+  margin: 0;
+}
+.life-button::after {
+  border: 0;
+}
+.life-link {
+  color: #42664f;
+  font-size: 12.48px;
+  padding: 8.32px 0;
+}
+.life-event {
+  display: flex;
+  justify-content: space-between;
+  gap: 10.4px;
+  align-items: center;
+  background: #fffef9;
+  border-radius: 14.56px;
+  padding: 13.52px;
+  margin: 9.36px 0;
+}
+.life-date {
+  background: #f7f5ee;
+  border-radius: 9.36px;
+  min-width: 37.44px;
+  text-align: center;
+  padding: 5.2px;
+  font:
+    19.76px Georgia,
+    serif;
+}
+.life-date span {
+  display: block;
+  font: 10.4px sans-serif;
+  color: #798279;
+}
+.life-event-copy {
+  flex: 1;
+}
+.life-count {
+  color: #b97461;
+  font-size: 14.56px;
+}
+.life-photo {
+  display: block;
+  width: 100%;
+  border-radius: 13.52px;
+  background: #e7ecdd;
+}
+.life-input {
+  background: #fffef9;
+  border: 0.52px solid #e5e6dc;
+  padding: 12.48px;
+  border-radius: 10.4px;
+  margin: 6.24px 0 14.56px;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 46.8px;
+  font-size: 15.6px;
+}
+.life-label {
+  font-size: 13.52px;
+  color: #798279;
+  margin-top: 13.52px;
+}
+.life-empty {
+  padding: 31.2px 10.4px;
+  text-align: center;
+  color: #798279;
+  line-height: 1.8;
+}
+.life-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8.32px;
+}
+.life-error {
+  color: #a44839;
+  padding: 12.48px 0;
+}
+.btn,
+.fab {
+  background: #42664f;
+}
+.btn.secondary {
+  background: #e7ecdd;
+  color: #42664f;
+}
+
+/* Keep shared date cards and hero numerals on stable baselines. */
+.life-number {
+  font-family: 'Times New Roman', serif;
+  display: flex;
+  align-items: baseline;
+  gap: 6.24px;
+  font-variant-numeric: lining-nums tabular-nums;
+  line-height: 1.15;
+  padding: 6.24px 0;
+}
+.life-number span {
+  margin-left: 0;
+  line-height: 1;
+}
+.life-date {
+  font-family: 'Times New Roman', serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 37.44px;
+  font-variant-numeric: lining-nums tabular-nums;
+  line-height: 1.2;
+}
+.life-date span {
+  line-height: 1.4;
+  margin-bottom: 2.08px;
+}
+.life-event-copy {
+  min-width: 0;
+  word-break: break-word;
+}
+.life-count {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.4;
+}
+.modules {
+  display: flex;
+  gap: 8.32px;
+  margin: 14.56px 0;
+}
+.modules > div {
+  flex: 1;
+  background: #fffef9;
+  border-radius: 12.48px;
+  padding: 13.52px 8.32px;
+  font-size: 14.04px;
+}
+.modules image {
+  display: block;
+  width: 20.8px;
+  height: 20.8px;
+  margin-bottom: 10.4px;
+}
+.modules span {
+  display: block;
+  font-size: 11.44px;
+  color: #798279;
+  margin-top: 3.12px;
+}
+
+.hero-progress {
+  height: 3.64px;
+  background: #fffef9;
+  border-radius: 5.2px;
+  overflow: hidden;
+  margin: 12.48px 0 8.32px;
+}
+.hero-progress > div {
+  height: 100%;
+  background: #42664f;
+}
+*{box-sizing:border-box}body{margin:0;background:#f7f5ee;color:#283b34;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif;font-size:15px}img{object-fit:contain}button{font-family:inherit;cursor:pointer}.status{height:34px;padding:13px 25px 0;display:flex;justify-content:space-between;font-size:12px}.nav{height:44px;display:flex;align-items:center;justify-content:center;font-size:16px;position:relative}.capsule{position:absolute;right:12px;border:1px solid #deded8;border-radius:24px;font-size:15px;padding:5px 9px}.back{position:absolute;left:22px;font-size:30px}.life-page{min-height:0;padding-bottom:100px}.life-row{gap:8px}.life-eyebrow{white-space:nowrap;font-size:11px}.life-number span{font:14px sans-serif;margin-left:6px}.life-hero{font-size:15px}.modules{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}.modules>div{background:#fffef9;border-radius:12.48px;padding:13.52px 6px;font-size:14.04px;white-space:nowrap;min-width:0}.modules img{display:block;width:20.8px;height:20.8px;margin-bottom:10.4px}.modules span{display:block;font-size:11.44px;color:#798279;margin-top:3.12px}.tabs{position:fixed;bottom:0;width:100%;height:76px;background:#fffef9;display:flex;align-items:flex-start;padding-top:12px;justify-content:space-around;border-top:1px solid #eeeee6;z-index:2}.tabs>div{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;color:#798279}.tabs img{height:25px;width:25px}.tabs:after{content:'';position:absolute;bottom:8px;width:120px;height:4px;border-radius:5px;background:#242e28}.small-button,.send{border:0;background:#42664f;color:#fffef9;border-radius:10px;padding:11px 15px;font-size:14px}.filters{display:flex;gap:10px;margin:10px 0 28px;color:#798279;font-size:13px}.filters span{padding:7px 15px;border-radius:18px}.filters .chosen{background:#e7ecdd;color:#42664f}.history-date{font-size:14px;color:#798279;margin:22px 0 12px}.history-card{background:#fffef9;border-radius:17px;padding:17px;margin:12px 0}.sender{display:flex;gap:11px;align-items:center;font-size:14px}.avatar{width:38px;height:38px;background:#dce8df;color:#42664f;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}.avatar.other{background:#e9e0d5;color:#79634e}.muted{font-size:11px;color:#879286;margin-top:4px}.receipt{margin-left:auto;font-size:11px;color:#798279}.message{margin:16px 0 0 49px;font-size:15px;line-height:1.6}.settings-row{display:flex;justify-content:space-between;margin-top:34px;padding:18px 3px;border-top:1px solid #e4e7dc;font-size:14px}.shade{position:fixed;inset:0;background:#26332a69;z-index:5}.sheet{position:fixed;bottom:0;left:0;right:0;background:#fffef9;border-radius:25px 25px 0 0;padding:12px 23px 27px;z-index:6}.sheet-handle{width:30px;height:4px;background:#dfdfd7;border-radius:4px;margin:0 auto 20px}.panel-title{font-size:21px;font-weight:600}.dismiss{font-size:25px;color:#798279}.people{display:flex;align-items:center;justify-content:center;gap:22px;color:#b2b9ac;margin:22px 0}.people .avatar{width:44px;height:44px}.editbox{height:125px;border:1px solid #dfe2d8;border-radius:13px;padding:16px;font-size:15px;position:relative;line-height:1.6}.counter{position:absolute;right:12px;bottom:10px;font-size:11px;color:#879286}.caret{display:inline-block;width:1px;height:17px;background:#42664f;vertical-align:middle;margin-left:2px}.chips{display:flex;gap:8px;margin:14px 0 23px}.chips span{background:#f4f1e9;border:1px solid #e8e6dc;border-radius:18px;padding:8px 13px;font-size:13px}.send{width:100%;padding:13px;font-size:16px}.footnote{text-align:center;color:#879286;font-size:11px;margin-top:13px}.popup{position:fixed;top:36%;left:24px;right:24px;background:#fffef9;border-radius:24px;padding:29px 23px 24px;z-index:6}.popup-close{position:absolute;right:17px;top:10px;font-size:23px;color:#879286}.received-message{background:#f7f5ee;border-radius:13px;padding:22px 16px;margin:24px 0;font-size:18px;line-height:1.6}.actions{display:flex;gap:12px}.actions button{flex:1;border:1px solid #c9d2c4;color:#42664f;background:transparent;border-radius:10px;padding:12px;font-size:14px}.actions .primary{background:#42664f;color:#fffef9;border-color:#42664f}</style><style> .sheet{z-index:30}.shade{z-index:20}.notice{color:#879286;font-size:12px;line-height:1.7;margin:12px 0 24px}.group-label{font-size:15px;font-weight:600;margin:26px 0 13px}.quota-card{background:#fffef9;padding:18px;border-radius:17px}.quota-row{display:flex;align-items:center;justify-content:space-between;font-size:14px;padding:13px 0}.quota-row+.quota-row{border-top:1px solid #eceee4}.quota-count{font-size:12px;color:#879286;margin-top:6px}.switch{width:35px;height:21px;border-radius:15px;background:#42664f;padding:3px}.switch:after{content:'';display:block;width:15px;height:15px;border-radius:50%;background:#fff;margin-left:14px}.top-summary{background:#e7ecdd;border-radius:18px;padding:18px;margin:6px 0 24px}.top-summary .sender{font-size:13px}.recent-state{font-size:12px;color:#68776f;margin-top:13px}.reply{background:#f7f5ee;border-radius:10px;padding:12px;margin:14px 0 0 49px;font-size:13px;color:#56655d;line-height:1.7}.reply .muted{margin-top:2px}.hint-row{display:flex;justify-content:space-between;font-size:12px;color:#798279;padding:14px 0;margin-top:12px}.calendar-misses{border-top:1px solid #e4e7dc;margin:18px 0;padding:16px 3px;font-size:13px}.calendar-misses .life-row{font-size:14px;color:#42664f}.calendar-misses p{font-size:12px;color:#879286;margin:8px 0 0}.readonly-title{font-size:13px;color:#879286;margin:8px 0 20px}.calendar-summary{padding:13px 0;border-bottom:1px solid #eceee4}.calendar-summary .message{margin-left:49px}.jump{display:block;text-align:center;font-size:14px;color:#42664f;padding:18px 0 0}.sheet .history-card{padding:8px 0;background:none}.sheet .history-card+.history-card{border-top:1px solid #e4e7dc;padding-top:18px}.sheet .reply{margin-left:49px}</style><div class=&quot;status&quot;><b>9:41</b><span>●●● ▰</span></div><div class=&quot;nav&quot;><span class=&quot;back&quot;>‹</span>想你了<span class=&quot;capsule&quot;>••• │ ◉</span></div><div class=&quot;life-page&quot;><div class=&quot;life-row&quot;><div class=&quot;life-title&quot;>想你了</div><button class=&quot;small-button&quot;>＋ 发一句</button></div><div class=&quot;top-summary&quot;><div class=&quot;sender&quot;><div class=&quot;avatar&quot;>我</div><span>与</span><div class=&quot;avatar other&quot;>辰</div><span>阿辰</span></div><div class=&quot;recent-state&quot;>最近一次互动 · 今天 14:38</div></div><div class=&quot;filters&quot;><span class=&quot;chosen&quot;>全部</span><span>收到的</span><span>发出的</span></div><div class=&quot;history-date&quot;>今天 · 11月12日</div><div class=&quot;history-card&quot;><div class=&quot;sender&quot;><div class=&quot;avatar&quot;>我</div><div><b>我</b><div class=&quot;muted&quot;>14:36</div></div><span class=&quot;receipt&quot;>对方已看</span></div><div class=&quot;message&quot;>下班一起吃饭？</div></div><div class=&quot;history-card&quot;><div class=&quot;sender&quot;><div class=&quot;avatar other&quot;>辰</div><div><b>阿辰</b><div class=&quot;muted&quot;>14:32</div></div><span class=&quot;receipt&quot;>已回应</span></div><div class=&quot;message&quot;>想你了</div><div class=&quot;reply&quot;><b>我</b>：我也是，晚上见。<div class=&quot;muted&quot;>14:38 · 对方已看</div></div></div><div class=&quot;history-date&quot;>昨天 · 11月11日</div><div class=&quot;history-card&quot;><div class=&quot;sender&quot;><div class=&quot;avatar&quot;>我</div><div><b>我</b><div class=&quot;muted&quot;>21:07</div></div><span class=&quot;receipt&quot;>对方未看</span></div><div class=&quot;message&quot;>等你回家</div></div><div class=&quot;hint-row&quot;><span>按日期回看，也可在日历里查看</span></div></div>"></iframe></div></div>

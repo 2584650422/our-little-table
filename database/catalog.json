@@ -1,0 +1,135 @@
+[
+  {
+    "table": "spaces",
+    "module": "共同空间",
+    "purpose": "两个人共享的生活空间",
+    "contents": "空间名称、邀请信息、起始日、首页文案和背景图片 key",
+    "privacy": "邀请码有有效期；图片 key 不是访问密钥。"
+  },
+  {
+    "table": "users",
+    "module": "共同空间",
+    "purpose": "微信用户与当前空间",
+    "contents": "微信 OpenID、昵称、头像 key、当前 space_id",
+    "privacy": "OpenID 是微信用户标识，不是加密内容或密码；仅后端使用。"
+  },
+  {
+    "table": "space_members",
+    "module": "共同空间",
+    "purpose": "空间成员与加入退出历史",
+    "contents": "space_id、user_id、加入时间与退出时间",
+    "privacy": "用于双人上限、成员关系和访问隔离，不应随意清除。"
+  },
+  {
+    "table": "category_templates",
+    "module": "饭桌",
+    "purpose": "新空间的分类模板",
+    "contents": "预设分类名称、排序和启用状态",
+    "privacy": "公共初始化模板，不存两人的私密记录。"
+  },
+  {
+    "table": "dish_templates",
+    "module": "饭桌",
+    "purpose": "可选的菜谱模板",
+    "contents": "模板菜名、描述、图片和估算热量",
+    "privacy": "现有空间不自动导入示例菜，保留模板兼容历史初始化。"
+  },
+  {
+    "table": "dish_categories",
+    "module": "饭桌",
+    "purpose": "空间自己的菜品分类",
+    "contents": "分类名称、排序、启用状态、space_id",
+    "privacy": "每个空间独立；不允许跨空间关联菜品。"
+  },
+  {
+    "table": "dishes",
+    "module": "饭桌",
+    "purpose": "空间里的菜谱",
+    "contents": "菜名、做法描述、图片 key、估算热量、上架和软删除状态",
+    "privacy": "下架和删除不破坏历史用餐快照。"
+  },
+  {
+    "table": "dish_favorites",
+    "module": "饭桌",
+    "purpose": "个人收藏的菜谱",
+    "contents": "user_id、dish_id、收藏时间",
+    "privacy": "每位用户独立收藏。"
+  },
+  {
+    "table": "meals",
+    "module": "饭桌",
+    "purpose": "每一顿点菜与用餐记录",
+    "contents": "点菜编号、用餐日期、餐次、发起人与做饭人、状态和时间",
+    "privacy": "按 space_id 隔离；是私人用餐记录，不涉及交易和支付。"
+  },
+  {
+    "table": "meal_items",
+    "module": "饭桌",
+    "purpose": "每一顿的菜品快照",
+    "contents": "meal_id、当时的菜名、图片、热量与份数",
+    "privacy": "历史快照需要保留；原菜谱变化不会改写过去的记录。"
+  },
+  {
+    "table": "meal_reviews",
+    "module": "饭桌",
+    "purpose": "饭后感受与成品照片",
+    "contents": "meal_id、记录人、文字、图片 key",
+    "privacy": "每人每顿最多一条；图片可能被其他历史记录引用。"
+  },
+  {
+    "table": "messages",
+    "module": "消息",
+    "purpose": "小程序内消息与双方已读状态",
+    "contents": "收件人、消息类型、标题正文、meal_id、事件编号与已读时间",
+    "privacy": "每人只更新本人的已读状态；事件编号用于关联同一次通知。"
+  },
+  {
+    "table": "subscription_grants",
+    "module": "消息",
+    "purpose": "微信一次性订阅授权去重记录",
+    "contents": "user_id、request_id、template_id、提醒事件、授权登记时间",
+    "privacy": "request_id 是防重复计次编号；template_id 是微信模板标识，不是加密正文。保留去重记录防重放。"
+  },
+  {
+    "table": "subscription_credits",
+    "module": "消息",
+    "purpose": "每人每模板的预计剩余提醒机会",
+    "contents": "user_id、template_id、提醒事件、available_count（上限10）",
+    "privacy": "本地估算账本，不等于微信官方实时余额。发送前扣减，失败按规则退回或归零。"
+  },
+  {
+    "table": "calendar_entries",
+    "module": "日历",
+    "purpose": "当天记录、生日、纪念日和倒数日",
+    "contents": "标题、可选正文、日期、记录类型、历法、提醒设置、创建人与 space_id",
+    "privacy": "当天记录不加入倒计时；类型决定颜色，创建人用于头像归属。"
+  },
+  {
+    "table": "photos",
+    "module": "足迹",
+    "purpose": "旅行照片与拍摄地点",
+    "contents": "原图和预览图 key、尺寸字节数、地点坐标、拍摄日、随手记和创建人",
+    "privacy": "图片本体在私有 COS；坐标为用户选择的位置，不是持续定位记录。"
+  },
+  {
+    "table": "thought_messages",
+    "module": "想你了",
+    "purpose": "想你了留言、回复与阅读记录",
+    "contents": "space_id、发送人与接收人、根留言、幂等请求号、正文、已读和删除时间、微信请求状态",
+    "privacy": "令牌空间隔离；仅接收人可标记已读、仅发送人可软删除。删除根留言时整组隐藏；正文不写日志。"
+  },
+  {
+    "table": "notification_preferences",
+    "module": "消息",
+    "purpose": "每位成员各类微信提醒的接收开关",
+    "contents": "user_id、created/served/thought事件、启用状态和更新时间",
+    "privacy": "只修改本人接收偏好，不改变对方开关，不等同微信系统授权状态。"
+  },
+  {
+    "table": "table_guide",
+    "module": "维护",
+    "purpose": "数据库内的中文表说明",
+    "contents": "每张表的模块、用途、保存内容和隐私及维护说明",
+    "privacy": "仅文档元数据，不复制用户记录、不保存任何配置密钥。"
+  }
+]

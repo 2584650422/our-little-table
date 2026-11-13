@@ -1,1 +1,6 @@
-{"navigationStyle":"custom"}
+{
+  "navigationBarTitleText": "我们",
+  "usingComponents": {
+    "thought-inbox": "/components/thought-inbox/thought-inbox"
+  }
+}

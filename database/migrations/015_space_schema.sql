@@ -1,0 +1,76 @@
+-- Schema 015: run ONLY on a restored copy of the old database with API writes stopped.
+-- No USE statement: the caller must explicitly select the target database.
+-- DDL auto-commits on MySQL 5.7; rollback switches back to the preserved old database.
+RENAME TABLE
+  `couples` TO `spaces`,
+  `couple_members` TO `space_members`,
+  `starter_categories` TO `category_templates`,
+  `starter_dishes` TO `dish_templates`,
+  `categories` TO `dish_categories`,
+  `favorites` TO `dish_favorites`,
+  `orders` TO `meals`,
+  `order_items` TO `meal_items`,
+  `notifications` TO `messages`,
+  `wechat_subscription_grants` TO `subscription_grants`,
+  `wechat_subscription_credits` TO `subscription_credits`,
+  `life_events` TO `calendar_entries`,
+  `travel_photos` TO `photos`;
+
+ALTER TABLE `users` CHANGE COLUMN couple_id space_id BIGINT UNSIGNED NULL;
+ALTER TABLE `space_members` CHANGE COLUMN couple_id space_id BIGINT UNSIGNED NOT NULL;
+ALTER TABLE `dish_categories` CHANGE COLUMN couple_id space_id BIGINT UNSIGNED NOT NULL;
+ALTER TABLE `dishes` CHANGE COLUMN couple_id space_id BIGINT UNSIGNED NOT NULL;
+ALTER TABLE `meals` CHANGE COLUMN couple_id space_id BIGINT UNSIGNED NOT NULL;
+ALTER TABLE `calendar_entries` CHANGE COLUMN couple_id space_id BIGINT UNSIGNED NOT NULL;
+ALTER TABLE `photos` CHANGE COLUMN couple_id space_id BIGINT UNSIGNED NOT NULL;
+ALTER TABLE `meal_items` CHANGE COLUMN order_id meal_id BIGINT UNSIGNED NOT NULL;
+ALTER TABLE `meal_reviews` CHANGE COLUMN order_id meal_id BIGINT UNSIGNED NOT NULL;
+ALTER TABLE `messages` CHANGE COLUMN order_id meal_id BIGINT UNSIGNED NULL;
+ALTER TABLE spaces ALTER COLUMN name SET DEFAULT '我们的时光';
+
+CREATE TABLE IF NOT EXISTS table_guide (
+  table_name VARCHAR(64) PRIMARY KEY,
+  module VARCHAR(30) NOT NULL,
+  purpose VARCHAR(160) NOT NULL,
+  contents VARCHAR(600) NOT NULL,
+  privacy_note VARCHAR(600) NOT NULL,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='数据库表用途与维护说明';
+
+ALTER TABLE `spaces` COMMENT='两个人共享的生活空间';
+ALTER TABLE `users` COMMENT='微信用户与当前空间';
+ALTER TABLE `space_members` COMMENT='空间成员与加入退出历史';
+ALTER TABLE `category_templates` COMMENT='新空间的分类模板';
+ALTER TABLE `dish_templates` COMMENT='可选的菜谱模板';
+ALTER TABLE `dish_categories` COMMENT='空间自己的菜品分类';
+ALTER TABLE `dishes` COMMENT='空间里的菜谱';
+ALTER TABLE `dish_favorites` COMMENT='个人收藏的菜谱';
+ALTER TABLE `meals` COMMENT='每一顿点菜与用餐记录';
+ALTER TABLE `meal_items` COMMENT='每一顿的菜品快照';
+ALTER TABLE `meal_reviews` COMMENT='饭后感受与成品照片';
+ALTER TABLE `messages` COMMENT='小程序内消息与双方已读状态';
+ALTER TABLE `subscription_grants` COMMENT='微信一次性订阅授权去重记录';
+ALTER TABLE `subscription_credits` COMMENT='每人每模板的预计剩余提醒机会';
+ALTER TABLE `calendar_entries` COMMENT='当天记录、生日、纪念日和倒数日';
+ALTER TABLE `photos` COMMENT='旅行照片与拍摄地点';
+ALTER TABLE `table_guide` COMMENT='数据库内的中文表说明';
+
+INSERT INTO table_guide (table_name,module,purpose,contents,privacy_note) VALUES
+('spaces','共同空间','两个人共享的生活空间','空间名称、邀请信息、起始日、首页文案和背景图片 key','邀请码有有效期；图片 key 不是访问密钥。'),
+('users','共同空间','微信用户与当前空间','微信 OpenID、昵称、头像 key、当前 space_id','OpenID 是微信用户标识，不是加密内容或密码；仅后端使用。'),
+('space_members','共同空间','空间成员与加入退出历史','space_id、user_id、加入时间与退出时间','用于双人上限、成员关系和访问隔离，不应随意清除。'),
+('category_templates','饭桌','新空间的分类模板','预设分类名称、排序和启用状态','公共初始化模板，不存两人的私密记录。'),
+('dish_templates','饭桌','可选的菜谱模板','模板菜名、描述、图片和估算热量','现有空间不自动导入示例菜，保留模板兼容历史初始化。'),
+('dish_categories','饭桌','空间自己的菜品分类','分类名称、排序、启用状态、space_id','每个空间独立；不允许跨空间关联菜品。'),
+('dishes','饭桌','空间里的菜谱','菜名、做法描述、图片 key、估算热量、上架和软删除状态','下架和删除不破坏历史用餐快照。'),
+('dish_favorites','饭桌','个人收藏的菜谱','user_id、dish_id、收藏时间','每位用户独立收藏。'),
+('meals','饭桌','每一顿点菜与用餐记录','点菜编号、用餐日期、餐次、发起人与做饭人、状态和时间','按 space_id 隔离；是私人用餐记录，不涉及交易和支付。'),
+('meal_items','饭桌','每一顿的菜品快照','meal_id、当时的菜名、图片、热量与份数','历史快照需要保留；原菜谱变化不会改写过去的记录。'),
+('meal_reviews','饭桌','饭后感受与成品照片','meal_id、记录人、文字、图片 key','每人每顿最多一条；图片可能被其他历史记录引用。'),
+('messages','消息','小程序内消息与双方已读状态','收件人、消息类型、标题正文、meal_id、事件编号与已读时间','每人只更新本人的已读状态；事件编号用于关联同一次通知。'),
+('subscription_grants','消息','微信一次性订阅授权去重记录','user_id、request_id、template_id、提醒事件、授权登记时间','request_id 是防重复计次编号；template_id 是微信模板标识，不是加密正文。保留去重记录防重放。'),
+('subscription_credits','消息','每人每模板的预计剩余提醒机会','user_id、template_id、提醒事件、available_count（上限10）','本地估算账本，不等于微信官方实时余额。发送前扣减，失败按规则退回或归零。'),
+('calendar_entries','日历','当天记录、生日、纪念日和倒数日','标题、可选正文、日期、记录类型、历法、提醒设置、创建人与 space_id','当天记录不加入倒计时；类型决定颜色，创建人用于头像归属。'),
+('photos','足迹','旅行照片与拍摄地点','原图和预览图 key、尺寸字节数、地点坐标、拍摄日、随手记和创建人','图片本体在私有 COS；坐标为用户选择的位置，不是持续定位记录。'),
+('table_guide','维护','数据库内的中文表说明','每张表的模块、用途、保存内容和隐私及维护说明','仅文档元数据，不复制用户记录、不保存任何配置密钥。')
+ON DUPLICATE KEY UPDATE module=VALUES(module),purpose=VALUES(purpose),contents=VALUES(contents),privacy_note=VALUES(privacy_note);

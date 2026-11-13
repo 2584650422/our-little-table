@@ -6,3 +6,5 @@ python-dotenv==1.0.1
 httpx==0.28.1
 cos-python-sdk-v5==1.9.34
 qcloud-python-sts==3.1.6
+
+lunardate==0.2.2

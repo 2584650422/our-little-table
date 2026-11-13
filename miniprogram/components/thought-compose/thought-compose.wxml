@@ -1,0 +1,9 @@
+<view wx:if="{{open}}" class="compose-mask" catchtap="close" catchtouchmove="noop">
+  <view class="compose-sheet" catchtap="noop">
+    <view class="handle"/><view class="compose-heading"><text>{{replying?'回一句':'想你了'}}</text><text class="close" bindtap="close">×</text></view>
+    <view class="people"><view>我</view><text>→</text><view>你</view></view>
+    <view class="input-wrap"><textarea value="{{content}}" bindinput="input" maxlength="100" placeholder="想说的话，可以写在这里" adjust-position cursor-spacing="24" disabled="{{sending}}"/><text>{{content.length}} / 100</text></view>
+    <view class="presets"><text wx:for="{{presets}}" wx:key="*this" data-text="{{item}}" bindtap="preset">{{item}}</text></view>
+    <button class="send" bindtap="send" loading="{{sending}}" disabled="{{sending}}">发送</button><view class="hint">不填内容，默认发送“想你了”</view>
+  </view>
+</view>

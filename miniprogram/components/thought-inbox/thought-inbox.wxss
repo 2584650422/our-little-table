@@ -1,0 +1,89 @@
+.inbox-mask {
+  position: fixed;
+  inset: 0;
+  background: #26332a69;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.inbox-card {
+  position: relative;
+  width: calc(100% - 88rpx);
+  box-sizing: border-box;
+  border-radius: 44rpx;
+  background: #fffef9;
+  padding: 54rpx 40rpx 40rpx;
+  color: #283b34;
+}
+.inbox-close {
+  position: absolute;
+  right: 30rpx;
+  top: 16rpx;
+  font-size: 44rpx;
+  color: #879286;
+}
+.sender {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  font-size: 27rpx;
+  font-weight: 600;
+}
+.sender image,
+.avatar {
+  height: 76rpx;
+  width: 76rpx;
+  border-radius: 50%;
+  flex: none;
+}
+.avatar {
+  line-height: 76rpx;
+  text-align: center;
+  background: #eee6dc;
+  color: #79634e;
+}
+.sender text {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 21rpx;
+  color: #879286;
+  font-weight: 400;
+}
+.message {
+  box-sizing: border-box;
+  background: #f7f5ee;
+  border-radius: 24rpx;
+  padding: 30rpx;
+  margin: 40rpx 0;
+  max-height: 280rpx;
+  font-size: 32rpx;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.more {
+  color: #879286;
+  font-size: 22rpx;
+  margin: -14rpx 0 30rpx;
+}
+.actions {
+  display: flex;
+  gap: 22rpx;
+}
+.actions button {
+  flex: 1;
+  margin: 0;
+  font-size: 26rpx;
+  border: 1rpx solid #c9d2c4;
+  background: transparent;
+  border-radius: 20rpx;
+  color: #42664f;
+}
+.actions button::after {
+  border: 0;
+}
+.actions .primary {
+  background: #42664f;
+  color: #fffef9;
+}

@@ -1,4 +1,6 @@
 <view class="menu-page" style="padding-top:{{topInset}}px">
+  <view class="food-links"><text bindtap="openFoodHome">帮我选菜 →</text><text bindtap="openFoodOrders">点单与吃过 →</text></view>
+  <view class="food-tools"><text bindtap="openFavorites">♡ 收藏菜谱</text><text bindtap="openManage">☷ 管理菜单</text></view>
   <view class="toolbar"><view class="menu-title">菜单</view><view class="menu-caption">一起做饭，一起吃饭</view><view class="search-toggle" catchtap="toggleSearch"><view class="glass"></view></view></view>
   <view wx:if="{{searchOpen}}" class="search-bar"><input focus="{{searchOpen}}" placeholder="搜索菜名、分类或标签" value="{{keyword}}" bindinput="input" confirm-type="search" bindconfirm="search"/><text catchtap="clearSearch">清空</text></view>
   <view class="menu-body" bindtap="foldOnBackground">
@@ -29,3 +31,5 @@
     <view class="sheet-footer"><text>共选了 {{cartCount}} 份喜欢的</text><view class="sheet-submit" catchtap="goCart">就吃这些啦 <text>›</text></view></view>
   </view>
 </view>
+
+<thought-inbox/>

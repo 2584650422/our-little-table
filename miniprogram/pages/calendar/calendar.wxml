@@ -1,0 +1,51 @@
+<view class="life-page calendar-page">
+  <view class="life-eyebrow">每一个值得记住的日子</view>
+  <view class="life-title">纪念日历</view>
+  <view class="calendar-entry-actions">
+    <button class="calendar-entry diary-entry" bindtap="addDiary"><view class="entry-icon"><view class="entry-pencil"/></view><view class="entry-copy"><view>＋ 写当天记录</view><text>去了哪里、做了什么</text></view></button>
+    <button class="calendar-entry important-entry" bindtap="add"><view class="entry-icon"><view class="entry-calendar"><view class="entry-calendar-dots"/></view></view><view class="entry-copy"><view>＋ 添加重要日子</view><text>生日、纪念日、倒数日</text></view></button>
+  </view>
+  <view class="life-row together-row"><text>{{togetherLabel}}</text><text class="life-link" bindtap="start">设置起始日</text></view>
+  <view wx:if="{{error}}" class="life-error" bindtap="load">{{error}} · 点击重试</view>
+  <view class="life-card month-card">
+    <view class="life-row"><text class="month-arrow" data-delta="-1" bindtap="move">‹</text><text class="month-label">{{monthLabel || month}}</text><text class="month-arrow" data-delta="1" bindtap="move">›</text></view>
+    <view class="calendar-grid"><text class="weekday" wx:for="{{week}}" wx:key="*this">{{item}}</text></view>
+    <view class="calendar-grid">
+      <view wx:for="{{cells}}" wx:key="key" data-date="{{item.date}}" bindtap="select" class="day {{item.selected?'selected':''}}">
+        <text class="day-number">{{item.day}}</text><text wx:if="{{item.date}}" class="day-lunar {{item.lunarMonthStart?'lunar-month-start':''}}">{{item.lunar}}</text><view class="day-markers"><view wx:if="{{item.marked}}" class="event-dot important-dot"/><view wx:if="{{item.diary}}" class="event-dot diary-dot"/></view>
+      </view>
+    </view>
+    <view class="calendar-legend"><text><text class="legend-dot diary-dot"/>当天记录</text><text><text class="legend-dot important-dot"/>重要日子</text></view>
+  </view>
+  <view id="day-records" class="day-records">
+  <view class="selected-date-heading"><view class="selected-date-copy"><view class="selected-date-title">{{selectedTitle || selected}}</view><view class="selected-lunar">{{selectedLunar}}</view></view><text class="life-link" bindtap="addDiary">写记录 →</text></view>
+  <view wx:if="{{!dayEvents.length}}" class="life-subtitle">这一天，等我们写下新的故事。</view>
+  <view wx:for="{{dayEvents}}" wx:key="id" class="life-event calendar-event {{item.isDiary?'diary-card':'important-card'}}" data-id="{{item.id}}" bindtap="edit">
+    <view class="life-event-copy">
+      <view class="record-heading"><text class="record-title">{{item.title}}</text><text class="record-kind {{item.isDiary?'diary-kind':'important-kind'}}">{{item.label}}</text></view>
+      <view wx:if="{{item.isDiary && item.content}}" class="diary-content">{{item.content}}</view>
+      <view wx:if="{{!item.isDiary}}" class="life-subtitle">{{item.calendarLabel}} · {{item.daysLabel}}</view>
+      <view wx:if="{{item.createdBy}}" class="record-author">
+        <image wx:if="{{item.creatorAvatarUrl}}" class="author-avatar" src="{{item.creatorAvatarUrl}}" mode="aspectFill" data-id="{{item.id}}" binderror="avatarError"/>
+        <view wx:else class="author-avatar author-fallback">{{item.creatorInitial}}</view>
+        <text>{{item.creatorLabel}}记录<text wx:if="{{item.isDiary && item.createdAtLabel}}" class="author-time"> · {{item.createdAtLabel}}</text></text>
+      </view>
+    </view>
+  </view>
+  </view>
+  <view wx:if="{{thoughtDay.items.length}}" class="calendar-thoughts" bindtap="showThoughtDay"><view><text>♡ 当天互动</text><text>查看 ›</text></view><text>发出 {{thoughtDay.sent}} 条 · 收到 {{thoughtDay.received}} 条</text></view>
+  <view wx:elif="{{thoughtError}}" class="thought-retry" bindtap="loadThoughtDay">当天互动暂时没打开 · 重试</view>
+  <view class="upcoming-toggle" bindtap="toggleUpcoming"><text class="upcoming-toggle-title">接下来值得期待</text><text wx:if="{{upcoming.length}}" class="upcoming-toggle-count">{{upcoming.length}}</text><text wx:else class="upcoming-toggle-meta">添加一件期待</text><view class="upcoming-toggle-chevron {{upcomingExpanded?'expanded':''}}"/></view>
+  <view wx:if="{{upcomingExpanded}}" class="upcoming-content">
+  <view wx:for="{{upcoming}}" wx:key="id" class="life-event" bindtap="edit" data-id="{{item.id}}">
+    <view class="life-date"><text>{{item.month}}月</text>{{item.day}}</view>
+    <view class="life-event-copy"><view>{{item.title}}</view><view class="life-subtitle">{{item.calendarLabel}} · {{item.label}}<text wx:if="{{item.reminderActive}}"> · 快到啦</text></view></view>
+    <text class="life-count">{{item.daysLabel}}</text>
+  </view>
+  <view wx:if="{{!upcoming.length}}" class="life-empty">生日、纪念日、一起出发的日子，<view>点击「添加重要日子」即可设置。</view></view>
+  </view>
+</view>
+
+<thought-inbox/>
+
+<view wx:if="{{thoughtsOpen}}" class="thought-day-mask" catchtap="closeThoughtDay"><view class="thought-day-sheet" catchtap="noop"><view class="life-row"><view class="life-heading">{{selectedTitle}} · 当天互动</view><text class="thought-day-close" bindtap="closeThoughtDay">×</text></view><view class="life-subtitle">在这里回看留言，回复和管理请前往“想你了”</view><scroll-view scroll-y class="thought-day-scroll" bindscroll="queueThoughtRead"><view wx:for="{{thoughtDay.threads}}" wx:key="id" class="thought-day-item"><view class="thought-day-sender"><image wx:if="{{item.senderAvatarUrl}}" src="{{item.senderAvatarUrl}}" mode="aspectFill"/><view wx:else>{{item.senderInitial}}</view><view>{{item.senderName}}<text>{{item.createdAt}}</text></view></view><view class="thought-day-content thought-day-readable" data-id="{{item.id}}">{{item.content}}</view><text wx:if="{{item.rootId}}" class="life-subtitle">回复</text><text class="thought-day-status">{{item.readAt?'已查看':'未查看'}}</text><view wx:for="{{item.replies}}" wx:for-item="reply" wx:key="id" class="calendar-thought-reply thought-day-readable" data-id="{{reply.id}}"><view>{{reply.senderName}}：{{reply.content}}</view><text>{{reply.createdAt}} · {{reply.readAt?'已查看':'未查看'}}</text></view></view></scroll-view><view class="thought-day-link" bindtap="viewThoughts">去想你了查看 ›</view></view></view>

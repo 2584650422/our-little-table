@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: our-time-api
+  namespace: homelab
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: our-time-api
+  template:
+    metadata:
+      labels:
+        app: our-time-api
+    spec:
+      imagePullSecrets:
+        - name: our-time-acr
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: api
+          image: crpi-6okhrwjmx6tg1zpc.cn-beijing.personal.cr.aliyuncs.com/docker-images-lyc/our-time-api@sha256:a997c8752b2848e64b69ca0bd4270ced5d89b6cf6e88f36ffdb8d9abf071859e
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: our-time-config
+            - secretRef:
+                name: our-time-secrets
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          startupProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 5
+            failureThreshold: 12
+          livenessProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 30
+            timeoutSeconds: 2
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 6
+            failureThreshold: 2
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: our-time-api
+  namespace: homelab
+spec:
+  type: ClusterIP
+  selector:
+    app: our-time-api
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http

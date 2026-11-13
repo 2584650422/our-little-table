@@ -1,0 +1,192 @@
+.thought-page .life-title {
+  margin: 0;
+}
+.thought-page > .life-row {
+  margin-bottom: 32rpx;
+}
+.thought-summary {
+  background: #e7ecdd;
+  border-radius: 34rpx;
+  padding: 32rpx;
+  margin-bottom: 38rpx;
+}
+.summary-people {
+  display: flex;
+  align-items: center;
+  gap: 22rpx;
+  margin-bottom: 22rpx;
+}
+.summary-people view {
+  width: 68rpx;
+  height: 68rpx;
+  line-height: 68rpx;
+  text-align: center;
+  border-radius: 50%;
+  background: #d8e5d8;
+  color: #42664f;
+  font-size: 28rpx;
+}
+.summary-people view:last-child {
+  background: #e9e0d5;
+  color: #79634e;
+}
+.summary-people > text {
+  font-size: 24rpx;
+  color: #798279;
+}
+.thought-filters {
+  display: flex;
+  gap: 20rpx;
+  font-size: 25rpx;
+  color: #798279;
+  margin: 22rpx 0 38rpx;
+}
+.thought-filters text {
+  padding: 14rpx 28rpx;
+  border-radius: 40rpx;
+}
+.thought-filters .active {
+  background: #e7ecdd;
+  color: #42664f;
+}
+.thought-day {
+  font-size: 25rpx;
+  color: #798279;
+  margin: 36rpx 0 22rpx;
+}
+.thought-card {
+  padding: 32rpx;
+  border-radius: 34rpx;
+  background: #fffef9;
+  margin: 22rpx 0;
+}
+.thought-sender {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+.thought-sender image,
+.thought-avatar {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 50%;
+  flex: none;
+}
+.thought-avatar {
+  line-height: 72rpx;
+  text-align: center;
+  background: #e7ecdd;
+  color: #42664f;
+}
+.sender-copy {
+  flex: 1;
+  font-size: 27rpx;
+  font-weight: 500;
+}
+.sender-copy text {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 21rpx;
+  color: #879286;
+  font-weight: 400;
+}
+.receipt {
+  font-size: 21rpx;
+  color: #798279;
+}
+.thought-content {
+  margin: 28rpx 0 0 92rpx;
+  font-size: 29rpx;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.thought-reply {
+  background: #f7f5ee;
+  border-radius: 20rpx;
+  padding: 24rpx;
+  margin: 26rpx 0 0 92rpx;
+  font-size: 25rpx;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.thought-reply text {
+  display: block;
+  color: #879286;
+  font-size: 21rpx;
+  margin-top: 6rpx;
+}
+.thought-reminders {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1rpx solid #e4e7dc;
+  padding: 30rpx 4rpx;
+  margin: 44rpx 0 12rpx;
+  font-size: 26rpx;
+}
+.thought-reminders text:last-child {
+  color: #879286;
+  font-size: 23rpx;
+}
+.focus-note,
+.more-records {
+  font-size: 24rpx;
+  color: #42664f;
+  padding: 24rpx 0;
+}
+.more-records {
+  text-align: center;
+}
+.detail-mask {
+  position: fixed;
+  inset: 0;
+  background: #26332a69;
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+}
+.detail-sheet {
+  width: 100%;
+  box-sizing: border-box;
+  background: #fffef9;
+  border-radius: 44rpx 44rpx 0 0;
+  padding: 10rpx 40rpx max(40rpx, env(safe-area-inset-bottom));
+}
+.detail-scroll {
+  max-height: 65vh;
+  margin-bottom: 28rpx;
+}
+.detail-content {
+  font-size: 30rpx;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 24rpx 0;
+}
+.detail-meta {
+  color: #879286;
+  font-size: 23rpx;
+  margin: 12rpx 0 20rpx;
+}
+.detail-reply {
+  border-top: 1rpx solid #e4e7dc;
+  padding: 28rpx 0;
+}
+.delete {
+  font-size: 23rpx;
+  color: #a46452;
+  display: block;
+  padding: 12rpx 0;
+}
+.close {
+  font-size: 44rpx;
+  color: #879286;
+  padding: 20rpx;
+}
+
+.summary-people image {
+  width: 68rpx;
+  height: 68rpx;
+  border-radius: 50%;
+}

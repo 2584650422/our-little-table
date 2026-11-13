@@ -10,7 +10,7 @@
       <view wx:else class="media-thumb media-placeholder"><image src="/assets/icons/dish-placeholder.png" mode="aspectFit"/></view>
       <view class="dish-copy"><view class="dish-name">{{item.name}}</view><view class="dish-meta">{{item.categoryName}} · 点过 {{item.orderedCount||0}} 次</view></view>
       <view wx:if="{{item.enabled && item.coupleId}}" class="down" catchtap="disable" data-id="{{item.id}}">下架</view>
-      <text wx:elif="{{!item.enabled}}" class="off">已下架</text><text class="arrow">›</text>
+      <view wx:elif="{{!item.enabled}}" class="off-actions"><text class="off">已下架</text><button class="manage-action restore" catchtap="restore" data-id="{{item.id}}" disabled="{{busy}}">重新上架</button><button class="manage-action remove" catchtap="remove" data-id="{{item.id}}" disabled="{{busy}}">删除</button></view><text class="arrow">›</text>
     </view>
     <view wx:if="{{!dishes.length}}" class="empty">{{keyword?'没有找到这道菜':'菜单还空着，先加一道喜欢的菜吧'}}</view>
   </block>

@@ -1,0 +1,1853 @@
+<!doctype html><meta charset="utf-8"><style>body{margin:0;background:#ecebe4;color:#42664f;font-family:-apple-system,'PingFang SC',sans-serif;padding:26px 25px}h1{font-size:22px;margin:0 0 8px}p{font-size:12px;color:#7c857a;margin:0 0 24px}.row{display:flex;gap:24px}.label{font-size:14px;margin:0 0 12px 5px}iframe{border:1px solid #dfdfd4;border-radius:24px;width:390px;height:1100px;background:#f7f5ee;box-shadow:0 6px 20px #283b3409}</style><h1>我们的时光 · 提醒与日历联动</h1><p>布局提案 · 延续当前页面样式 · 消息、次数与人物为示意数据</p><div class="row"><div><div class="label">日历 · 当天记录下增加轻量入口</div><iframe srcdoc="<html><meta charset=&quot;utf-8&quot;><style>body {
+  background: #faf9f6;
+  color: #262326;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif;
+  font-size: 14.56px;
+}
+.page {
+  min-height: 100vh;
+  padding: 14.56px 14.56px 78px;
+  box-sizing: border-box;
+}
+.card {
+  background: #fff;
+  border-radius: 14.56px;
+  padding: 14.56px;
+  box-shadow: 0 4.16px 14.56px rgba(48, 38, 42, 0.045);
+  margin-bottom: 12.48px;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+.title {
+  font-size: 19.76px;
+  font-weight: 700;
+}
+.subtitle {
+  font-size: 13px;
+  color: #8a8583;
+  margin-top: 4.16px;
+}
+.muted {
+  color: #8a8583;
+}
+.light {
+  color: #b7b0ae;
+}
+.pink {
+  color: #e7798b;
+}
+.row {
+  display: flex;
+  align-items: center;
+}
+.between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6.24px;
+}
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e7798b;
+  color: #fff;
+  border-radius: 519.48px;
+  font-size: 14.56px;
+  font-weight: 600;
+  padding: 11.440000000000001px 17.68px;
+  line-height: 1.2;
+  border: 0;
+  transition:
+    transform 0.16s ease,
+    opacity 0.16s ease,
+    box-shadow 0.16s ease;
+}
+.btn:active {
+  transform: scale(0.975);
+  opacity: 0.9;
+}
+.btn::after {
+  border: 0;
+}
+.btn.secondary {
+  background: #fbecee;
+  color: #c6677a;
+}
+.btn.ghost {
+  background: #fff;
+  color: #c6677a;
+  border: 1.04px solid #f2d9de;
+}
+.btn.small {
+  padding: 7.28px 12.48px;
+  font-size: 12.48px;
+}
+.tag {
+  background: #fbecee;
+  color: #b76577;
+  border-radius: 519.48px;
+  padding: 4.16px 8.32px;
+  font-size: 11.440000000000001px;
+}
+.section-title {
+  font-size: 16.64px;
+  font-weight: 700;
+  margin: 18.72px 2.08px 10.4px;
+}
+.input {
+  height: 43.68px;
+  line-height: 43.68px;
+  background: #fff;
+  border-radius: 12.48px;
+  padding: 0 13.52px;
+  box-sizing: border-box;
+  width: 100%;
+  font-size: 14.56px;
+  transition:
+    background 0.18s ease,
+    box-shadow 0.18s ease;
+}
+.input:focus {
+  background: #fffdfe;
+  box-shadow: 0 0 0 1.56px #f7e1e5;
+}
+.field {
+  margin-bottom: 12.48px;
+}
+.label {
+  display: block;
+  font-size: 12.48px;
+  color: #8a8583;
+  margin: 0 0 6.24px 3.12px;
+}
+.empty {
+  text-align: center;
+  padding: 41.6px 15.600000000000001px;
+  color: #8a8583;
+}
+.empty-icon {
+  font-size: 39.52px;
+  margin-bottom: 10.4px;
+}
+.fab {
+  position: fixed;
+  right: 15.600000000000001px;
+  bottom: 78px;
+  background: #e7798b;
+  color: #fff;
+  border-radius: 519.48px;
+  padding: 11.440000000000001px 15.600000000000001px;
+  box-shadow: 0 6.24px 15.600000000000001px rgba(231, 121, 139, 0.22);
+  z-index: 9;
+  transition: transform 0.16s ease;
+}
+.fab:active {
+  transform: scale(0.95);
+}
+.image-placeholder {
+  background: #f6f1ee;
+  color: #b6a8a5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.loading {
+  text-align: center;
+  color: #8a8583;
+  padding: 41.6px;
+}
+.error {
+  text-align: center;
+  padding: 31.200000000000003px;
+}
+.divider {
+  height: 1.04px;
+  background: #f0ebe9;
+  margin: 12.48px 0;
+}
+
+/* Warm cream and muted coral used across the prototype. */
+body {
+  background: #fffcfb;
+  color: #29272a;
+}
+.pink {
+  color: #de7f84;
+}
+.btn,
+.fab {
+  background: #de7f84;
+}
+.btn.secondary {
+  background: #fcf4f3;
+  color: #bd6c74;
+}
+.btn.ghost {
+  color: #bd6c74;
+  border-color: #f1dcda;
+}
+.tag {
+  background: #fff0ee;
+  color: #b96e75;
+}
+.image-placeholder {
+  background: #f8f3f0;
+  color: #bdaea5;
+}
+
+/* Detail and management pages share the approved prototype's scale and palette. */
+.prototype-page {
+  min-height: 100vh;
+  box-sizing: border-box;
+  background: #fff;
+  color: #242326;
+  padding: 0 14.56px 93.60000000000001px;
+}
+.prototype-title {
+  font-size: 24.44px;
+  line-height: 1.25;
+  letter-spacing: -0.52px;
+  font-weight: 760;
+  color: #171719;
+}
+.prototype-caption {
+  font-size: 12.48px;
+  line-height: 1.5;
+  color: #89888d;
+}
+.prototype-card {
+  background: #fff;
+  border: 0.52px solid #f0edeb;
+  border-radius: 13px;
+  box-shadow: 0 5.2px 13.52px rgba(44, 32, 34, 0.035);
+}
+.prototype-button {
+  background: #dd7e80;
+  color: #fff;
+  border-radius: 519.48px;
+  font-size: 14.56px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  box-sizing: border-box;
+}
+.prototype-button::after {
+  border: 0;
+}
+.prototype-button:active {
+  opacity: 0.88;
+  transform: scale(0.987);
+}
+.prototype-fixed {
+  position: fixed;
+  left: 14.56px;
+  right: 14.56px;
+  bottom: calc(15.600000000000001px + env(safe-area-inset-bottom));
+  height: 44.72px;
+  z-index: 8;
+  box-shadow: 0 5.2px 13px rgba(221, 126, 128, 0.12);
+}
+.prototype-soft {
+  background: #f8f6f5;
+  border-radius: 10.4px;
+}
+.prototype-divider {
+  height: 0.52px;
+  background: #f0edec;
+}
+.media-thumb {
+  width: 58.24px;
+  height: 58.24px;
+  flex-shrink: 0;
+  border-radius: 9.36px;
+  overflow: hidden;
+  background: #f3eeeb;
+}
+.media-hero {
+  width: 100%;
+  aspect-ratio: 4/3;
+  border-radius: 12.48px;
+  overflow: hidden;
+  background: #f3eeeb;
+}
+.media-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #f3eeeb;
+}
+.media-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3eeeb;
+}
+.media-placeholder image {
+  width: 40%;
+  height: 40%;
+  opacity: 0.65;
+}
+.prototype-page > subpage-header {
+  display: block;
+  margin: 0 -14.56px;
+}
+/* Approved life-space palette: sage, warm paper, generous quiet spacing. */
+body {
+  background: #f7f5ee;
+  color: #283b34;
+}
+.life-page {
+  padding: 16.64px 20.8px 33.28px;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+.life-eyebrow {
+  font-size: 11.440000000000001px;
+  letter-spacing: 1.56px;
+  color: #798279;
+}
+.life-title {
+  font-size: 28.080000000000002px;
+  line-height: 1.4;
+  font-weight: 500;
+  font-family: Georgia, 'Songti SC', serif;
+  margin: 8.32px 0 12.48px;
+}
+.life-subtitle {
+  font-size: 12.48px;
+  color: #798279;
+  line-height: 1.7;
+}
+.life-card {
+  background: #fffef9;
+  border-radius: 16.64px;
+  padding: 14.56px;
+  margin: 10.4px 0;
+}
+.life-hero {
+  background: #e7ecdd;
+  border-radius: 20.8px;
+  padding: 20.8px;
+  margin: 16.64px 0;
+}
+.life-number {
+  font-family: Georgia, serif;
+  font-size: 56.160000000000004px;
+  line-height: 1.3;
+  color: #42664f;
+}
+.life-number span {
+  font-family: sans-serif;
+  font-size: 13.52px;
+  margin-left: 6.24px;
+}
+.life-heading {
+  font-size: 17.68px;
+  font-weight: 500;
+  margin: 18.72px 0 10.4px;
+}
+.life-button {
+  background: #42664f;
+  color: #fff;
+  border: 0;
+  border-radius: 11.440000000000001px;
+  font-size: 13.52px;
+  padding: 9.36px 14.56px;
+  line-height: 1.6;
+  margin: 0;
+}
+.life-button::after {
+  border: 0;
+}
+.life-link {
+  color: #42664f;
+  font-size: 12.48px;
+  padding: 8.32px 0;
+}
+.life-event {
+  display: flex;
+  justify-content: space-between;
+  gap: 10.4px;
+  align-items: center;
+  background: #fffef9;
+  border-radius: 14.56px;
+  padding: 13.52px;
+  margin: 9.36px 0;
+}
+.life-date {
+  background: #f7f5ee;
+  border-radius: 9.36px;
+  min-width: 37.44px;
+  text-align: center;
+  padding: 5.2px;
+  font:
+    19.76px Georgia,
+    serif;
+}
+.life-date span {
+  display: block;
+  font: 10.4px sans-serif;
+  color: #798279;
+}
+.life-event-copy {
+  flex: 1;
+}
+.life-count {
+  color: #b97461;
+  font-size: 14.56px;
+}
+.life-photo {
+  display: block;
+  width: 100%;
+  border-radius: 13.52px;
+  background: #e7ecdd;
+}
+.life-input {
+  background: #fffef9;
+  border: 0.52px solid #e5e6dc;
+  padding: 12.48px;
+  border-radius: 10.4px;
+  margin: 6.24px 0 14.56px;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 46.800000000000004px;
+  font-size: 15.600000000000001px;
+}
+.life-label {
+  font-size: 13.52px;
+  color: #798279;
+  margin-top: 13.52px;
+}
+.life-empty {
+  padding: 31.200000000000003px 10.4px;
+  text-align: center;
+  color: #798279;
+  line-height: 1.8;
+}
+.life-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8.32px;
+}
+.life-error {
+  color: #a44839;
+  padding: 12.48px 0;
+}
+.btn,
+.fab {
+  background: #42664f;
+}
+.btn.secondary {
+  background: #e7ecdd;
+  color: #42664f;
+}
+
+/* Keep shared date cards and hero numerals on stable baselines. */
+.life-number {
+  font-family: 'Times New Roman', serif;
+  display: flex;
+  align-items: baseline;
+  gap: 6.24px;
+  font-variant-numeric: lining-nums tabular-nums;
+  line-height: 1.15;
+  padding: 6.24px 0;
+}
+.life-number span {
+  margin-left: 0;
+  line-height: 1;
+}
+.life-date {
+  font-family: 'Times New Roman', serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 37.44px;
+  font-variant-numeric: lining-nums tabular-nums;
+  line-height: 1.2;
+}
+.life-date span {
+  line-height: 1.4;
+  margin-bottom: 2.08px;
+}
+.life-event-copy {
+  min-width: 0;
+  word-break: break-word;
+}
+.life-count {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.4;
+}
+
+/* Give the calendar more breathing room and keep day records lightweight. */
+.calendar-page {
+  padding-top: 9.36px;
+}
+.calendar-page .life-title {
+  font-size: 23.92px;
+  margin: 4.16px 0 7.28px;
+}
+.calendar-page .life-eyebrow {
+  font-size: 10.4px;
+  line-height: 1.5;
+}
+.calendar-page .month-card {
+  margin: 6.24px 0 8.32px;
+}
+.together-row .life-link {
+  padding: 4.16px 0;
+}
+.calendar-page .calendar-event {
+  margin: 4.16px 0;
+}
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  text-align: center;
+  align-items: center;
+}
+.weekday {
+  font-size: 11.440000000000001px;
+  color: #798279;
+  padding: 8.32px 0 6.24px;
+}
+.month-card {
+  padding: 8.32px 11.440000000000001px 6.24px;
+}
+.month-label {
+  font-size: 15.600000000000001px;
+  font-weight: 600;
+  color: #283b34;
+}
+.month-arrow {
+  padding: 2.08px 9.36px;
+  line-height: 1;
+  font-size: 19.76px;
+  color: #42664f;
+}
+.day {
+  height: 43.68px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 4.16px;
+  box-sizing: border-box;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.day > span {
+  position: relative;
+  z-index: 1;
+}
+.day-number {
+  font-size: 14.56px;
+  line-height: 16.64px;
+  color: #283b34;
+}
+.day-lunar {
+  margin-top: 2.08px;
+  font-size: 9.88px;
+  line-height: 11.440000000000001px;
+  color: #879286;
+  white-space: nowrap;
+}
+.lunar-month-start {
+  color: #42664f;
+}
+.day.selected::before {
+  content: '';
+  position: absolute;
+  top: 1.04px;
+  width: 35.36px;
+  height: 41.6px;
+  border-radius: 8.32px;
+  background: #42664f;
+}
+.selected .day-number,
+.selected .day-lunar {
+  color: #fffef9;
+}
+.day-markers {
+  position: absolute;
+  bottom: 3.12px;
+  left: 0;
+  right: 0;
+  height: 5.2px;
+  display: flex;
+  justify-content: center;
+  gap: 3.12px;
+}
+.event-dot {
+  width: 5.2px;
+  height: 5.2px;
+  border-radius: 50%;
+  flex: none;
+}
+.legend-dot {
+  display: inline-block;
+  width: 6.76px;
+  height: 6.76px;
+  border-radius: 50%;
+  flex: none;
+}
+.calendar-page .important-dot {
+  background: #b97461;
+}
+.calendar-page .diary-dot {
+  background: #438c95;
+}
+.calendar-page .selected .diary-dot {
+  background: #a9dfe0;
+}
+.calendar-page .selected .important-dot {
+  background: #f0bbab;
+}
+.calendar-legend {
+  display: flex;
+  justify-content: center;
+  gap: 15.600000000000001px;
+  color: #798279;
+  font-size: 11.440000000000001px;
+  margin: 7.28px 0 2.08px;
+}
+.calendar-legend > span {
+  display: flex;
+  align-items: center;
+  gap: 6.24px;
+}
+.together-row {
+  font-size: 13px;
+  color: #798279;
+}
+.calendar-entry-actions {
+  display: flex;
+  gap: 9.36px;
+  margin: 0 0 6.24px;
+}
+.calendar-entry {
+  display: flex;
+  align-items: center;
+  gap: 6.24px;
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 8.32px 7.28px;
+  border-radius: 11.440000000000001px;
+  font-size: 12.48px;
+  line-height: 1.6;
+  text-align: left;
+}
+.calendar-entry::after {
+  border: 0;
+}
+.entry-copy {
+  flex: 1;
+  min-width: 0;
+}
+.calendar-entry span {
+  display: block;
+  font-size: 9.88px;
+  font-weight: 400;
+  margin-top: 2.08px;
+}
+.diary-entry {
+  background: #ddedea;
+  color: #357d85;
+}
+.important-entry {
+  background: #f2e7df;
+  color: #975f4c;
+}
+.entry-icon {
+  flex: none;
+  width: 22.880000000000003px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.entry-pencil {
+  position: relative;
+  width: 5.2px;
+  height: 16.64px;
+  border: 1.04px solid currentColor;
+  border-radius: 1.56px 1.56px 0 0;
+  transform: rotate(40deg);
+  box-sizing: border-box;
+}
+.entry-pencil::after {
+  content: '';
+  position: absolute;
+  left: -1.04px;
+  bottom: -4.68px;
+  border-left: 2.6px solid transparent;
+  border-right: 2.6px solid transparent;
+  border-top: 3.64px solid currentColor;
+}
+.entry-calendar {
+  position: relative;
+  width: 15.600000000000001px;
+  height: 15.600000000000001px;
+  border: 1.04px solid currentColor;
+  border-radius: 2.6px;
+  box-sizing: border-box;
+}
+.entry-calendar::before {
+  content: '';
+  position: absolute;
+  top: 3.64px;
+  left: 0;
+  right: 0;
+  border-top: 1.04px solid currentColor;
+}
+.entry-calendar::after {
+  content: '';
+  position: absolute;
+  left: 3.12px;
+  right: 3.12px;
+  height: 3.64px;
+  top: -2.6px;
+  border-left: 1.04px solid currentColor;
+  border-right: 1.04px solid currentColor;
+}
+.entry-calendar-dots {
+  width: 1.56px;
+  height: 1.56px;
+  background: currentColor;
+  position: absolute;
+  top: 7.28px;
+  left: 3.12px;
+  box-shadow:
+    4.68px 0 currentColor,
+    0 3.64px currentColor,
+    4.68px 3.64px currentColor;
+}
+.day-records {
+  margin: 7.28px 0 9.36px;
+}
+.selected-date-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10.4px;
+  margin-bottom: 3.12px;
+}
+.selected-date-copy {
+  flex: 1;
+  min-width: 0;
+}
+.selected-date-title {
+  font-size: 14.56px;
+  font-weight: 600;
+  color: #283b34;
+  line-height: 1.6;
+}
+.selected-lunar {
+  font-size: 11.96px;
+  color: #879286;
+  line-height: 1.6;
+  margin-top: 1.56px;
+}
+.selected-date-heading .life-link {
+  flex: none;
+  white-space: nowrap;
+  padding-top: 5.2px;
+}
+.calendar-event {
+  display: block;
+  width: 100%;
+  height: auto;
+  padding: 7.28px 10.4px;
+  border-radius: 10.4px;
+  box-sizing: border-box;
+}
+.calendar-event .life-event-copy {
+  width: 100%;
+  min-width: 0;
+}
+.calendar-page .diary-card {
+  background: #edf5f4;
+  border-left: 3.12px solid #bad6ce;
+}
+.calendar-page .important-card {
+  background: #fffef9;
+}
+.record-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 6.24px;
+}
+.record-title {
+  font-size: 14.040000000000001px;
+  font-weight: 500;
+  line-height: 1.45;
+  word-break: break-word;
+  white-space: pre-wrap;
+  flex: 1;
+  min-width: 0;
+}
+.record-kind {
+  flex: none;
+  font-size: 9.36px;
+  padding: 1.56px 4.16px;
+  border-radius: 5.2px;
+  white-space: nowrap;
+  line-height: 1.5;
+}
+.diary-kind {
+  background: #d6eae8;
+  color: #357d85;
+}
+.important-kind {
+  background: #f4e6e0;
+  color: #a65f4c;
+}
+.diary-content {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  font-size: 13.52px;
+  line-height: 1.55;
+  color: #56655d;
+  margin-top: 3.12px;
+}
+.record-author {
+  display: flex;
+  align-items: center;
+  gap: 4.16px;
+  margin-top: 4.16px;
+  font-size: 10.92px;
+  color: #68776f;
+}
+.author-avatar {
+  width: 14.56px;
+  height: 14.56px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.author-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #dce7d8;
+  color: #42664f;
+  font-size: 9.36px;
+}
+
+/* Keep the calendar easy to scan; let the secondary upcoming list stay tucked away. */
+.calendar-page .month-card {
+  padding: 10.4px 12.48px 8.32px;
+}
+.calendar-page .weekday {
+  padding-top: 10.4px;
+  padding-bottom: 8.32px;
+}
+.calendar-page .day {
+  height: 48.88px;
+  padding-top: 5.2px;
+}
+.calendar-page .day.selected::before {
+  height: 45.760000000000005px;
+}
+.calendar-page .calendar-legend {
+  margin-top: 9.36px;
+  margin-bottom: 4.16px;
+}
+.calendar-page .calendar-event {
+  padding: 5.2px 8.32px;
+}
+.calendar-page .diary-content {
+  margin-top: 2.08px;
+}
+.calendar-page .record-author {
+  margin-top: 2.6px;
+}
+.upcoming-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7.28px;
+  margin: 14.56px 2.08px 7.28px;
+  padding: 8.32px 2.08px;
+  border-bottom: 0.52px solid #e4e7dc;
+  color: #42664f;
+}
+.upcoming-toggle-title {
+  font-size: 14.040000000000001px;
+  font-weight: 600;
+}
+.upcoming-toggle-meta {
+  flex: 1;
+  color: #879286;
+  font-size: 10.92px;
+  text-align: right;
+}
+.upcoming-toggle-count {
+  min-width: 16.64px;
+  height: 16.64px;
+  padding: 0 4.16px;
+  border-radius: 9.36px;
+  background: #e7ecdd;
+  color: #42664f;
+  font-size: 9.88px;
+  line-height: 16.64px;
+  text-align: center;
+  box-sizing: border-box;
+}
+.upcoming-toggle-chevron {
+  width: 6.24px;
+  height: 6.24px;
+  border-right: 1.56px solid #879286;
+  border-bottom: 1.56px solid #879286;
+  transform: rotate(45deg) translateY(-1.56px);
+  transition: transform 160ms ease;
+}
+.upcoming-toggle-chevron.expanded {
+  transform: rotate(225deg) translateY(-0.52px);
+}
+.upcoming-content {
+  padding-bottom: 4.16px;
+}
+body{margin:0;background:#f7f5ee;width:390px;font-family:system-ui;color:#283b34}button{border:0;font-family:inherit}i{display:block}header{padding:14px 24px 4px;font-size:13px}.nav{height:40px;text-align:center;line-height:40px;font-size:17px}.tab{display:flex;justify-content:space-around;background:#fffef9;padding:18px 8px;color:#798279;font-size:13px}.calendar-page{min-height:0}.tab{position:fixed;left:0;right:0;bottom:0;z-index:10} .sheet{z-index:30}.shade{z-index:20}.notice{color:#879286;font-size:12px;line-height:1.7;margin:12px 0 24px}.group-label{font-size:15px;font-weight:600;margin:26px 0 13px}.quota-card{background:#fffef9;padding:18px;border-radius:17px}.quota-row{display:flex;align-items:center;justify-content:space-between;font-size:14px;padding:13px 0}.quota-row+.quota-row{border-top:1px solid #eceee4}.quota-count{font-size:12px;color:#879286;margin-top:6px}.switch{width:35px;height:21px;border-radius:15px;background:#42664f;padding:3px}.switch:after{content:'';display:block;width:15px;height:15px;border-radius:50%;background:#fff;margin-left:14px}.top-summary{background:#e7ecdd;border-radius:18px;padding:18px;margin:6px 0 24px}.top-summary .sender{font-size:13px}.recent-state{font-size:12px;color:#68776f;margin-top:13px}.reply{background:#f7f5ee;border-radius:10px;padding:12px;margin:14px 0 0 49px;font-size:13px;color:#56655d;line-height:1.7}.reply .muted{margin-top:2px}.hint-row{display:flex;justify-content:space-between;font-size:12px;color:#798279;padding:14px 0;margin-top:12px}.calendar-misses{border-top:1px solid #e4e7dc;margin:18px 0;padding:16px 3px;font-size:13px}.calendar-misses .life-row{font-size:14px;color:#42664f}.calendar-misses p{font-size:12px;color:#879286;margin:8px 0 0}.readonly-title{font-size:13px;color:#879286;margin:8px 0 20px}.calendar-summary{padding:13px 0;border-bottom:1px solid #eceee4}.calendar-summary .message{margin-left:49px}.jump{display:block;text-align:center;font-size:14px;color:#42664f;padding:18px 0 0}.sheet .history-card{padding:8px 0;background:none}.sheet .history-card+.history-card{border-top:1px solid #e4e7dc;padding-top:18px}.sheet .reply{margin-left:49px}</style><header>9:41 <span style=&quot;float:right&quot;>●●● ▰</span></header><div class=&quot;nav&quot;>纪念日历</div><div class=&quot;life-page calendar-page&quot;><div class=&quot;life-eyebrow&quot;>每一个值得记住的日子</div><div class=&quot;life-title&quot;>纪念日历</div><div class=&quot;calendar-entry-actions&quot;><button class=&quot;calendar-entry diary-entry&quot;><div class=&quot;entry-icon&quot;><div class=&quot;entry-pencil&quot;></div></div><div class=&quot;entry-copy&quot;><div>＋ 写当天记录</div><span>去了哪里、做了什么</span></div></button><button class=&quot;calendar-entry important-entry&quot;><div class=&quot;entry-icon&quot;><div class=&quot;entry-calendar&quot;><div class=&quot;entry-calendar-dots&quot;></div></div></div><div class=&quot;entry-copy&quot;><div>＋ 添加重要日子</div><span>生日、纪念日、倒数日</span></div></button></div><div class=&quot;life-row together-row&quot;><span>在一起第 1003 天</span><span class=&quot;life-link&quot;>设置起始日</span></div><div class=&quot;life-card month-card&quot;><div class=&quot;life-row&quot;><span class=&quot;month-arrow&quot;>‹</span><span class=&quot;month-label&quot;>2026年11月</span><span class=&quot;month-arrow&quot;>›</span></div><div class=&quot;calendar-grid&quot;><span class=&quot;weekday&quot;>一</span><span class=&quot;weekday&quot;>二</span><span class=&quot;weekday&quot;>三</span><span class=&quot;weekday&quot;>四</span><span class=&quot;weekday&quot;>五</span><span class=&quot;weekday&quot;>六</span><span class=&quot;weekday&quot;>日</span></div><div class=&quot;calendar-grid&quot;><div class=&quot;day &quot;><span class=&quot;day-number&quot;></span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;></span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;></span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;></span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;></span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;></span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>1</span><span class=&quot;day-lunar &quot;>廿三</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>2</span><span class=&quot;day-lunar &quot;>廿四</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>3</span><span class=&quot;day-lunar &quot;>廿五</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>4</span><span class=&quot;day-lunar &quot;>廿六</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>5</span><span class=&quot;day-lunar &quot;>廿七</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>6</span><span class=&quot;day-lunar &quot;>廿八</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>7</span><span class=&quot;day-lunar &quot;>廿九</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>8</span><span class=&quot;day-lunar &quot;>三十</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>9</span><span class=&quot;day-lunar lunar-month-start&quot;>十月</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>10</span><span class=&quot;day-lunar &quot;>初二</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>11</span><span class=&quot;day-lunar &quot;>初三</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day selected&quot;><span class=&quot;day-number&quot;>12</span><span class=&quot;day-lunar &quot;>初四</span><div class=&quot;day-markers&quot;><i class=&quot;event-dot diary-dot&quot;></i></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>13</span><span class=&quot;day-lunar &quot;>初五</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>14</span><span class=&quot;day-lunar &quot;>初六</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>15</span><span class=&quot;day-lunar &quot;>初七</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>16</span><span class=&quot;day-lunar &quot;>初八</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>17</span><span class=&quot;day-lunar &quot;>初九</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>18</span><span class=&quot;day-lunar &quot;>初十</span><div class=&quot;day-markers&quot;><i class=&quot;event-dot important-dot&quot;></i></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>19</span><span class=&quot;day-lunar &quot;>十一</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>20</span><span class=&quot;day-lunar &quot;>十二</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>21</span><span class=&quot;day-lunar &quot;>十三</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>22</span><span class=&quot;day-lunar &quot;>十四</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>23</span><span class=&quot;day-lunar &quot;>十五</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>24</span><span class=&quot;day-lunar &quot;>十六</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>25</span><span class=&quot;day-lunar &quot;>十七</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>26</span><span class=&quot;day-lunar &quot;>十八</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>27</span><span class=&quot;day-lunar &quot;>十九</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>28</span><span class=&quot;day-lunar &quot;>二十</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>29</span><span class=&quot;day-lunar &quot;>廿一</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>30</span><span class=&quot;day-lunar &quot;>廿二</span><div class=&quot;day-markers&quot;></div></div></div><div class=&quot;calendar-legend&quot;><span><span class=&quot;legend-dot diary-dot&quot;></span>当天记录</span><span><span class=&quot;legend-dot important-dot&quot;></span>重要日子</span></div></div><div class=&quot;day-records&quot;><div class=&quot;selected-date-heading&quot;><div class=&quot;selected-date-copy&quot;><div class=&quot;selected-date-title&quot;>11月12日 · 星期四</div><div class=&quot;selected-lunar&quot;>农历十月初四 · 丙午年</div></div><span class=&quot;life-link&quot;>写记录 →</span></div><div class=&quot;life-event calendar-event diary-card&quot;><div class=&quot;life-event-copy&quot;><div class=&quot;record-heading&quot;><span class=&quot;record-title&quot;>一起散步的傍晚</span><span class=&quot;record-kind diary-kind&quot;>当天记录</span></div><div class=&quot;diary-content&quot;>在熟悉的小路上，又聊了好多小事。
+路过街角的花店，买了一束喜欢的花。</div><div class=&quot;record-author&quot;><div class=&quot;author-avatar author-fallback&quot;>我</div><span>我记录</span></div></div></div></div><div class=&quot;calendar-misses&quot;><div class=&quot;life-row&quot;><span>♡ 当天互动</span><span>查看 ›</span></div><p>发出 2 条 · 收到 1 条</p></div><div class=&quot;upcoming-toggle&quot;><span class=&quot;upcoming-toggle-title&quot;>接下来值得期待</span><span class=&quot;upcoming-toggle-count&quot;>2</span><i class=&quot;upcoming-toggle-chevron expanded&quot;></i></div><div class=&quot;upcoming-content&quot;><div class=&quot;life-event&quot;><div class=&quot;life-date&quot;>18</div><div class=&quot;life-event-copy&quot;>一起迎接新的日子</div><div class=&quot;life-count&quot;>还有6天</div></div></div></div><div class=&quot;tab&quot;>首页　小饭桌　<span style=&quot;color:#42664f&quot;>日历</span>　足迹　我们</div></html><script>document.body.dataset.recordBottom=Math.ceil(document.querySelector('.calendar-event').getBoundingClientRect().bottom);document.body.dataset.tabTop=Math.floor(document.querySelector('.tab').getBoundingClientRect().top);</script>"></iframe></div><div><div class="label">日历 · 只读回看，管理跳转原模块</div><iframe srcdoc="<html><meta charset=&quot;utf-8&quot;><style>body {
+  background: #faf9f6;
+  color: #262326;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif;
+  font-size: 14.56px;
+}
+.page {
+  min-height: 100vh;
+  padding: 14.56px 14.56px 78px;
+  box-sizing: border-box;
+}
+.card {
+  background: #fff;
+  border-radius: 14.56px;
+  padding: 14.56px;
+  box-shadow: 0 4.16px 14.56px rgba(48, 38, 42, 0.045);
+  margin-bottom: 12.48px;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+.title {
+  font-size: 19.76px;
+  font-weight: 700;
+}
+.subtitle {
+  font-size: 13px;
+  color: #8a8583;
+  margin-top: 4.16px;
+}
+.muted {
+  color: #8a8583;
+}
+.light {
+  color: #b7b0ae;
+}
+.pink {
+  color: #e7798b;
+}
+.row {
+  display: flex;
+  align-items: center;
+}
+.between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6.24px;
+}
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e7798b;
+  color: #fff;
+  border-radius: 519.48px;
+  font-size: 14.56px;
+  font-weight: 600;
+  padding: 11.440000000000001px 17.68px;
+  line-height: 1.2;
+  border: 0;
+  transition:
+    transform 0.16s ease,
+    opacity 0.16s ease,
+    box-shadow 0.16s ease;
+}
+.btn:active {
+  transform: scale(0.975);
+  opacity: 0.9;
+}
+.btn::after {
+  border: 0;
+}
+.btn.secondary {
+  background: #fbecee;
+  color: #c6677a;
+}
+.btn.ghost {
+  background: #fff;
+  color: #c6677a;
+  border: 1.04px solid #f2d9de;
+}
+.btn.small {
+  padding: 7.28px 12.48px;
+  font-size: 12.48px;
+}
+.tag {
+  background: #fbecee;
+  color: #b76577;
+  border-radius: 519.48px;
+  padding: 4.16px 8.32px;
+  font-size: 11.440000000000001px;
+}
+.section-title {
+  font-size: 16.64px;
+  font-weight: 700;
+  margin: 18.72px 2.08px 10.4px;
+}
+.input {
+  height: 43.68px;
+  line-height: 43.68px;
+  background: #fff;
+  border-radius: 12.48px;
+  padding: 0 13.52px;
+  box-sizing: border-box;
+  width: 100%;
+  font-size: 14.56px;
+  transition:
+    background 0.18s ease,
+    box-shadow 0.18s ease;
+}
+.input:focus {
+  background: #fffdfe;
+  box-shadow: 0 0 0 1.56px #f7e1e5;
+}
+.field {
+  margin-bottom: 12.48px;
+}
+.label {
+  display: block;
+  font-size: 12.48px;
+  color: #8a8583;
+  margin: 0 0 6.24px 3.12px;
+}
+.empty {
+  text-align: center;
+  padding: 41.6px 15.600000000000001px;
+  color: #8a8583;
+}
+.empty-icon {
+  font-size: 39.52px;
+  margin-bottom: 10.4px;
+}
+.fab {
+  position: fixed;
+  right: 15.600000000000001px;
+  bottom: 78px;
+  background: #e7798b;
+  color: #fff;
+  border-radius: 519.48px;
+  padding: 11.440000000000001px 15.600000000000001px;
+  box-shadow: 0 6.24px 15.600000000000001px rgba(231, 121, 139, 0.22);
+  z-index: 9;
+  transition: transform 0.16s ease;
+}
+.fab:active {
+  transform: scale(0.95);
+}
+.image-placeholder {
+  background: #f6f1ee;
+  color: #b6a8a5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.loading {
+  text-align: center;
+  color: #8a8583;
+  padding: 41.6px;
+}
+.error {
+  text-align: center;
+  padding: 31.200000000000003px;
+}
+.divider {
+  height: 1.04px;
+  background: #f0ebe9;
+  margin: 12.48px 0;
+}
+
+/* Warm cream and muted coral used across the prototype. */
+body {
+  background: #fffcfb;
+  color: #29272a;
+}
+.pink {
+  color: #de7f84;
+}
+.btn,
+.fab {
+  background: #de7f84;
+}
+.btn.secondary {
+  background: #fcf4f3;
+  color: #bd6c74;
+}
+.btn.ghost {
+  color: #bd6c74;
+  border-color: #f1dcda;
+}
+.tag {
+  background: #fff0ee;
+  color: #b96e75;
+}
+.image-placeholder {
+  background: #f8f3f0;
+  color: #bdaea5;
+}
+
+/* Detail and management pages share the approved prototype's scale and palette. */
+.prototype-page {
+  min-height: 100vh;
+  box-sizing: border-box;
+  background: #fff;
+  color: #242326;
+  padding: 0 14.56px 93.60000000000001px;
+}
+.prototype-title {
+  font-size: 24.44px;
+  line-height: 1.25;
+  letter-spacing: -0.52px;
+  font-weight: 760;
+  color: #171719;
+}
+.prototype-caption {
+  font-size: 12.48px;
+  line-height: 1.5;
+  color: #89888d;
+}
+.prototype-card {
+  background: #fff;
+  border: 0.52px solid #f0edeb;
+  border-radius: 13px;
+  box-shadow: 0 5.2px 13.52px rgba(44, 32, 34, 0.035);
+}
+.prototype-button {
+  background: #dd7e80;
+  color: #fff;
+  border-radius: 519.48px;
+  font-size: 14.56px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  box-sizing: border-box;
+}
+.prototype-button::after {
+  border: 0;
+}
+.prototype-button:active {
+  opacity: 0.88;
+  transform: scale(0.987);
+}
+.prototype-fixed {
+  position: fixed;
+  left: 14.56px;
+  right: 14.56px;
+  bottom: calc(15.600000000000001px + env(safe-area-inset-bottom));
+  height: 44.72px;
+  z-index: 8;
+  box-shadow: 0 5.2px 13px rgba(221, 126, 128, 0.12);
+}
+.prototype-soft {
+  background: #f8f6f5;
+  border-radius: 10.4px;
+}
+.prototype-divider {
+  height: 0.52px;
+  background: #f0edec;
+}
+.media-thumb {
+  width: 58.24px;
+  height: 58.24px;
+  flex-shrink: 0;
+  border-radius: 9.36px;
+  overflow: hidden;
+  background: #f3eeeb;
+}
+.media-hero {
+  width: 100%;
+  aspect-ratio: 4/3;
+  border-radius: 12.48px;
+  overflow: hidden;
+  background: #f3eeeb;
+}
+.media-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #f3eeeb;
+}
+.media-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3eeeb;
+}
+.media-placeholder image {
+  width: 40%;
+  height: 40%;
+  opacity: 0.65;
+}
+.prototype-page > subpage-header {
+  display: block;
+  margin: 0 -14.56px;
+}
+/* Approved life-space palette: sage, warm paper, generous quiet spacing. */
+body {
+  background: #f7f5ee;
+  color: #283b34;
+}
+.life-page {
+  padding: 16.64px 20.8px 33.28px;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+.life-eyebrow {
+  font-size: 11.440000000000001px;
+  letter-spacing: 1.56px;
+  color: #798279;
+}
+.life-title {
+  font-size: 28.080000000000002px;
+  line-height: 1.4;
+  font-weight: 500;
+  font-family: Georgia, 'Songti SC', serif;
+  margin: 8.32px 0 12.48px;
+}
+.life-subtitle {
+  font-size: 12.48px;
+  color: #798279;
+  line-height: 1.7;
+}
+.life-card {
+  background: #fffef9;
+  border-radius: 16.64px;
+  padding: 14.56px;
+  margin: 10.4px 0;
+}
+.life-hero {
+  background: #e7ecdd;
+  border-radius: 20.8px;
+  padding: 20.8px;
+  margin: 16.64px 0;
+}
+.life-number {
+  font-family: Georgia, serif;
+  font-size: 56.160000000000004px;
+  line-height: 1.3;
+  color: #42664f;
+}
+.life-number span {
+  font-family: sans-serif;
+  font-size: 13.52px;
+  margin-left: 6.24px;
+}
+.life-heading {
+  font-size: 17.68px;
+  font-weight: 500;
+  margin: 18.72px 0 10.4px;
+}
+.life-button {
+  background: #42664f;
+  color: #fff;
+  border: 0;
+  border-radius: 11.440000000000001px;
+  font-size: 13.52px;
+  padding: 9.36px 14.56px;
+  line-height: 1.6;
+  margin: 0;
+}
+.life-button::after {
+  border: 0;
+}
+.life-link {
+  color: #42664f;
+  font-size: 12.48px;
+  padding: 8.32px 0;
+}
+.life-event {
+  display: flex;
+  justify-content: space-between;
+  gap: 10.4px;
+  align-items: center;
+  background: #fffef9;
+  border-radius: 14.56px;
+  padding: 13.52px;
+  margin: 9.36px 0;
+}
+.life-date {
+  background: #f7f5ee;
+  border-radius: 9.36px;
+  min-width: 37.44px;
+  text-align: center;
+  padding: 5.2px;
+  font:
+    19.76px Georgia,
+    serif;
+}
+.life-date span {
+  display: block;
+  font: 10.4px sans-serif;
+  color: #798279;
+}
+.life-event-copy {
+  flex: 1;
+}
+.life-count {
+  color: #b97461;
+  font-size: 14.56px;
+}
+.life-photo {
+  display: block;
+  width: 100%;
+  border-radius: 13.52px;
+  background: #e7ecdd;
+}
+.life-input {
+  background: #fffef9;
+  border: 0.52px solid #e5e6dc;
+  padding: 12.48px;
+  border-radius: 10.4px;
+  margin: 6.24px 0 14.56px;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 46.800000000000004px;
+  font-size: 15.600000000000001px;
+}
+.life-label {
+  font-size: 13.52px;
+  color: #798279;
+  margin-top: 13.52px;
+}
+.life-empty {
+  padding: 31.200000000000003px 10.4px;
+  text-align: center;
+  color: #798279;
+  line-height: 1.8;
+}
+.life-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8.32px;
+}
+.life-error {
+  color: #a44839;
+  padding: 12.48px 0;
+}
+.btn,
+.fab {
+  background: #42664f;
+}
+.btn.secondary {
+  background: #e7ecdd;
+  color: #42664f;
+}
+
+/* Keep shared date cards and hero numerals on stable baselines. */
+.life-number {
+  font-family: 'Times New Roman', serif;
+  display: flex;
+  align-items: baseline;
+  gap: 6.24px;
+  font-variant-numeric: lining-nums tabular-nums;
+  line-height: 1.15;
+  padding: 6.24px 0;
+}
+.life-number span {
+  margin-left: 0;
+  line-height: 1;
+}
+.life-date {
+  font-family: 'Times New Roman', serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 37.44px;
+  font-variant-numeric: lining-nums tabular-nums;
+  line-height: 1.2;
+}
+.life-date span {
+  line-height: 1.4;
+  margin-bottom: 2.08px;
+}
+.life-event-copy {
+  min-width: 0;
+  word-break: break-word;
+}
+.life-count {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.4;
+}
+
+/* Give the calendar more breathing room and keep day records lightweight. */
+.calendar-page {
+  padding-top: 9.36px;
+}
+.calendar-page .life-title {
+  font-size: 23.92px;
+  margin: 4.16px 0 7.28px;
+}
+.calendar-page .life-eyebrow {
+  font-size: 10.4px;
+  line-height: 1.5;
+}
+.calendar-page .month-card {
+  margin: 6.24px 0 8.32px;
+}
+.together-row .life-link {
+  padding: 4.16px 0;
+}
+.calendar-page .calendar-event {
+  margin: 4.16px 0;
+}
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  text-align: center;
+  align-items: center;
+}
+.weekday {
+  font-size: 11.440000000000001px;
+  color: #798279;
+  padding: 8.32px 0 6.24px;
+}
+.month-card {
+  padding: 8.32px 11.440000000000001px 6.24px;
+}
+.month-label {
+  font-size: 15.600000000000001px;
+  font-weight: 600;
+  color: #283b34;
+}
+.month-arrow {
+  padding: 2.08px 9.36px;
+  line-height: 1;
+  font-size: 19.76px;
+  color: #42664f;
+}
+.day {
+  height: 43.68px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 4.16px;
+  box-sizing: border-box;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.day > span {
+  position: relative;
+  z-index: 1;
+}
+.day-number {
+  font-size: 14.56px;
+  line-height: 16.64px;
+  color: #283b34;
+}
+.day-lunar {
+  margin-top: 2.08px;
+  font-size: 9.88px;
+  line-height: 11.440000000000001px;
+  color: #879286;
+  white-space: nowrap;
+}
+.lunar-month-start {
+  color: #42664f;
+}
+.day.selected::before {
+  content: '';
+  position: absolute;
+  top: 1.04px;
+  width: 35.36px;
+  height: 41.6px;
+  border-radius: 8.32px;
+  background: #42664f;
+}
+.selected .day-number,
+.selected .day-lunar {
+  color: #fffef9;
+}
+.day-markers {
+  position: absolute;
+  bottom: 3.12px;
+  left: 0;
+  right: 0;
+  height: 5.2px;
+  display: flex;
+  justify-content: center;
+  gap: 3.12px;
+}
+.event-dot {
+  width: 5.2px;
+  height: 5.2px;
+  border-radius: 50%;
+  flex: none;
+}
+.legend-dot {
+  display: inline-block;
+  width: 6.76px;
+  height: 6.76px;
+  border-radius: 50%;
+  flex: none;
+}
+.calendar-page .important-dot {
+  background: #b97461;
+}
+.calendar-page .diary-dot {
+  background: #438c95;
+}
+.calendar-page .selected .diary-dot {
+  background: #a9dfe0;
+}
+.calendar-page .selected .important-dot {
+  background: #f0bbab;
+}
+.calendar-legend {
+  display: flex;
+  justify-content: center;
+  gap: 15.600000000000001px;
+  color: #798279;
+  font-size: 11.440000000000001px;
+  margin: 7.28px 0 2.08px;
+}
+.calendar-legend > span {
+  display: flex;
+  align-items: center;
+  gap: 6.24px;
+}
+.together-row {
+  font-size: 13px;
+  color: #798279;
+}
+.calendar-entry-actions {
+  display: flex;
+  gap: 9.36px;
+  margin: 0 0 6.24px;
+}
+.calendar-entry {
+  display: flex;
+  align-items: center;
+  gap: 6.24px;
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 8.32px 7.28px;
+  border-radius: 11.440000000000001px;
+  font-size: 12.48px;
+  line-height: 1.6;
+  text-align: left;
+}
+.calendar-entry::after {
+  border: 0;
+}
+.entry-copy {
+  flex: 1;
+  min-width: 0;
+}
+.calendar-entry span {
+  display: block;
+  font-size: 9.88px;
+  font-weight: 400;
+  margin-top: 2.08px;
+}
+.diary-entry {
+  background: #ddedea;
+  color: #357d85;
+}
+.important-entry {
+  background: #f2e7df;
+  color: #975f4c;
+}
+.entry-icon {
+  flex: none;
+  width: 22.880000000000003px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.entry-pencil {
+  position: relative;
+  width: 5.2px;
+  height: 16.64px;
+  border: 1.04px solid currentColor;
+  border-radius: 1.56px 1.56px 0 0;
+  transform: rotate(40deg);
+  box-sizing: border-box;
+}
+.entry-pencil::after {
+  content: '';
+  position: absolute;
+  left: -1.04px;
+  bottom: -4.68px;
+  border-left: 2.6px solid transparent;
+  border-right: 2.6px solid transparent;
+  border-top: 3.64px solid currentColor;
+}
+.entry-calendar {
+  position: relative;
+  width: 15.600000000000001px;
+  height: 15.600000000000001px;
+  border: 1.04px solid currentColor;
+  border-radius: 2.6px;
+  box-sizing: border-box;
+}
+.entry-calendar::before {
+  content: '';
+  position: absolute;
+  top: 3.64px;
+  left: 0;
+  right: 0;
+  border-top: 1.04px solid currentColor;
+}
+.entry-calendar::after {
+  content: '';
+  position: absolute;
+  left: 3.12px;
+  right: 3.12px;
+  height: 3.64px;
+  top: -2.6px;
+  border-left: 1.04px solid currentColor;
+  border-right: 1.04px solid currentColor;
+}
+.entry-calendar-dots {
+  width: 1.56px;
+  height: 1.56px;
+  background: currentColor;
+  position: absolute;
+  top: 7.28px;
+  left: 3.12px;
+  box-shadow:
+    4.68px 0 currentColor,
+    0 3.64px currentColor,
+    4.68px 3.64px currentColor;
+}
+.day-records {
+  margin: 7.28px 0 9.36px;
+}
+.selected-date-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10.4px;
+  margin-bottom: 3.12px;
+}
+.selected-date-copy {
+  flex: 1;
+  min-width: 0;
+}
+.selected-date-title {
+  font-size: 14.56px;
+  font-weight: 600;
+  color: #283b34;
+  line-height: 1.6;
+}
+.selected-lunar {
+  font-size: 11.96px;
+  color: #879286;
+  line-height: 1.6;
+  margin-top: 1.56px;
+}
+.selected-date-heading .life-link {
+  flex: none;
+  white-space: nowrap;
+  padding-top: 5.2px;
+}
+.calendar-event {
+  display: block;
+  width: 100%;
+  height: auto;
+  padding: 7.28px 10.4px;
+  border-radius: 10.4px;
+  box-sizing: border-box;
+}
+.calendar-event .life-event-copy {
+  width: 100%;
+  min-width: 0;
+}
+.calendar-page .diary-card {
+  background: #edf5f4;
+  border-left: 3.12px solid #bad6ce;
+}
+.calendar-page .important-card {
+  background: #fffef9;
+}
+.record-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 6.24px;
+}
+.record-title {
+  font-size: 14.040000000000001px;
+  font-weight: 500;
+  line-height: 1.45;
+  word-break: break-word;
+  white-space: pre-wrap;
+  flex: 1;
+  min-width: 0;
+}
+.record-kind {
+  flex: none;
+  font-size: 9.36px;
+  padding: 1.56px 4.16px;
+  border-radius: 5.2px;
+  white-space: nowrap;
+  line-height: 1.5;
+}
+.diary-kind {
+  background: #d6eae8;
+  color: #357d85;
+}
+.important-kind {
+  background: #f4e6e0;
+  color: #a65f4c;
+}
+.diary-content {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  font-size: 13.52px;
+  line-height: 1.55;
+  color: #56655d;
+  margin-top: 3.12px;
+}
+.record-author {
+  display: flex;
+  align-items: center;
+  gap: 4.16px;
+  margin-top: 4.16px;
+  font-size: 10.92px;
+  color: #68776f;
+}
+.author-avatar {
+  width: 14.56px;
+  height: 14.56px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.author-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #dce7d8;
+  color: #42664f;
+  font-size: 9.36px;
+}
+
+/* Keep the calendar easy to scan; let the secondary upcoming list stay tucked away. */
+.calendar-page .month-card {
+  padding: 10.4px 12.48px 8.32px;
+}
+.calendar-page .weekday {
+  padding-top: 10.4px;
+  padding-bottom: 8.32px;
+}
+.calendar-page .day {
+  height: 48.88px;
+  padding-top: 5.2px;
+}
+.calendar-page .day.selected::before {
+  height: 45.760000000000005px;
+}
+.calendar-page .calendar-legend {
+  margin-top: 9.36px;
+  margin-bottom: 4.16px;
+}
+.calendar-page .calendar-event {
+  padding: 5.2px 8.32px;
+}
+.calendar-page .diary-content {
+  margin-top: 2.08px;
+}
+.calendar-page .record-author {
+  margin-top: 2.6px;
+}
+.upcoming-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7.28px;
+  margin: 14.56px 2.08px 7.28px;
+  padding: 8.32px 2.08px;
+  border-bottom: 0.52px solid #e4e7dc;
+  color: #42664f;
+}
+.upcoming-toggle-title {
+  font-size: 14.040000000000001px;
+  font-weight: 600;
+}
+.upcoming-toggle-meta {
+  flex: 1;
+  color: #879286;
+  font-size: 10.92px;
+  text-align: right;
+}
+.upcoming-toggle-count {
+  min-width: 16.64px;
+  height: 16.64px;
+  padding: 0 4.16px;
+  border-radius: 9.36px;
+  background: #e7ecdd;
+  color: #42664f;
+  font-size: 9.88px;
+  line-height: 16.64px;
+  text-align: center;
+  box-sizing: border-box;
+}
+.upcoming-toggle-chevron {
+  width: 6.24px;
+  height: 6.24px;
+  border-right: 1.56px solid #879286;
+  border-bottom: 1.56px solid #879286;
+  transform: rotate(45deg) translateY(-1.56px);
+  transition: transform 160ms ease;
+}
+.upcoming-toggle-chevron.expanded {
+  transform: rotate(225deg) translateY(-0.52px);
+}
+.upcoming-content {
+  padding-bottom: 4.16px;
+}
+body{margin:0;background:#f7f5ee;width:390px;font-family:system-ui;color:#283b34}button{border:0;font-family:inherit}i{display:block}header{padding:14px 24px 4px;font-size:13px}.nav{height:40px;text-align:center;line-height:40px;font-size:17px}.tab{display:flex;justify-content:space-around;background:#fffef9;padding:18px 8px;color:#798279;font-size:13px}.calendar-page{min-height:0}.tab{position:fixed;left:0;right:0;bottom:0;z-index:10} .sheet{z-index:30}.shade{z-index:20}.notice{color:#879286;font-size:12px;line-height:1.7;margin:12px 0 24px}.group-label{font-size:15px;font-weight:600;margin:26px 0 13px}.quota-card{background:#fffef9;padding:18px;border-radius:17px}.quota-row{display:flex;align-items:center;justify-content:space-between;font-size:14px;padding:13px 0}.quota-row+.quota-row{border-top:1px solid #eceee4}.quota-count{font-size:12px;color:#879286;margin-top:6px}.switch{width:35px;height:21px;border-radius:15px;background:#42664f;padding:3px}.switch:after{content:'';display:block;width:15px;height:15px;border-radius:50%;background:#fff;margin-left:14px}.top-summary{background:#e7ecdd;border-radius:18px;padding:18px;margin:6px 0 24px}.top-summary .sender{font-size:13px}.recent-state{font-size:12px;color:#68776f;margin-top:13px}.reply{background:#f7f5ee;border-radius:10px;padding:12px;margin:14px 0 0 49px;font-size:13px;color:#56655d;line-height:1.7}.reply .muted{margin-top:2px}.hint-row{display:flex;justify-content:space-between;font-size:12px;color:#798279;padding:14px 0;margin-top:12px}.calendar-misses{border-top:1px solid #e4e7dc;margin:18px 0;padding:16px 3px;font-size:13px}.calendar-misses .life-row{font-size:14px;color:#42664f}.calendar-misses p{font-size:12px;color:#879286;margin:8px 0 0}.readonly-title{font-size:13px;color:#879286;margin:8px 0 20px}.calendar-summary{padding:13px 0;border-bottom:1px solid #eceee4}.calendar-summary .message{margin-left:49px}.jump{display:block;text-align:center;font-size:14px;color:#42664f;padding:18px 0 0}.sheet .history-card{padding:8px 0;background:none}.sheet .history-card+.history-card{border-top:1px solid #e4e7dc;padding-top:18px}.sheet .reply{margin-left:49px}</style><header>9:41 <span style=&quot;float:right&quot;>●●● ▰</span></header><div class=&quot;nav&quot;>纪念日历</div><div class=&quot;life-page calendar-page&quot;><div class=&quot;life-eyebrow&quot;>每一个值得记住的日子</div><div class=&quot;life-title&quot;>纪念日历</div><div class=&quot;calendar-entry-actions&quot;><button class=&quot;calendar-entry diary-entry&quot;><div class=&quot;entry-icon&quot;><div class=&quot;entry-pencil&quot;></div></div><div class=&quot;entry-copy&quot;><div>＋ 写当天记录</div><span>去了哪里、做了什么</span></div></button><button class=&quot;calendar-entry important-entry&quot;><div class=&quot;entry-icon&quot;><div class=&quot;entry-calendar&quot;><div class=&quot;entry-calendar-dots&quot;></div></div></div><div class=&quot;entry-copy&quot;><div>＋ 添加重要日子</div><span>生日、纪念日、倒数日</span></div></button></div><div class=&quot;life-row together-row&quot;><span>在一起第 1003 天</span><span class=&quot;life-link&quot;>设置起始日</span></div><div class=&quot;life-card month-card&quot;><div class=&quot;life-row&quot;><span class=&quot;month-arrow&quot;>‹</span><span class=&quot;month-label&quot;>2026年11月</span><span class=&quot;month-arrow&quot;>›</span></div><div class=&quot;calendar-grid&quot;><span class=&quot;weekday&quot;>一</span><span class=&quot;weekday&quot;>二</span><span class=&quot;weekday&quot;>三</span><span class=&quot;weekday&quot;>四</span><span class=&quot;weekday&quot;>五</span><span class=&quot;weekday&quot;>六</span><span class=&quot;weekday&quot;>日</span></div><div class=&quot;calendar-grid&quot;><div class=&quot;day &quot;><span class=&quot;day-number&quot;></span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;></span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;></span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;></span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;></span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;></span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>1</span><span class=&quot;day-lunar &quot;>廿三</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>2</span><span class=&quot;day-lunar &quot;>廿四</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>3</span><span class=&quot;day-lunar &quot;>廿五</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>4</span><span class=&quot;day-lunar &quot;>廿六</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>5</span><span class=&quot;day-lunar &quot;>廿七</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>6</span><span class=&quot;day-lunar &quot;>廿八</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>7</span><span class=&quot;day-lunar &quot;>廿九</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>8</span><span class=&quot;day-lunar &quot;>三十</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>9</span><span class=&quot;day-lunar lunar-month-start&quot;>十月</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>10</span><span class=&quot;day-lunar &quot;>初二</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>11</span><span class=&quot;day-lunar &quot;>初三</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day selected&quot;><span class=&quot;day-number&quot;>12</span><span class=&quot;day-lunar &quot;>初四</span><div class=&quot;day-markers&quot;><i class=&quot;event-dot diary-dot&quot;></i></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>13</span><span class=&quot;day-lunar &quot;>初五</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>14</span><span class=&quot;day-lunar &quot;>初六</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>15</span><span class=&quot;day-lunar &quot;>初七</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>16</span><span class=&quot;day-lunar &quot;>初八</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>17</span><span class=&quot;day-lunar &quot;>初九</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>18</span><span class=&quot;day-lunar &quot;>初十</span><div class=&quot;day-markers&quot;><i class=&quot;event-dot important-dot&quot;></i></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>19</span><span class=&quot;day-lunar &quot;>十一</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>20</span><span class=&quot;day-lunar &quot;>十二</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>21</span><span class=&quot;day-lunar &quot;>十三</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>22</span><span class=&quot;day-lunar &quot;>十四</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>23</span><span class=&quot;day-lunar &quot;>十五</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>24</span><span class=&quot;day-lunar &quot;>十六</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>25</span><span class=&quot;day-lunar &quot;>十七</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>26</span><span class=&quot;day-lunar &quot;>十八</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>27</span><span class=&quot;day-lunar &quot;>十九</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>28</span><span class=&quot;day-lunar &quot;>二十</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>29</span><span class=&quot;day-lunar &quot;>廿一</span><div class=&quot;day-markers&quot;></div></div><div class=&quot;day &quot;><span class=&quot;day-number&quot;>30</span><span class=&quot;day-lunar &quot;>廿二</span><div class=&quot;day-markers&quot;></div></div></div><div class=&quot;calendar-legend&quot;><span><span class=&quot;legend-dot diary-dot&quot;></span>当天记录</span><span><span class=&quot;legend-dot important-dot&quot;></span>重要日子</span></div></div><div class=&quot;day-records&quot;><div class=&quot;selected-date-heading&quot;><div class=&quot;selected-date-copy&quot;><div class=&quot;selected-date-title&quot;>11月12日 · 星期四</div><div class=&quot;selected-lunar&quot;>农历十月初四 · 丙午年</div></div><span class=&quot;life-link&quot;>写记录 →</span></div><div class=&quot;life-event calendar-event diary-card&quot;><div class=&quot;life-event-copy&quot;><div class=&quot;record-heading&quot;><span class=&quot;record-title&quot;>一起散步的傍晚</span><span class=&quot;record-kind diary-kind&quot;>当天记录</span></div><div class=&quot;diary-content&quot;>在熟悉的小路上，又聊了好多小事。
+路过街角的花店，买了一束喜欢的花。</div><div class=&quot;record-author&quot;><div class=&quot;author-avatar author-fallback&quot;>我</div><span>我记录</span></div></div></div></div><div class=&quot;calendar-misses&quot;><div class=&quot;life-row&quot;><span>♡ 当天互动</span><span>查看 ›</span></div><p>发出 2 条 · 收到 1 条</p></div><div class=&quot;upcoming-toggle&quot;><span class=&quot;upcoming-toggle-title&quot;>接下来值得期待</span><span class=&quot;upcoming-toggle-count&quot;>2</span><i class=&quot;upcoming-toggle-chevron expanded&quot;></i></div><div class=&quot;upcoming-content&quot;><div class=&quot;life-event&quot;><div class=&quot;life-date&quot;>18</div><div class=&quot;life-event-copy&quot;>一起迎接新的日子</div><div class=&quot;life-count&quot;>还有6天</div></div></div></div><div class=&quot;tab&quot;>首页　小饭桌　<span style=&quot;color:#42664f&quot;>日历</span>　足迹　我们</div><style>.small-button,.send{border:0;background:#42664f;color:#fffef9;border-radius:10px;padding:11px 15px;font-size:14px}.filters{display:flex;gap:10px;margin:10px 0 28px;color:#798279;font-size:13px}.filters span{padding:7px 15px;border-radius:18px}.filters .chosen{background:#e7ecdd;color:#42664f}.history-date{font-size:14px;color:#798279;margin:22px 0 12px}.history-card{background:#fffef9;border-radius:17px;padding:17px;margin:12px 0}.sender{display:flex;gap:11px;align-items:center;font-size:14px}.avatar{width:38px;height:38px;background:#dce8df;color:#42664f;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}.avatar.other{background:#e9e0d5;color:#79634e}.muted{font-size:11px;color:#879286;margin-top:4px}.receipt{margin-left:auto;font-size:11px;color:#798279}.message{margin:16px 0 0 49px;font-size:15px;line-height:1.6}.settings-row{display:flex;justify-content:space-between;margin-top:34px;padding:18px 3px;border-top:1px solid #e4e7dc;font-size:14px}.shade{position:fixed;inset:0;background:#26332a69;z-index:5}.sheet{position:fixed;bottom:0;left:0;right:0;background:#fffef9;border-radius:25px 25px 0 0;padding:12px 23px 27px;z-index:6}.sheet-handle{width:30px;height:4px;background:#dfdfd7;border-radius:4px;margin:0 auto 20px}.panel-title{font-size:21px;font-weight:600}.dismiss{font-size:25px;color:#798279}.people{display:flex;align-items:center;justify-content:center;gap:22px;color:#b2b9ac;margin:22px 0}.people .avatar{width:44px;height:44px}.editbox{height:125px;border:1px solid #dfe2d8;border-radius:13px;padding:16px;font-size:15px;position:relative;line-height:1.6}.counter{position:absolute;right:12px;bottom:10px;font-size:11px;color:#879286}.caret{display:inline-block;width:1px;height:17px;background:#42664f;vertical-align:middle;margin-left:2px}.chips{display:flex;gap:8px;margin:14px 0 23px}.chips span{background:#f4f1e9;border:1px solid #e8e6dc;border-radius:18px;padding:8px 13px;font-size:13px}.send{width:100%;padding:13px;font-size:16px}.footnote{text-align:center;color:#879286;font-size:11px;margin-top:13px}.popup{position:fixed;top:36%;left:24px;right:24px;background:#fffef9;border-radius:24px;padding:29px 23px 24px;z-index:6}.popup-close{position:absolute;right:17px;top:10px;font-size:23px;color:#879286}.received-message{background:#f7f5ee;border-radius:13px;padding:22px 16px;margin:24px 0;font-size:18px;line-height:1.6}.actions{display:flex;gap:12px}.actions button{flex:1;border:1px solid #c9d2c4;color:#42664f;background:transparent;border-radius:10px;padding:12px;font-size:14px}.actions .primary{background:#42664f;color:#fffef9;border-color:#42664f} .sheet{z-index:30}.shade{z-index:20}.notice{color:#879286;font-size:12px;line-height:1.7;margin:12px 0 24px}.group-label{font-size:15px;font-weight:600;margin:26px 0 13px}.quota-card{background:#fffef9;padding:18px;border-radius:17px}.quota-row{display:flex;align-items:center;justify-content:space-between;font-size:14px;padding:13px 0}.quota-row+.quota-row{border-top:1px solid #eceee4}.quota-count{font-size:12px;color:#879286;margin-top:6px}.switch{width:35px;height:21px;border-radius:15px;background:#42664f;padding:3px}.switch:after{content:'';display:block;width:15px;height:15px;border-radius:50%;background:#fff;margin-left:14px}.top-summary{background:#e7ecdd;border-radius:18px;padding:18px;margin:6px 0 24px}.top-summary .sender{font-size:13px}.recent-state{font-size:12px;color:#68776f;margin-top:13px}.reply{background:#f7f5ee;border-radius:10px;padding:12px;margin:14px 0 0 49px;font-size:13px;color:#56655d;line-height:1.7}.reply .muted{margin-top:2px}.hint-row{display:flex;justify-content:space-between;font-size:12px;color:#798279;padding:14px 0;margin-top:12px}.calendar-misses{border-top:1px solid #e4e7dc;margin:18px 0;padding:16px 3px;font-size:13px}.calendar-misses .life-row{font-size:14px;color:#42664f}.calendar-misses p{font-size:12px;color:#879286;margin:8px 0 0}.readonly-title{font-size:13px;color:#879286;margin:8px 0 20px}.calendar-summary{padding:13px 0;border-bottom:1px solid #eceee4}.calendar-summary .message{margin-left:49px}.jump{display:block;text-align:center;font-size:14px;color:#42664f;padding:18px 0 0}.sheet .history-card{padding:8px 0;background:none}.sheet .history-card+.history-card{border-top:1px solid #e4e7dc;padding-top:18px}.sheet .reply{margin-left:49px}</style><div class=&quot;shade&quot;></div><div class=&quot;sheet&quot;><div class=&quot;sheet-handle&quot;></div><div class=&quot;life-row&quot;><b class=&quot;panel-title&quot;>11月12日 · 当天互动</b><span class=&quot;dismiss&quot;>×</span></div><div class=&quot;readonly-title&quot;>在这里回看留言，回复和管理请前往“想你了”</div><div class=&quot;history-card&quot;><div class=&quot;sender&quot;><div class=&quot;avatar&quot;>我</div><div><b>我</b><div class=&quot;muted&quot;>14:36 · 对方已看</div></div></div><div class=&quot;message&quot;>下班一起吃饭？</div></div><div class=&quot;history-card&quot;><div class=&quot;sender&quot;><div class=&quot;avatar other&quot;>辰</div><div><b>阿辰</b><div class=&quot;muted&quot;>14:32 · 已回应</div></div></div><div class=&quot;message&quot;>想你了</div><div class=&quot;reply&quot;><b>我</b>：我也是，晚上见。<div class=&quot;muted&quot;>14:38</div></div></div><span class=&quot;jump&quot;>去想你了查看 ›</span></div></html><script>document.body.dataset.recordBottom=Math.ceil(document.querySelector('.calendar-event').getBoundingClientRect().bottom);document.body.dataset.tabTop=Math.floor(document.querySelector('.tab').getBoundingClientRect().top);</script>"></iframe></div></div>

@@ -1,0 +1,15 @@
+{
+  "couples": "spaces",
+  "couple_members": "space_members",
+  "starter_categories": "category_templates",
+  "starter_dishes": "dish_templates",
+  "categories": "dish_categories",
+  "favorites": "dish_favorites",
+  "orders": "meals",
+  "order_items": "meal_items",
+  "notifications": "messages",
+  "wechat_subscription_grants": "subscription_grants",
+  "wechat_subscription_credits": "subscription_credits",
+  "life_events": "calendar_entries",
+  "travel_photos": "photos"
+}

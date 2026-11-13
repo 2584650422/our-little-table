@@ -1,0 +1,31 @@
+<view class="board {{compact?'compact':''}} {{album?'album':''}}">
+  <view class="map-clip" style="{{clipStyle}}">
+  <movable-area class="area" style="{{areaStyle}}" scale-area>
+    <movable-view class="stage" direction="all" inertia scale scale-min="1" scale-max="3" scale-value="{{scale}}" x="{{x}}" y="{{y}}" bindscale="scaleChange" bindchange="moveChange" bindtap="mapTap" animation>
+      <view class="map-frame" style="{{frameStyle}}">
+        <view class="map-layer {{focus?'focused':''}} {{zoomed?'province-only':''}}" style="{{imageStyle}}">
+          <image id="map-surface" class="map-image" src="{{base}}" mode="scaleToFill"/>
+        </view>
+        <image wx:if="{{highlight}}" class="map-image highlight" src="{{highlight}}" mode="scaleToFill"/>
+        <block wx:for="{{cityLabels}}" wx:key="name">
+          <view wx:if="{{item.leaderStyle}}" class="city-leader" style="{{item.leaderStyle}}"/>
+          <text class="city-label" style="{{item.style}}">{{item.text}}</text>
+        </block>
+      </view>
+    </movable-view>
+  </movable-area>
+  </view>
+      <view class="photos {{fading?'fading':''}}">
+        <view wx:for="{{markers}}" wx:key="id" class="location-marker" style="{{item.style}}"><view class="marker-dot"/><text wx:if="{{album && item.label}}" class="marker-label">{{item.label}}</text></view>
+        <view wx:for="{{lines}}" wx:key="id" class="thread" style="{{item.style}}"><view class="pin"/></view>
+        <view wx:for="{{cards}}" wx:key="id" class="stack edge-{{item.edge}}" style="{{item.style}}" data-id="{{item.id}}" catchtap="groupTap" role="button" aria-label="{{item.name}}，{{item.count}}张照片">
+          <image class="paper back-two" src="{{item.previewUrl}}" mode="aspectFill"/>
+          <image class="paper back-one" src="{{item.back}}" mode="aspectFill"/>
+          <image class="paper front" src="{{item.previewUrl}}" mode="aspectFill"/>
+          <text class="count">{{item.count}}</text>
+          <text wx:if="{{!compact}}" class="name">{{item.name}}</text>
+        </view>
+      </view>
+  <view wx:if="{{!compact}}" class="zoom-controls"><view class="zoom-button" data-delta="0.35" bindtap="zoom" aria-label="放大">＋</view><view class="zoom-button" data-delta="-0.35" bindtap="zoom" aria-label="缩小">−</view><view class="zoom-button" bindtap="reset" aria-label="恢复视图">↺</view></view>
+  <view wx:if="{{pages>1}}" class="pagination"><text class="pager-arrow" bindtap="previous">‹</text><text>{{page+1}} / {{pages}}</text><text class="pager-arrow" bindtap="next">›</text></view>
+</view>

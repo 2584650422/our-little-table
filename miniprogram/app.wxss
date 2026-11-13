@@ -1,28 +1,493 @@
-page{background:#FAF9F6;color:#262326;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;font-size:28rpx} .page{min-height:100vh;padding:28rpx 28rpx 150rpx;box-sizing:border-box}.card{background:#fff;border-radius:28rpx;padding:28rpx;box-shadow:0 8rpx 28rpx rgba(48,38,42,.045);margin-bottom:24rpx;transition:transform .18s ease,box-shadow .18s ease}.title{font-size:38rpx;font-weight:700}.subtitle{font-size:25rpx;color:#8A8583;margin-top:8rpx}.muted{color:#8A8583}.light{color:#B7B0AE}.pink{color:#E7798B}.row{display:flex;align-items:center}.between{display:flex;align-items:center;justify-content:space-between}.wrap{display:flex;flex-wrap:wrap;gap:12rpx}.btn{display:flex;align-items:center;justify-content:center;background:#E7798B;color:#fff;border-radius:999rpx;font-size:28rpx;font-weight:600;padding:22rpx 34rpx;line-height:1.2;border:0;transition:transform .16s ease,opacity .16s ease,box-shadow .16s ease}.btn:active{transform:scale(.975);opacity:.9}.btn::after{border:0}.btn.secondary{background:#FBECEE;color:#C6677A}.btn.ghost{background:#fff;color:#C6677A;border:2rpx solid #F2D9DE}.btn.small{padding:14rpx 24rpx;font-size:24rpx}.tag{background:#FBECEE;color:#B76577;border-radius:999rpx;padding:8rpx 16rpx;font-size:22rpx}.section-title{font-size:32rpx;font-weight:700;margin:36rpx 4rpx 20rpx}.input{height:84rpx;line-height:84rpx;background:#fff;border-radius:24rpx;padding:0 26rpx;box-sizing:border-box;width:100%;font-size:28rpx;transition:background .18s ease,box-shadow .18s ease}.input:focus{background:#FFFDFE;box-shadow:0 0 0 3rpx #F7E1E5}.field{margin-bottom:24rpx}.label{display:block;font-size:24rpx;color:#8A8583;margin:0 0 12rpx 6rpx}.empty{text-align:center;padding:80rpx 30rpx;color:#8A8583}.empty-icon{font-size:76rpx;margin-bottom:20rpx}.fab{position:fixed;right:30rpx;bottom:150rpx;background:#E7798B;color:#fff;border-radius:999rpx;padding:22rpx 30rpx;box-shadow:0 12rpx 30rpx rgba(231,121,139,.22);z-index:9;transition:transform .16s ease}.fab:active{transform:scale(.95)}.image-placeholder{background:#F6F1EE;color:#B6A8A5;display:flex;align-items:center;justify-content:center}.loading{text-align:center;color:#8A8583;padding:80rpx}.error{text-align:center;padding:60rpx}.divider{height:2rpx;background:#F0EBE9;margin:24rpx 0}
+page {
+  background: #faf9f6;
+  color: #262326;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif;
+  font-size: 28rpx;
+}
+.page {
+  min-height: 100vh;
+  padding: 28rpx 28rpx 150rpx;
+  box-sizing: border-box;
+}
+.card {
+  background: #fff;
+  border-radius: 28rpx;
+  padding: 28rpx;
+  box-shadow: 0 8rpx 28rpx rgba(48, 38, 42, 0.045);
+  margin-bottom: 24rpx;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+.title {
+  font-size: 38rpx;
+  font-weight: 700;
+}
+.subtitle {
+  font-size: 25rpx;
+  color: #8a8583;
+  margin-top: 8rpx;
+}
+.muted {
+  color: #8a8583;
+}
+.light {
+  color: #b7b0ae;
+}
+.pink {
+  color: #e7798b;
+}
+.row {
+  display: flex;
+  align-items: center;
+}
+.between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e7798b;
+  color: #fff;
+  border-radius: 999rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+  padding: 22rpx 34rpx;
+  line-height: 1.2;
+  border: 0;
+  transition:
+    transform 0.16s ease,
+    opacity 0.16s ease,
+    box-shadow 0.16s ease;
+}
+.btn:active {
+  transform: scale(0.975);
+  opacity: 0.9;
+}
+.btn::after {
+  border: 0;
+}
+.btn.secondary {
+  background: #fbecee;
+  color: #c6677a;
+}
+.btn.ghost {
+  background: #fff;
+  color: #c6677a;
+  border: 2rpx solid #f2d9de;
+}
+.btn.small {
+  padding: 14rpx 24rpx;
+  font-size: 24rpx;
+}
+.tag {
+  background: #fbecee;
+  color: #b76577;
+  border-radius: 999rpx;
+  padding: 8rpx 16rpx;
+  font-size: 22rpx;
+}
+.section-title {
+  font-size: 32rpx;
+  font-weight: 700;
+  margin: 36rpx 4rpx 20rpx;
+}
+.input {
+  height: 84rpx;
+  line-height: 84rpx;
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 0 26rpx;
+  box-sizing: border-box;
+  width: 100%;
+  font-size: 28rpx;
+  transition:
+    background 0.18s ease,
+    box-shadow 0.18s ease;
+}
+.input:focus {
+  background: #fffdfe;
+  box-shadow: 0 0 0 3rpx #f7e1e5;
+}
+.field {
+  margin-bottom: 24rpx;
+}
+.label {
+  display: block;
+  font-size: 24rpx;
+  color: #8a8583;
+  margin: 0 0 12rpx 6rpx;
+}
+.empty {
+  text-align: center;
+  padding: 80rpx 30rpx;
+  color: #8a8583;
+}
+.empty-icon {
+  font-size: 76rpx;
+  margin-bottom: 20rpx;
+}
+.fab {
+  position: fixed;
+  right: 30rpx;
+  bottom: 150rpx;
+  background: #e7798b;
+  color: #fff;
+  border-radius: 999rpx;
+  padding: 22rpx 30rpx;
+  box-shadow: 0 12rpx 30rpx rgba(231, 121, 139, 0.22);
+  z-index: 9;
+  transition: transform 0.16s ease;
+}
+.fab:active {
+  transform: scale(0.95);
+}
+.image-placeholder {
+  background: #f6f1ee;
+  color: #b6a8a5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.loading {
+  text-align: center;
+  color: #8a8583;
+  padding: 80rpx;
+}
+.error {
+  text-align: center;
+  padding: 60rpx;
+}
+.divider {
+  height: 2rpx;
+  background: #f0ebe9;
+  margin: 24rpx 0;
+}
 
 /* Warm cream and muted coral used across the prototype. */
-page{background:#FFFCFB;color:#29272A}
-.pink{color:#DE7F84}
-.btn,.fab{background:#DE7F84}
-.btn.secondary{background:#FCF4F3;color:#BD6C74}
-.btn.ghost{color:#BD6C74;border-color:#F1DCDA}
-.tag{background:#FFF0EE;color:#B96E75}
-.image-placeholder{background:#F8F3F0;color:#BDAEA5}
+page {
+  background: #fffcfb;
+  color: #29272a;
+}
+.pink {
+  color: #de7f84;
+}
+.btn,
+.fab {
+  background: #de7f84;
+}
+.btn.secondary {
+  background: #fcf4f3;
+  color: #bd6c74;
+}
+.btn.ghost {
+  color: #bd6c74;
+  border-color: #f1dcda;
+}
+.tag {
+  background: #fff0ee;
+  color: #b96e75;
+}
+.image-placeholder {
+  background: #f8f3f0;
+  color: #bdaea5;
+}
 
 /* Detail and management pages share the approved prototype's scale and palette. */
-.prototype-page{min-height:100vh;box-sizing:border-box;background:#fff;color:#242326;padding:0 28rpx 180rpx}
-.prototype-title{font-size:47rpx;line-height:1.25;letter-spacing:-1rpx;font-weight:760;color:#171719}
-.prototype-caption{font-size:24rpx;line-height:1.5;color:#89888D}
-.prototype-card{background:#fff;border:1rpx solid #F0EDEB;border-radius:25rpx;box-shadow:0 10rpx 26rpx rgba(44,32,34,.035)}
-.prototype-button{background:#DD7E80;color:#fff;border-radius:999rpx;font-size:28rpx;font-weight:600;display:flex;align-items:center;justify-content:center;border:0;box-sizing:border-box}
-.prototype-button::after{border:0}
-.prototype-button:active{opacity:.88;transform:scale(.987)}
-.prototype-fixed{position:fixed;left:28rpx;right:28rpx;bottom:calc(30rpx + env(safe-area-inset-bottom));height:86rpx;z-index:8;box-shadow:0 10rpx 25rpx rgba(221,126,128,.12)}
-.prototype-soft{background:#F8F6F5;border-radius:20rpx}
-.prototype-divider{height:1rpx;background:#F0EDEC}
-.media-thumb{width:112rpx;height:112rpx;flex-shrink:0;border-radius:18rpx;overflow:hidden;background:#F3EEEB}
-.media-hero{width:100%;aspect-ratio:4/3;border-radius:24rpx;overflow:hidden;background:#F3EEEB}
-.media-avatar{width:100%;height:100%;border-radius:50%;overflow:hidden;background:#F3EEEB}
-.media-placeholder{display:flex;align-items:center;justify-content:center;background:#F3EEEB}
-.media-placeholder image{width:40%;height:40%;opacity:.65}
-.prototype-page>subpage-header{display:block;margin:0 -28rpx}
+.prototype-page {
+  min-height: 100vh;
+  box-sizing: border-box;
+  background: #fff;
+  color: #242326;
+  padding: 0 28rpx 180rpx;
+}
+.prototype-title {
+  font-size: 47rpx;
+  line-height: 1.25;
+  letter-spacing: -1rpx;
+  font-weight: 760;
+  color: #171719;
+}
+.prototype-caption {
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: #89888d;
+}
+.prototype-card {
+  background: #fff;
+  border: 1rpx solid #f0edeb;
+  border-radius: 25rpx;
+  box-shadow: 0 10rpx 26rpx rgba(44, 32, 34, 0.035);
+}
+.prototype-button {
+  background: #dd7e80;
+  color: #fff;
+  border-radius: 999rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  box-sizing: border-box;
+}
+.prototype-button::after {
+  border: 0;
+}
+.prototype-button:active {
+  opacity: 0.88;
+  transform: scale(0.987);
+}
+.prototype-fixed {
+  position: fixed;
+  left: 28rpx;
+  right: 28rpx;
+  bottom: calc(30rpx + env(safe-area-inset-bottom));
+  height: 86rpx;
+  z-index: 8;
+  box-shadow: 0 10rpx 25rpx rgba(221, 126, 128, 0.12);
+}
+.prototype-soft {
+  background: #f8f6f5;
+  border-radius: 20rpx;
+}
+.prototype-divider {
+  height: 1rpx;
+  background: #f0edec;
+}
+.media-thumb {
+  width: 112rpx;
+  height: 112rpx;
+  flex-shrink: 0;
+  border-radius: 18rpx;
+  overflow: hidden;
+  background: #f3eeeb;
+}
+.media-hero {
+  width: 100%;
+  aspect-ratio: 4/3;
+  border-radius: 24rpx;
+  overflow: hidden;
+  background: #f3eeeb;
+}
+.media-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #f3eeeb;
+}
+.media-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3eeeb;
+}
+.media-placeholder image {
+  width: 40%;
+  height: 40%;
+  opacity: 0.65;
+}
+.prototype-page > subpage-header {
+  display: block;
+  margin: 0 -28rpx;
+}
+/* Approved life-space palette: sage, warm paper, generous quiet spacing. */
+page {
+  background: #f7f5ee;
+  color: #283b34;
+}
+.life-page {
+  padding: 32rpx 40rpx 64rpx;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+.life-eyebrow {
+  font-size: 22rpx;
+  letter-spacing: 3rpx;
+  color: #798279;
+}
+.life-title {
+  font-size: 54rpx;
+  line-height: 1.4;
+  font-weight: 500;
+  font-family: Georgia, 'Songti SC', serif;
+  margin: 16rpx 0 24rpx;
+}
+.life-subtitle {
+  font-size: 24rpx;
+  color: #798279;
+  line-height: 1.7;
+}
+.life-card {
+  background: #fffef9;
+  border-radius: 32rpx;
+  padding: 28rpx;
+  margin: 20rpx 0;
+}
+.life-hero {
+  background: #e7ecdd;
+  border-radius: 40rpx;
+  padding: 40rpx;
+  margin: 32rpx 0;
+}
+.life-number {
+  font-family: Georgia, serif;
+  font-size: 108rpx;
+  line-height: 1.3;
+  color: #42664f;
+}
+.life-number text {
+  font-family: sans-serif;
+  font-size: 26rpx;
+  margin-left: 12rpx;
+}
+.life-heading {
+  font-size: 34rpx;
+  font-weight: 500;
+  margin: 36rpx 0 20rpx;
+}
+.life-button {
+  background: #42664f;
+  color: #fff;
+  border: 0;
+  border-radius: 22rpx;
+  font-size: 26rpx;
+  padding: 18rpx 28rpx;
+  line-height: 1.6;
+  margin: 0;
+}
+.life-button::after {
+  border: 0;
+}
+.life-link {
+  color: #42664f;
+  font-size: 24rpx;
+  padding: 16rpx 0;
+}
+.life-event {
+  display: flex;
+  justify-content: space-between;
+  gap: 20rpx;
+  align-items: center;
+  background: #fffef9;
+  border-radius: 28rpx;
+  padding: 26rpx;
+  margin: 18rpx 0;
+}
+.life-date {
+  background: #f7f5ee;
+  border-radius: 18rpx;
+  min-width: 72rpx;
+  text-align: center;
+  padding: 10rpx;
+  font:
+    38rpx Georgia,
+    serif;
+}
+.life-date text {
+  display: block;
+  font: 20rpx sans-serif;
+  color: #798279;
+}
+.life-event-copy {
+  flex: 1;
+}
+.life-count {
+  color: #b97461;
+  font-size: 28rpx;
+}
+.life-photo {
+  display: block;
+  width: 100%;
+  border-radius: 26rpx;
+  background: #e7ecdd;
+}
+.life-input {
+  background: #fffef9;
+  border: 1rpx solid #e5e6dc;
+  padding: 24rpx;
+  border-radius: 20rpx;
+  margin: 12rpx 0 28rpx;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 90rpx;
+  font-size: 30rpx;
+}
+.life-label {
+  font-size: 26rpx;
+  color: #798279;
+  margin-top: 26rpx;
+}
+.life-empty {
+  padding: 60rpx 20rpx;
+  text-align: center;
+  color: #798279;
+  line-height: 1.8;
+}
+.life-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16rpx;
+}
+.life-error {
+  color: #a44839;
+  padding: 24rpx 0;
+}
+.btn,
+.fab {
+  background: #42664f;
+}
+.btn.secondary {
+  background: #e7ecdd;
+  color: #42664f;
+}
+
+/* Keep shared date cards and hero numerals on stable baselines. */
+.life-number {
+  font-family: 'Times New Roman', serif;
+  display: flex;
+  align-items: baseline;
+  gap: 12rpx;
+  font-variant-numeric: lining-nums tabular-nums;
+  line-height: 1.15;
+  padding: 12rpx 0;
+}
+.life-number text {
+  margin-left: 0;
+  line-height: 1;
+}
+.life-date {
+  font-family: 'Times New Roman', serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 72rpx;
+  font-variant-numeric: lining-nums tabular-nums;
+  line-height: 1.2;
+}
+.life-date text {
+  line-height: 1.4;
+  margin-bottom: 4rpx;
+}
+.life-event-copy {
+  min-width: 0;
+  word-break: break-word;
+}
+.life-count {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.4;
+}

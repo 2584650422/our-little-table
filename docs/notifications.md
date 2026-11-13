@@ -1,4 +1,4 @@
-# 点菜与上菜提醒
+# 微信提醒与站内消息
 
 小饭桌有两种提醒：**站内消息**保存在“消息提醒”页；**微信订阅消息**会尝试发到接收人的微信。微信消息需要接收人自己主动允许一次性订阅，不能由另一人代为授权，也不能在后台自动补次数。
 
@@ -43,9 +43,9 @@ WECHAT_SERVED_USER_KEY=thing1
 WECHAT_SERVED_DISH_NAME_KEY=thing2
 ```
 
-还需要 `WECHAT_APP_ID` 与 `WECHAT_APP_SECRET`。字段键须与自己在微信后台选用模板的详情一致。`GET /api/notifications/config` 只有在 AppID、AppSecret、模板 ID 和全部字段键齐全时，才向前端返回该模板 ID。修改生产 `.env` 后运行 `docker compose -f compose.production.yml up -d --force-recreate api`，单纯 restart 不会更新容器环境。
+还需要 `WECHAT_APP_ID` 与 `WECHAT_APP_SECRET`。字段键须与自己在微信后台选用模板的详情一致。`GET /api/notifications/config` 只有在 AppID、AppSecret、模板 ID 和全部字段键齐全时，才向前端返回该模板 ID。修改生产 `.env` 后运行 `server/k8s/sync-config.sh` 同步配置并滚动重启 API。
 
-已有数据库按实际迁移记录依次执行尚未运行的 `008_wechat_subscription_credits.sql`、`009_cap_wechat_subscription_credits.sql`；全新数据库的 `database/schema.sql` 已包含所需表。不要重复执行已运行的迁移。
+历史旧库（015 之前）按实际迁移记录执行尚未运行的 `008_wechat_subscription_credits.sql`、`009_cap_wechat_subscription_credits.sql`；全新数据库的 `database/schema.sql` 已包含所需表。不要重复执行已运行的迁移。
 
 ## 真机怎么验证
 
@@ -57,3 +57,22 @@ WECHAT_SERVED_DISH_NAME_KEY=thing2
 “消息提醒”页还有“测试点菜提醒”和“测试做饭完成”两个按钮，**只发给当前登录账号**。有余额时消耗一次；没有余额时先请求当前用户授权，再立即测试发送。测试按钮能确认微信发送接口是否接受请求，不能保证最终送达或已读。
 
 站内消息使用 `GET /api/notifications`、`PUT /api/notifications/read`；测试发送接口 `POST /api/notifications/test-send` 不允许指定其他人的 OpenID。
+
+## 小程序内的阅读状态
+
+消息卡片显示本人“未读／已读”，以及当前双方头像和各自阅读状态。绿色对勾表示该成员已在小程序阅读，或本人点击了“全部标为已读”；它不代表已读微信订阅通知。订单详情加载成功后，仅提交该次返回的本人未读消息编号，新到消息不会被顺带全部标记。全部已读同样限制在当前饭桌和当前用户，不能替伴侣操作。返回消息页会立即重新取得双方状态；停留在消息页期间每 5 秒刷新一次，仅请求消息接口，不重复加载订阅配置或显示加载动画。请求未完成时不叠加新请求，失败后保留现有内容并在下一轮重试；离开或关闭页面即停止，已发出的旧请求结果也不会覆盖新页面状态。这是短暂延迟同步，不是瞬时推送，无需 Redis、消息队列或 WebSocket。
+
+新点菜、菜单更新和上菜消息使用 `notifications.event_key` 关联同一事件的双方记录。历史消息缺少可靠关联，因此另一成员显示“无阅读记录”。更新 API 前执行迁移 `010_dish_archive_notification_receipts.sql`；它只增加字段和索引，不删除历史数据。
+
+## 当前数据库命名
+
+015 之后：站内消息为 `messages`，订阅授权收据为 `subscription_grants`，预计余额为 `subscription_credits`。字段中的微信模板 ID、请求 UUID 和 OpenID 是服务标识符，不是密文。不会为了缩减表名而合并授权收据与余额，避免重复请求增加次数或并发发送超扣。详见 [表说明](database-tables.md)。
+
+
+## 想你了与统一接收管理（016）
+
+消息提醒统一展示小饭桌和想你了两组，事件分别为created、served、thought。顶部“一键补充全部”一次传入所有已开启、已配置、未满额的模板（最多三类），不按余额排序。页面进入时预加载配置；点击时同步调用微信授权API，不能先等待网络请求，也不在授权回调后自动串行再弹窗。每类仅按真实accept/acceptWithAudio结果登记一次。未返回、拒绝、模板同名过滤及调用失败分别展示，开发者工具结果不能作为手机微信批量授权验收。每类保留单独补充入口；微信拒绝或过滤的模板不增加次数。诊断日志只记录运行平台与事件状态，不记录模板ID和消息正文。
+
+接收开关默认开启，关闭后服务端不尝试发送该类微信消息。用户只能管理自己的开关和接收机会。补充不会把各类一次填满，也不能给伴侣增加次数。提醒页可分别测试点菜、做饭完成及想念三类微信模板；测试使用当前登录用户自己的授权次数。
+
+想你了使用单独的后端模板配置；同方向10分钟合并微信请求、留言保留，详情见 [想你了实现与上线说明](thoughts.md)。先执行016与表说明更新，再发布后端和小程序。

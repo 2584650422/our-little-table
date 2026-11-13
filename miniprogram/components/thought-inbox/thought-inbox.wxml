@@ -1,0 +1,3 @@
+<view wx:if="{{item}}" class="inbox-mask" catchtouchmove="noop">
+  <view class="inbox-card"><text class="inbox-close" bindtap="close">×</text><view class="sender"><image wx:if="{{item.senderAvatarUrl}}" src="{{item.senderAvatarUrl}}" mode="aspectFill"/><view wx:else class="avatar">{{item.senderInitial}}</view><view><view>{{item.senderName}}发来一句话</view><text>{{item.createdAt}}</text></view></view><scroll-view scroll-y class="message">{{item.content}}</scroll-view><view wx:if="{{count>1}}" class="more">还有 {{count-1}} 条未查看，可在记录中一起查看</view><view class="actions"><button bindtap="confirm" loading="{{busy}}" disabled="{{busy}}">知道了</button><button class="primary" bindtap="open">{{count>1?'查看全部':'回一句'}}</button></view></view>
+</view>

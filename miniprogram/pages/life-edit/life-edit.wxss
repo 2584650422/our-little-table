@@ -1,0 +1,21 @@
+.diary-input {
+  min-height: 240rpx;
+  line-height: 1.8;
+}
+.save-button {
+  margin-top: 40rpx;
+}
+
+.entry-explanation {
+  padding: 22rpx 24rpx;
+  background: #f2e7df;
+  color: #975f4c;
+  border-radius: 20rpx;
+  font-size: 25rpx;
+  line-height: 1.7;
+  margin-bottom: 24rpx;
+}
+.diary-explanation {
+  background: #edf5f4;
+  color: #357d85;
+}

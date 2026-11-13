@@ -15,3 +15,5 @@ server/app/__pycache__/
 npm-debug.log*
 coverage/
 dist/
+
+.cache/atlas-geo/

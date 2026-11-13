@@ -1,4 +1,5 @@
 <view class="page history-page" style="padding-top:{{topInset}}px">
+  <view class="food-back" bindtap="back" aria-label="返回小饭桌">‹ 返回小饭桌</view>
   <view class="history-header"><view class="page-title">{{tab==='history'?'吃过':'等上菜'}}</view><view class="search-toggle" bindtap="toggleSearch"><view class="glass"></view></view></view>
   <view wx:if="{{searchOpen}}" class="search-bar"><input focus="{{searchOpen}}" placeholder="搜索吃过的菜或留言" value="{{keyword}}" bindinput="input"/><text catchtap="clearSearch">清空</text></view>
   <view wx:if="{{tab==='history'&&activeCount}}" class="active-link" bindtap="choose" data-tab="active"><text>有 {{activeCount}} 份小菜单正在等上菜</text><text>去看看 ›</text></view>

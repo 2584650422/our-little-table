@@ -1,0 +1,9 @@
+.env
+.env.*
+.venv*
+**/__pycache__
+**/*.py[cod]
+tests
+scripts
+k8s
+logs

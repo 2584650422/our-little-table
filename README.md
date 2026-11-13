@@ -1,73 +1,68 @@
-# 两个人的小饭桌
+# 我们的时光
 
-这是一个只给两个人使用的微信小程序：把想吃的菜放进同一份菜单，点菜、上菜，再把这一顿留在“吃过”里。它没有价格、支付或配送功能。
+两个人私密共享的生活记录小程序，包含小饭桌、日历和足迹。底部导航为首页、小饭桌、日历、足迹、我们。它不涉及交易、支付、配送或商业经营。
 
-两位饭桌成员共享菜单、点菜记录、饭桌背景与首页文案；收藏、头像和称呼各自管理。提交点菜后，对方可收到提醒；上菜后，点菜人可收到完成提醒。小程序内消息会保留，微信订阅消息则取决于接收人是否有可用的一次性授权机会。
+- **小饭桌**：共享菜谱、点菜上菜、每顿快照、饭后记录、个人收藏与消息提醒。
+- **日历**：当天记录、生日、纪念日、公历和农历倒数日；记录显示作者，按类型区分颜色。
+- **足迹**：地图选点、完整照片与预览图、最多 9 张批量保存。
+- **共同空间**：两名成员、称呼头像、起始日、首页文案和成员管理。
 
-## 四个主页面原型
+暖纸色、鼠尾草绿和现有交互以 [已确认的原型决定](docs/prototype-decisions.md) 为准。历史小饭桌原型在 `docs/prototypes/`，它们只对应饭桌模块，不代表当前五个主页面。
 
-这是此前确认的四屏合并版原型，依次展示“今天、菜单、吃过、我们”。点击图片可查看原尺寸；图中的菜品、头像和统计数字仅作设计示意，不代表真实数据。
+## 项目目录
 
-<p align="center"><a href="docs/prototypes/main-pages-overview.png"><img src="docs/prototypes/main-pages-overview.png" width="820" alt="今天、菜单、吃过、我们四个主页面原型总览"></a></p>
+| 目录 | 内容 |
+|---|---|
+| `miniprogram/` | 自包含的原生微信小程序；开发者工具打开此目录 |
+| `server/app/` | FastAPI API、空间隔离、日历、照片和 COS |
+| `server/tests/`、`tests/` | 后端与小程序行为测试 |
+| `database/` | 新库 schema、可选模板、015 改名迁移、表说明源数据 |
+| `scripts/` | 本地数据库说明生成工具 |
+| `server/scripts/` | 只读迁移核对、隔离库集成检查、图片导入工具 |
+| `server/k8s/` | 当前服务器部署资源与配置同步脚本 |
+| `docs/` | 原型、功能、数据库、配置和发布记录 |
 
-## 管理与编辑页面原型
+## 数据库
 
-以下原型补充菜单管理、分类编辑、菜品详情和饭桌设置。点击图片可查看原尺寸。
+当前命名为 `our_time`，17 张表按空间、饭桌、日历、足迹、消息和维护划分。完整中文解释见 [数据库表说明](docs/database-tables.md)，数据库内可执行：
 
-<table>
-  <tr>
-    <td align="center"><a href="docs/prototypes/01-menu-category-management.png"><img src="docs/prototypes/01-menu-category-management.png" width="380" alt="菜单与分类管理原型"></a><br><sub>菜单与分类管理</sub></td>
-    <td align="center"><a href="docs/prototypes/02-category-editor-dish-editor.png"><img src="docs/prototypes/02-category-editor-dish-editor.png" width="380" alt="分类和菜品编辑原型"></a><br><sub>分类和菜品编辑</sub></td>
-  </tr>
-  <tr>
-    <td align="center"><a href="docs/prototypes/03-dish-detail-order-draft.png"><img src="docs/prototypes/03-dish-detail-order-draft.png" width="380" alt="菜品详情与点菜单原型"></a><br><sub>菜品详情与点菜单</sub></td>
-    <td align="center"><a href="docs/prototypes/04-order-detail-couple-settings.png"><img src="docs/prototypes/04-order-detail-couple-settings.png" width="380" alt="订单详情与饭桌设置原型"></a><br><sub>订单详情与饭桌设置</sub></td>
-  </tr>
-</table>
-
-## 从哪里开始
-
-| 想做什么 | 阅读 |
-| --- | --- |
-| 本机启动后端、填写环境变量 | [配置指南](docs/configuration.md)、[后端说明](server/README.md) |
-| 在服务器部署或更新 API | [部署说明](docs/deployment.md)、[容器运维](docs/operations.md) |
-| 理解微信提醒与预计次数 | [消息通知](docs/notifications.md) |
-| 了解页面和业务规则 | [产品设计](docs/product-design.md)、[技术架构](docs/architecture.md) |
-| 管理图片或查看页面视觉稿 | [图片规范](docs/image-policy.md)、[页面原型](docs/prototypes/README.md) |
-
-## 代码在哪里
-
-- `miniprogram/`：原生微信小程序，可直接用微信开发者工具打开。API 地址在 `miniprogram/config/index.js`。
-- `server/`：Python 3.9+、FastAPI、PyMySQL 后端；`server/README.md` 介绍代码与测试。
-- `database/`：全新数据库用 `schema.sql`、`seed.sql`；已有数据库的增量脚本在 `migrations/`。
-- `server/compose.production.yml`：小饭桌 API 专用 Compose；服务器公共 MySQL、Nginx、PHP 配置不属于本仓库。
-- `docs/`：产品、配置、部署及运维说明。
-
-## 本机快速运行
-
-先准备 MySQL，**仅对全新数据库**在仓库根目录执行：
-
-```bash
-mysql -u root -p < database/schema.sql
-mysql -u root -p < database/seed.sql
+```sql
+SELECT table_name, module, purpose, contents, privacy_note FROM table_guide ORDER BY module, table_name;
 ```
 
-然后启动后端：
+`subscription_grants` 保存订阅授权的防重复记录，`subscription_credits` 保存预计剩余提醒次数。模板 ID、OpenID、UUID 都是标识符，不能当成无用的加密内容清空。
+
+**全新空库**：`mysql -u root -p < database/schema.sql`。`seed.sql` 仅提供可选公共菜单模板，不创建用户或演示记录。已有 `little_table` 数据库按 [015 迁移手册](docs/schema-refactor.md) 操作，不重导 schema，也不重跑 001–014。
+
+## 本地开发
 
 ```bash
 cd server
 cp .env.example .env
-# 编辑 .env：至少填写 MySQL、JWT_SECRET；微信登录还需要 AppID 和 AppSecret
+# 填写 MySQL、JWT、微信和 COS 配置，真密钥只留在 .env
 make install
 make dev
 ```
 
-另开终端运行 `curl http://127.0.0.1:3000/health`，确认返回 `database: connected`。用微信开发者工具打开 **`miniprogram/` 目录**，并把 `miniprogram/config/index.js` 的 API 地址改成当前后端地址。真机访问本机服务时不能使用 `127.0.0.1`；正式环境必须使用微信后台登记的 HTTPS 域名。详细步骤见[配置指南](docs/configuration.md)。
+小程序 API 地址在 `miniprogram/config/index.js`。真机预览使用可访问的 HTTPS 后端；生产密钥不能进入前端或 Git。
 
-已有数据库不要重新导入 `schema.sql` 或 `seed.sql`。先确认已执行到哪个迁移编号，再依次执行**尚未执行**的 `database/migrations/` 脚本；删列迁移 `007` 尤其要先备份并核对新旧 API 的兼容性。服务器现有部署和备份操作见[容器运维](docs/operations.md)。
+## 检查与格式化
 
-## 日常检查
+```bash
+npm ci
+npm test
+npm run format:check
+python3 scripts/build_schema_docs.py --check
+cd server
+make check
+make test
+```
 
-在 `server/` 下执行 `make check` 检查 Python 语法、`make test` 运行后端回归测试；小程序更新逻辑可在仓库根目录运行 `node --test tests/miniprogram-update.test.js`。服务端健康检查只验证 API 与数据库连接，微信消息是否送达仍需两位成员在真机上验证。
+维护代码时使用 `npm run format` 格式化前端 JS/WXSS；后端先安装 `requirements-dev.txt`，再运行 `make format`。格式工具仅用于开发，不加入小程序或服务器运行时。
 
-`.env`、密钥、数据库数据和证书只留在运行环境，不提交到 Git。小程序前端只保存 API 地址；微信模板 ID 由后端配置并通过接口提供给前端。
+## 继续阅读
+
+[产品与原型](docs/prototype-decisions.md) · [生活空间](docs/life-space.md) · [架构](docs/architecture.md) · [配置](docs/configuration.md) · [数据库迁移](docs/schema-refactor.md) · [发布](docs/releasing.md) · [部署](docs/deployment.md) · [微信消息](docs/notifications.md)
+
+
+想你了模块：首页四模块入口、留言回复与已读、统一微信提醒偏好、日历只读回看。数据库016与上线顺序见 [说明](docs/thoughts.md)。

@@ -1,4 +1,4 @@
-.PHONY: install dev start check test
+.PHONY: install dev start check test format format-check
 
 install:
 	python3 -m venv .venv
@@ -16,3 +16,9 @@ check:
 # 用 unittest 跑服务端回归测试；测试会 mock 数据库和微信/COS，不会改生产数据。
 test:
 	PYTHONPATH=. .venv/bin/python -m unittest discover -s tests -v
+
+format:
+	.venv/bin/ruff format app tests scripts
+
+format-check:
+	.venv/bin/ruff format --check app tests scripts

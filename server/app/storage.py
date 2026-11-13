@@ -3,6 +3,7 @@
 数据库只保存对象 key，不保存长期可访问的公开链接。读取时按需生成短期签名 URL，
 因此 COS 桶可以保持私有，长期密钥也只存在服务端。
 """
+
 import logging
 from typing import Iterable, Optional
 
@@ -13,7 +14,9 @@ logger = logging.getLogger("little_table.storage")
 
 def configured() -> bool:
     """判断 COS 的四项必要配置是否齐全。"""
-    return all((settings.cos_secret_id, settings.cos_secret_key, settings.cos_bucket, settings.cos_region))
+    return all(
+        (settings.cos_secret_id, settings.cos_secret_key, settings.cos_bucket, settings.cos_region)
+    )
 
 
 def couple_prefix(public_id: str) -> str:
@@ -29,8 +32,16 @@ def is_couple_key(key: Optional[str], public_id: str) -> bool:
 def _client():
     """按需创建 COS 客户端，避免未配置 COS 时导入 SDK 或初始化连接。"""
     from qcloud_cos import CosConfig, CosS3Client
-    return CosS3Client(CosConfig(Region=settings.cos_region, SecretId=settings.cos_secret_id,
-                                 SecretKey=settings.cos_secret_key, Token=None, Scheme="https"))
+
+    return CosS3Client(
+        CosConfig(
+            Region=settings.cos_region,
+            SecretId=settings.cos_secret_id,
+            SecretKey=settings.cos_secret_key,
+            Token=None,
+            Scheme="https",
+        )
+    )
 
 
 def signed_url(key: Optional[str], legacy_url: Optional[str] = None) -> Optional[str]:
@@ -40,8 +51,12 @@ def signed_url(key: Optional[str], legacy_url: Optional[str] = None) -> Optional
     if not configured():
         return legacy_url or None
     try:
-        return _client().get_presigned_url(Method="GET", Bucket=settings.cos_bucket, Key=key,
-                                           Expired=settings.cos_signed_url_expires_seconds)
+        return _client().get_presigned_url(
+            Method="GET",
+            Bucket=settings.cos_bucket,
+            Key=key,
+            Expired=settings.cos_signed_url_expires_seconds,
+        )
     except Exception:
         logger.exception("cos.sign_read_url_failed key=%s", key)
         return None

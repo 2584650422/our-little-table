@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: business-nginx
+  namespace: homelab
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: business-nginx
+  template:
+    metadata:
+      labels:
+        app: business-nginx
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: lyc-server
+      containers:
+        - name: nginx
+          image: nginx@sha256:98f8ec75657d21b924fe4f69b6b9bff2f6550ea48838af479d8894a852000e40
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              cpu: 300m
+              memory: 128Mi
+          readinessProbe:
+            httpGet:
+              path: /nginx-health
+              port: http
+              httpHeaders:
+                - name: Host
+                  value: imlyc.cn
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /nginx-health
+              port: http
+              httpHeaders:
+                - name: Host
+                  value: imlyc.cn
+            periodSeconds: 30
+          volumeMounts:
+            - name: site
+              mountPath: /usr/share/nginx/html
+              readOnly: true
+            - name: config
+              mountPath: /etc/nginx/conf.d
+              readOnly: true
+      volumes:
+        - name: site
+          hostPath:
+            path: /data/software/compose/nginx/html
+            type: Directory
+        - name: config
+          configMap:
+            name: business-nginx-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: business-nginx
+  namespace: homelab
+spec:
+  type: ClusterIP
+  selector:
+    app: business-nginx
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

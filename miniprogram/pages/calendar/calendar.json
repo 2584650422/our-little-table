@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "纪念日历",
+  "usingComponents": {
+    "thought-inbox": "/components/thought-inbox/thought-inbox"
+  }
+}

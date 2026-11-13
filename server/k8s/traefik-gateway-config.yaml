@@ -1,0 +1,34 @@
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    providers:
+      kubernetesGateway:
+        enabled: true
+    service:
+      spec:
+        externalTrafficPolicy: Local
+    gateway:
+      enabled: true
+      listeners:
+        web:
+          port: 8000
+          protocol: HTTP
+          namespacePolicy:
+            from: All
+        websecure:
+          port: 8443
+          protocol: HTTPS
+          mode: Terminate
+          namespacePolicy:
+            from: All
+          certificateRefs:
+            - kind: Secret
+              name: gateway-api-tls
+            - kind: Secret
+              name: gateway-blog-tls
+            - kind: Secret
+              name: gateway-ssl-tls

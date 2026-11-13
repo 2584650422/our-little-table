@@ -1,1 +1,6 @@
-{"navigationStyle":"custom","usingComponents":{"empty-state":"/components/empty-state/empty-state"}}
+{
+  "navigationBarTitleText": "我们的时光",
+  "usingComponents": {
+    "thought-inbox": "/components/thought-inbox/thought-inbox"
+  }
+}

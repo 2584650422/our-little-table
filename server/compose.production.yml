@@ -1,17 +1,18 @@
-name: server
+name: our-time
 
 services:
   api:
     build:
       context: .
       dockerfile: Dockerfile
-    image: little-table-api:latest
-    container_name: little-table-api
+    image: our-time-api:latest
+    container_name: our-time-api
     restart: unless-stopped
     env_file:
       - .env
     environment:
       APP_ENV: production
+      NODE_ENV: production
       PORT: "3000"
       MYSQL_HOST: mysql
       MYSQL_PORT: "3306"

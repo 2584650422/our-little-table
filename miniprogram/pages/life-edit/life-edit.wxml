@@ -1,0 +1,21 @@
+<view class="life-page">
+  <view class="life-eyebrow">把值得记住的，留在这一天</view>
+  <view class="life-title">{{type==='start'?'在一起的那天':kindIndex==3?'记下这一天':'记住这个日子'}}</view>
+  <block wx:if="{{type!=='start'}}">
+    <view class="entry-explanation {{kindIndex==3?'diary-explanation':''}}">{{kindIndex==3?'当天记录：记下发生的事，用蓝绿色标记，不加入倒计时。':'重要日子：设置生日、纪念日或倒数日，用红色标记。'}}</view>
+    <block wx:if="{{id || kindIndex!=3}}"><view class="life-label">{{id?'记录类型':'重要日子类型'}}</view><picker range="{{id?kinds:importantKinds}}" value="{{kindIndex}}" data-field="kindIndex" bindchange="field"><view class="life-input">{{kinds[kindIndex]}}</view></picker><view wx:if="{{id}}" class="life-subtitle">之前选错类型？可在这里改为「当天记录」。</view></block>
+    <view class="life-label">{{kindIndex==3?'这一天做了什么':'日子的名字'}}</view><input class="life-input" value="{{title}}" maxlength="60" placeholder="{{kindIndex==3?'例如：一起去了北京':'例如：下一次一起出发'}}" data-field="title" bindinput="field"/>
+    <block wx:if="{{kindIndex!=3}}"><view class="life-label">日期历法</view><picker range="{{calendars}}" value="{{calendarIndex}}" data-field="calendarIndex" bindchange="field"><view class="life-input">{{calendars[calendarIndex]}}</view></picker></block>
+  </block>
+  <view class="life-label">{{type==='start'?'选择起始日':kindIndex==3?'发生日期':calendarIndex==1?'选择农历日期':'选择公历日期'}}</view>
+  <block wx:if="{{type!=='start'&&kindIndex!=3&&calendarIndex==1}}">
+    <picker mode="multiSelector" range="{{lunarRanges}}" value="{{lunarIndex}}" bindchange="lunar"><view class="life-input">{{lunarLabel}}</view></picker>
+    <view class="life-row"><text>这是闰月</text><switch color="#42664F" checked="{{lunarLeap}}" data-field="lunarLeap" bindchange="field"/></view>
+    <view class="life-subtitle">倒数日按这个农历日期换算，只发生一次。生日和纪念日每年重复；没有对应闰月时按普通月，小月无三十时按二十九。</view>
+  </block>
+  <picker wx:else mode="date" start="1901-01-01" end="{{type==='start'?today:'2098-12-31'}}" value="{{eventDate}}" data-field="eventDate" bindchange="field"><view class="life-input">{{eventDate}}</view></picker>
+  <block wx:if="{{type!=='start'&&kindIndex==3}}"><view class="life-label">当天记录</view><textarea class="life-input diary-input" value="{{content}}" maxlength="3000" auto-height placeholder="去了哪里、做了什么，或者想记住的一句话…" data-field="content" bindinput="field"/><view class="life-subtitle">双方共同可见。日历用蓝绿色圆点标记，记录不会加入首页倒计时。</view></block>
+  <block wx:elif="{{type!=='start'}}"><view class="life-label">首页提醒</view><picker range="{{reminders}}" value="{{reminderIndex}}" data-field="reminderIndex" bindchange="field"><view class="life-input">{{reminders[reminderIndex]}}</view></picker><view class="life-subtitle">临近时在首页和日历标记「快到啦」。</view></block>
+  <view wx:else class="life-subtitle">开始当天为第 1 天，自动生成每百日节点和周年纪念。</view>
+  <view wx:if="{{error}}" class="life-error">{{error}}</view><button class="life-button save-button" bindtap="save" loading="{{saving}}" disabled="{{saving}}">保存</button>
+</view>

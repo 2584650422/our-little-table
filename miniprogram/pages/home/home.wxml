@@ -1,30 +1,3 @@
-<view class="page home-page" style="padding-top:{{topInset}}px">
-  <view class="home-intro">
-    <view class="greeting">{{greeting}}</view>
-    <view class="intro-line">{{homeSubtitle}}</view>
-    <view class="botanical botanical-top"><view class="botanical-circle"></view><view class="branch"></view><view class="leaf leaf-1"></view><view class="leaf leaf-2"></view><view class="leaf leaf-3"></view><view class="leaf leaf-4"></view></view>
-  </view>
-  <view class="hero-title">{{homeTitle}}</view>
-  <view wx:if="{{loading}}" class="loading">正在翻翻我们的小菜单…</view>
-  <view wx:elif="{{error}}" class="card error"><view>{{error}}</view><button class="btn secondary" bindtap="bootstrap">重新试试</button></view>
-  <view wx:elif="{{needsCouple}}" class="card bind-card"><view class="big">先把两把椅子摆好</view><view class="muted">创建或加入只属于你们的小饭桌</view><button class="btn" bindtap="goCouple">开始布置</button></view>
-  <block wx:else>
-    <view wx:if="{{recommendations.length}}" class="feature-wrap">
-      <swiper class="dish-swiper" current="{{recommendationIndex}}" circular="{{recommendations.length>1}}" bindchange="recommendChanged">
-        <swiper-item wx:for="{{recommendations}}" wx:key="id">
-          <view class="feature-card" bindtap="detail" data-id="{{item.id}}">
-            <image wx:if="{{item.imageUrl}}" class="feature-image" src="{{item.imageUrl}}" mode="aspectFill" lazy-load />
-            <view wx:else class="feature-image feature-placeholder"><image src="/assets/icons/dish-placeholder.png" mode="aspectFit"/></view>
-            <view class="image-shade"></view>
-            <view class="feature-copy"><view class="feature-name">{{item.name}}</view><view class="feature-description">{{item.description||'简单又满足的家常味道'}}</view></view>
-            <view class="feature-foot"><text>两个人，一顿刚刚好</text><text>{{index+1}}/{{recommendations.length}}</text></view>
-          </view>
-        </swiper-item>
-      </swiper>
-      <view class="feature-actions"><button class="btn secondary shuffle-btn" bindtap="shuffle"><text class="shuffle-icon">↻</text> 换一个</button><button class="btn choose-btn" bindtap="add" data-id="{{recommendations[recommendationIndex].id}}">就吃它</button></view>
-      <view class="recommend-dots"><view wx:for="{{recommendations}}" wx:key="id" class="dot {{index===recommendationIndex?'active':''}}"></view></view>
-    </view>
-    <view wx:else class="card empty-recommend"><view class="empty-recommend-icon">♡</view><view class="empty-recommend-title">菜单里还没有菜呢</view><view class="muted">先添几道喜欢的菜，再让小饭桌帮忙挑一挑</view><button class="btn secondary" bindtap="goMenu">去看看菜单</button></view>
-    <view class="home-reminder"><view class="reminder-label"><text>♥</text> 小提醒</view><view class="reminder-copy">好好吃饭，<view>就是对生活温柔的回应。</view></view><view class="botanical botanical-note"><view class="branch"></view><view class="leaf leaf-1"></view><view class="leaf leaf-2"></view><view class="leaf leaf-3"></view><view class="leaf leaf-4"></view></view></view>
-  </block>
-</view>
+<view class="life-page"><view class="life-row"><text class="life-eyebrow">属于我们两个的小小世界</text><text class="life-link" bindtap="editHome">编辑首页</text></view><view class="life-title">{{summary.name||'我们的时光'}}，<view>{{summary.tagline||'把日子慢慢过。'}}</view></view><view wx:if="{{loading}}" class="life-empty">正在翻开我们的日子…</view><view wx:elif="{{error}}" class="life-error" bindtap="load">{{error}} · 点击重试</view><view wx:elif="{{needsCouple}}" class="life-card"><view class="life-heading">先把两把椅子摆好</view><button class="life-button" bindtap="couple">创建或加入我们的空间</button></view><block wx:else><view class="life-hero" bindtap="editHome"><view class="life-eyebrow">{{summary.anniversary?'从 '+summary.anniversary+' 开始':'我们的故事从哪一天开始？'}}</view><view>我们在一起的</view><view class="life-number">{{summary.togetherDays||'♡'}}<text>{{summary.togetherDays?'天':'设置日期'}}</text></view><view wx:if="{{summary.togetherDays}}" class="hero-progress"><view style="width:{{milestoneProgress}}%"/></view><view wx:if="{{summary.togetherDays}}" class="life-row"><text class="life-subtitle">下一个小圆满 · 第 {{milestoneTarget}} 天</text><text>{{milestoneDays}} 天后</text></view></view><view class="modules"><view class="module-card" bindtap="open" data-url="/pages/menu/menu"><view class="module-icon"><image src="/assets/tabbar/menu-active.png" mode="aspectFit"/></view><view class="module-title">小饭桌</view><view class="module-subtitle">好好吃饭</view></view><view class="module-card" bindtap="open" data-url="/pages/calendar/calendar"><view class="module-icon"><image src="/assets/tabbar/calendar-active.png" mode="aspectFit"/></view><view class="module-title">纪念日历</view><view class="module-subtitle">记住心动</view></view><view class="module-card" bindtap="open" data-url="/pages/atlas/atlas"><view class="module-icon"><image src="/assets/tabbar/atlas-active.png" mode="aspectFit"/></view><view class="module-title">足迹相册</view><view class="module-subtitle">一起看世界</view></view><view bindtap="thoughts" class="module-card thought-module"><view wx:if="{{thoughtUnreadCount}}" class="thought-unread-dot"/><view class="module-icon"><view class="thought-module-icon"/></view><view class="module-title">想你了</view><view class="module-subtitle">留一句话</view></view></view><view class="life-row"><view class="life-heading">快到的日子</view><text class="life-link" bindtap="open" data-url="/pages/calendar/calendar">全部 →</text></view><view wx:if="{{upcoming.length===0}}" class="life-empty">还没有记下重要日子，去日历添一笔吧。</view><view wx:for="{{upcoming}}" wx:key="id" class="life-event"><view class="life-date"><text>{{item.month}}月</text>{{item.day}}</view><view class="life-event-copy"><view>{{item.title}}</view><view class="life-subtitle">{{item.label}} · {{item.calendarLabel}}</view></view><text class="life-count">{{item.daysLabel}}</text></view><view wx:if="{{summary.recentPhoto}}" class="life-card"><image class="life-photo" src="{{summary.recentPhoto.previewUrl}}" mode="widthFix" lazy-load bindtap="preview"/><view class="life-heading">最近的回忆 · {{summary.recentPhoto.city}}</view><text class="life-subtitle">{{summary.recentPhoto.caption||'我们又收藏了一段好时光'}}</text></view></block></view>
+
+<thought-inbox bind:unread="thoughtUnread"/>

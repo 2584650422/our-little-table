@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: our-time-api
+  namespace: homelab
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - aaa.imlyc.cn
+      secretName: little-table-api-tls
+  rules:
+    - host: aaa.imlyc.cn
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: our-time-api
+                port:
+                  number: 3000

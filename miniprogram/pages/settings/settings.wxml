@@ -1,34 +1,35 @@
-<view class="us-page">
-  <view class="us-hero"><image src="{{couple&&couple.backgroundImageUrl||'/assets/images/us-hero.jpg'}}" mode="aspectFill"/><view class="hero-wash"></view></view>
-  <view class="us-body" style="padding-top:{{topInset}}px">
-    <view wx:if="{{loading}}" class="loading us-state">正在收拾小饭桌…</view>
-    <view wx:elif="{{error}}" class="card error us-state"><view>{{error}}</view><button class="btn secondary" bindtap="load">重新试试</button></view>
-    <view wx:elif="{{!couple}}" class="card setup us-state"><view class="setup-mark">♡</view><view class="title">桌边还缺一个位置</view><view class="subtitle">创建或加入一个只属于你们的小饭桌</view><button class="btn" bindtap="couple">开始布置</button></view>
-    <block wx:else>
-      <view class="hero-gap"></view>
-      <view class="profile-panel">
-        <view class="avatar-line">
-          <view class="profile-person"><view class="avatar-frame"><image wx:if="{{profileMe.avatarUrl}}" src="{{profileMe.avatarUrl}}" mode="aspectFill"/><view wx:else class="avatar-fallback">{{profileMe.initial}}</view></view><text>我</text></view>
-          <view class="couple-heart">♥</view>
-          <view class="profile-person"><view class="avatar-frame partner-avatar"><image wx:if="{{profilePartnerAvatarUrl}}" src="{{profilePartnerAvatarUrl}}" mode="aspectFill"/><view wx:else class="avatar-fallback">{{profilePartnerInitial}}</view></view><text>TA</text></view>
-        </view>
-        <view class="couple-name">{{couple.name}}</view>
-        <view class="couple-subtitle">{{coupleSubtitle}}</view>
-        <view class="stats"><view bindtap="meals"><text class="stat-number">{{couple.stats.meals||0}}</text><text>一起吃过</text></view><view bindtap="meals"><text class="stat-number">{{couple.stats.monthlyMeals||0}}</text><text>本月吃过</text></view><view bindtap="favorites"><text class="stat-number">{{favoriteCount}}</text><text>收藏菜谱</text></view></view>
-        <view class="links">
-          <view class="link-row" bindtap="coupleSettings"><image class="link-icon-image" src="/assets/icons/settings.png" mode="aspectFit"/><text class="link-label">设置</text><text class="link-arrow">›</text></view>
-          <view class="link-row" bindtap="notifications"><image class="link-icon-image" src="/assets/icons/bell.png" mode="aspectFit"/><text class="link-label">消息提醒</text><text wx:if="{{unreadCount}}" class="unread-pill">{{unreadCount}}</text><text class="link-arrow">›</text></view>
-          <view class="link-row" bindtap="meals"><image class="link-icon-image" src="/assets/icons/heart.png" mode="aspectFit"/><text class="link-label">我们的小记录</text><text class="link-arrow">›</text></view>
-          <view class="link-row" bindtap="about"><image class="link-icon-image" src="/assets/icons/info.png" mode="aspectFit"/><text class="link-label">关于</text><text class="link-arrow">›</text></view>
-        </view>
+<view class="life-page us-page">
+  <view class="life-eyebrow">属于我们两个人的空间</view>
+  <view class="life-title">我们，<view>在一起的时光。</view></view>
+  <view wx:if="{{loading}}" class="life-empty">正在翻开我们的故事…</view>
+  <view wx:elif="{{error}}" class="life-error" bindtap="load">{{error}} · 点击重试</view>
+  <view wx:elif="{{!couple}}" class="us-empty"><view class="us-empty-mark">♡</view><view class="life-heading">先把两把椅子摆好</view><view class="life-subtitle">创建或加入只属于你们的空间</view><button class="life-button" bindtap="couple">开始布置</button></view>
+  <block wx:else>
+    <view class="us-story">
+      <view class="us-story-head"><view class="us-story-label">OUR LITTLE WORLD</view></view>
+      <view class="us-name">{{couple.name}}</view>
+      <view class="us-tagline">{{couple.lifeTagline||'把日子慢慢过。'}}</view>
+      <view class="us-people">
+        <view class="us-person"><view class="us-avatar"><image wx:if="{{me.avatarUrl}}" src="{{me.avatarUrl}}" mode="aspectFill"/><text wx:else>{{me.initial}}</text></view><text>{{me.nickname||'我'}}</text></view>
+        <view class="us-heart">♡</view>
+        <view class="us-person"><view class="us-avatar"><image wx:if="{{partner.avatarUrl}}" src="{{partner.avatarUrl}}" mode="aspectFill"/><text wx:else>{{partner.initial||'?'}}</text></view><text>{{partner.nickname||'等 TA 加入'}}</text></view>
       </view>
-    </block>
-    <view class="links version-panel">
-      <view class="link-row" bindtap="versionUpdate">
-        <image class="link-icon-image" src="/assets/icons/info.png" mode="aspectFit"/>
-        <view class="version-copy"><view class="link-label">版本与更新</view><view class="version-caption">{{versionInfo.display}}</view><view class="version-caption {{versionInfo.status==='ready'?'version-ready':''}}">{{versionInfo.hint}}</view></view>
-        <text class="link-arrow">›</text>
-      </view>
+      <view class="us-since"><view><text class="us-since-label">{{couple.anniversary?'从 '+couple.anniversary+' 开始':'我们的故事从哪天开始？'}}</text><view>{{days?'在一起第 '+days+' 天':'起始日期尚未设置'}}</view></view></view>
     </view>
-  </view>
+    <view class="us-section-title">我们一起收藏的</view>
+    <view class="us-shortcuts"><view bindtap="calendar"><image src="/assets/tabbar/calendar-active.png"/><text>纪念日历</text><view>记住心动的日子</view></view><view bindtap="atlas"><image src="/assets/tabbar/atlas-active.png"/><text>足迹相册</text><view>把路走成回忆</view></view></view>
+    <view class="us-section-title">我们的资料</view>
+    <view class="us-list">
+      <view class="us-list-row" bindtap="profile"><view><text>共同空间设置</text><view>我的头像与昵称、空间名称和成员</view></view><text>›</text></view>
+    </view>
+    <view class="us-section-title">提醒与更多</view>
+    <view class="us-list">
+      <view class="us-list-row" bindtap="notifications"><view><text>消息提醒</text><view>一起留意新消息</view></view><text wx:if="{{unreadCount}}" class="us-unread">{{unreadCount}}</text><text>›</text></view>
+      <view class="us-list-row" bindtap="versionUpdate"><view><text>版本与更新</text><view>{{versionInfo.display}} · {{versionInfo.hint}}</view></view><text>›</text></view>
+      <view class="us-list-row" bindtap="about"><view><text>关于我们的时光</text><view>只属于两个人的小小世界</view></view></view>
+    </view>
+    <view class="us-food-note" bindtap="food">想看看今晚吃什么？去小饭桌 →</view>
+  </block>
 </view>
+
+<thought-inbox/>

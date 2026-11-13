@@ -5,6 +5,7 @@
 运行：从 server 目录执行
     .venv/bin/python -m unittest discover -s tests -v
 """
+
 import asyncio
 import unittest
 from unittest.mock import AsyncMock, patch
@@ -17,18 +18,30 @@ class NotificationTests(unittest.TestCase):
         order = {"id": 7, "title": "晚餐", "dishNames": "番茄炒蛋", "mealDate": "2026-09-27"}
         creator = {"id": 1, "openid": "openid-one"}
         target = {"id": 2, "openid": "openid-two"}
-        with patch.object(main, "execute") as insert:
+        with patch.object(main, "connection"), patch.object(main, "execute") as insert:
             result = asyncio.run(main.notify_created(creator, target, order))
         self.assertEqual(insert.call_count, 2)
+        self.assertEqual(insert.call_args_list[0].args[1][-1], insert.call_args_list[1].args[1][-1])
         self.assertTrue(result["creator"]["sent"])
         self.assertTrue(result["target"]["sent"])
 
     def test_served_reaches_both_members(self):
-        order = {"id": 7, "coupleId": 3, "title": "晚餐", "dishNames": "番茄炒蛋", "mealDate": "2026-09-27"}
+        order = {
+            "id": 7,
+            "coupleId": 3,
+            "title": "晚餐",
+            "dishNames": "番茄炒蛋",
+            "mealDate": "2026-09-27",
+        }
         members = [{"id": 1, "openid": "openid-one"}, {"id": 2, "openid": "openid-two"}]
-        with patch.object(main, "fetch_all", return_value=members), patch.object(main, "execute") as insert:
+        with (
+            patch.object(main, "connection"),
+            patch.object(main, "fetch_all", return_value=members),
+            patch.object(main, "execute") as insert,
+        ):
             notified = asyncio.run(main.notify_served(order, served_by=1))
         self.assertEqual(insert.call_count, 2)
+        self.assertEqual(insert.call_args_list[0].args[1][-1], insert.call_args_list[1].args[1][-1])
         self.assertEqual(notified, members)
 
     def test_external_delivery_reaches_both_without_blocking_main_flow(self):
@@ -40,9 +53,13 @@ class NotificationTests(unittest.TestCase):
         self.assertTrue(all(call.args[2] == "served" for call in send.call_args_list))
 
     def test_subscription_grants_are_capped_at_ten(self):
-        with patch.object(main, "subscription_templates", return_value={"created": "order-template"}), \
-             patch.object(main, "connection") as connection, \
-             patch.object(main, "execute", side_effect=[(None, 1), (None, 1)]) as execute:
+        with (
+            patch.object(
+                main, "subscription_templates", return_value={"created": "order-template"}
+            ),
+            patch.object(main, "connection") as connection,
+            patch.object(main, "execute", side_effect=[(None, 1), (None, 1)]) as execute,
+        ):
             connection.return_value.__enter__.return_value = object()
             added = main.record_subscription_grants(12, ["order-template"], "request-1")
 
@@ -51,9 +68,13 @@ class NotificationTests(unittest.TestCase):
         self.assertEqual(grant_params[-1], 10)
         self.assertEqual(added, {"created": 1})
 
-        with patch.object(main, "subscription_templates", return_value={"created": "order-template"}), \
-             patch.object(main, "connection") as connection, \
-             patch.object(main, "execute", side_effect=[(None, 1), (None, 0)]) as execute:
+        with (
+            patch.object(
+                main, "subscription_templates", return_value={"created": "order-template"}
+            ),
+            patch.object(main, "connection") as connection,
+            patch.object(main, "execute", side_effect=[(None, 1), (None, 0)]) as execute,
+        ):
             connection.return_value.__enter__.return_value = object()
             added = main.record_subscription_grants(12, ["order-template"], "request-2")
 
@@ -69,14 +90,37 @@ class NotificationTests(unittest.TestCase):
 
     def test_notification_test_send_targets_the_current_user(self):
         user = {"id": 12, "openid": "current-openid", "nickname": "测试用户", "coupleId": 3}
-        with patch.object(main, "send_subscribe", new_callable=AsyncMock, return_value={"sent": True}) as send, \
-             patch.object(main, "fetch_all", return_value=[{"event": "served", "availableCount": 2}]):
+        with (
+            patch.object(
+                main, "send_subscribe", new_callable=AsyncMock, return_value={"sent": True}
+            ) as send,
+            patch.object(
+                main, "fetch_all", return_value=[{"event": "served", "availableCount": 2}]
+            ),
+        ):
             result = asyncio.run(main.send_notification_test({"event": "served"}, user))
 
         self.assertTrue(result["data"]["sent"])
         self.assertEqual(send.call_args.args[0]["openid"], "current-openid")
         self.assertEqual(send.call_args.args[2], "served")
         self.assertEqual(send.call_args.kwargs["page"], "pages/notifications/notifications")
+
+    def test_thought_test_send_accepts_event_and_only_targets_current_user(self):
+        user = {"id": 12, "openid": "current-openid", "coupleId": 3}
+        with (
+            patch.object(main, "send_subscribe", new_callable=AsyncMock,
+                         return_value={"sent": True}) as send,
+            patch.object(main, "subscription_balance", return_value={"thought": 0}),
+        ):
+            result = asyncio.run(main.send_notification_test({"event": "thought"}, user))
+
+        send.assert_awaited_once()
+        self.assertEqual(send.call_args.args[0], user)
+        self.assertEqual(send.call_args.args[2], "thought")
+        self.assertIn("想你提醒测试", send.call_args.args[1]["message"])
+        self.assertEqual(send.call_args.kwargs["page"], "pages/thoughts/thoughts")
+        self.assertTrue(result["data"]["sent"])
+        self.assertEqual(result["data"]["subscriptionCredits"], {"thought": 0})
 
 
 if __name__ == "__main__":

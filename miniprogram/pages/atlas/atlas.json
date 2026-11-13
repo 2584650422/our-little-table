@@ -1,0 +1,8 @@
+{
+  "navigationBarTitleText": "一起看世界",
+  "pageOrientation": "portrait",
+  "usingComponents": {
+    "atlas-board": "/components/atlas-board/atlas-board",
+    "thought-inbox": "/components/thought-inbox/thought-inbox"
+  }
+}

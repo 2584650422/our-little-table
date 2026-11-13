@@ -1,0 +1,34 @@
+.home-edit-page {
+  padding-bottom: 160rpx;
+}
+.tagline-input {
+  height: 138rpx;
+  line-height: 1.5;
+}
+.home-edit-preview {
+  margin: 42rpx 0 24rpx;
+  padding: 34rpx;
+  border-radius: 28rpx;
+  background: #e7ecdd;
+}
+.preview-name,
+.preview-tagline {
+  font-family: Georgia, 'Songti SC', serif;
+  font-size: 43rpx;
+  color: #283b34;
+  line-height: 1.5;
+}
+.preview-name {
+  margin-top: 16rpx;
+}
+.save-button {
+  width: 100%;
+  margin-top: 32rpx;
+}
+
+.home-space-name {
+  font-size: 30rpx;
+  font-weight: 500;
+  color: #42664f;
+  margin: 12rpx 0;
+}

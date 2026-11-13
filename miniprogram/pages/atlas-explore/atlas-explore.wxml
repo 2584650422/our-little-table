@@ -1,0 +1,44 @@
+<view class="explore" style="padding-left:max({{leftInset}}px,env(safe-area-inset-left));padding-top:{{topInset}}px;">
+  <view class="toolbar" style="padding-right:{{rightInset}}px">
+    <view class="back" bindtap="back" aria-label="返回上一层"><view class="back-chevron"/></view>
+    <view class="title" bindtap="country">一起看世界</view>
+    <view class="crumb"><text bindtap="country">全国</text><text wx:if="{{province}}" bindtap="back"> / {{province}}</text><text wx:if="{{place}}"> / {{place.name}}</text></view>
+    <view class="close" bindtap="close">退出全屏</view>
+  </view>
+  <view class="content {{level==='place'?'album-open':''}}">
+    <view wx:if="{{level==='province'}}" class="country-return" bindtap="country">‹ 全国地图</view>
+    <view class="map-panel"><atlas-board id="explore-board" groups="{{groups}}" points="{{level==='place'?photos:(level==='province'?groups:[])}}" focus="{{province}}" zoomed="{{level==='province' || level==='place'}}" album="{{level==='place'}}" bind:groupselect="groupSelect" bind:provinceselect="provinceSelect"/></view>
+    <view wx:if="{{level==='place'}}" class="album-panel visible">
+      <view class="album-heading"><text>{{place.name}}</text></view>
+      <swiper class="place-swiper" current="{{placePhotoIndex}}" bindchange="placePhotoChange" duration="260" circular="{{photos.length > 1}}">
+        <swiper-item wx:for="{{photos}}" wx:key="id" class="place-slide">
+          <view class="photo" style="width:{{photoFrameWidth+10}}px" role="button" aria-label="查看第{{index+1}}张原图" data-id="{{item.id}}" bindtap="preview">
+            <image src="{{item.previewUrl}}" style="height:{{photoFrameHeight}}px" mode="aspectFit" data-id="{{item.id}}" catchtap="preview"/>
+            <view class="photo-date"><text>{{item.takenOn}}</text><text class="photo-more" data-id="{{item.id}}" catchtap="managePhoto">管理</text></view>
+          </view>
+        </swiper-item>
+      </swiper>
+      <view wx:if="{{photos.length > 1}}" class="place-progress" role="progressbar" aria-label="照片浏览进度"><view class="place-progress-track"><view class="place-progress-thumb" style="width:{{100/photos.length}}%;left:{{placePhotoIndex*100/photos.length}}%;"/></view></view>
+    </view>
+  </view>
+  <view class="footer"><text>{{level==='country'?'点省份或照片堆，看看我们走过哪里':level==='province'?'点地点照片堆，展开这个地方的照片':'点照片查看完整原图，左右滑动翻阅'}}</text><text wx:if="{{loading}}">正在加载照片…</text><text wx:elif="{{error}}" bindtap="load">{{error}} · 重试</text><text wx:elif="{{level==='province' && !groups.length}}">这个省份还没有照片</text><text wx:elif="{{!regions.length}}">还没有照片，先回足迹添加一张吧</text></view>
+</view>
+
+<view wx:if="{{viewerOpen}}" class="viewer">
+  <view class="viewer-toolbar"><view class="viewer-close" bindtap="closePhoto" aria-label="关闭原图">×</view><text>{{photoIndex+1}} / {{photos.length}}</text><text class="viewer-status">{{failedPhotos[photos[photoIndex].id]?'原图加载失败，显示预览':!loadedPhotos[photos[photoIndex].id]?'正在加载原图…':'双指缩放 · 放大后拖动'}}</text></view>
+  <swiper class="viewer-swiper" current="{{photoIndex}}" bindchange="photoChange" duration="320" disable-touch="{{photoZoomed}}">
+    <swiper-item wx:for="{{photos}}" wx:key="id" wx:for-index="photoPosition">
+      <movable-area wx:if="{{photoPosition===photoIndex}}" class="viewer-area" scale-area>
+        <movable-view class="viewer-image-stage" direction="all" inertia scale bindscale="photoZoom" scale-min="1" scale-max="4" scale-value="{{photoScale}}" x="0" y="0">
+          <image wx:if="{{!loadedPhotos[item.id] || failedPhotos[item.id]}}" class="viewer-image" src="{{item.previewUrl}}" mode="aspectFit"/>
+          <image wx:if="{{!failedPhotos[item.id]}}" class="viewer-image" src="{{item.originalUrl}}" mode="aspectFit" data-id="{{item.id}}" bindload="originalLoaded" binderror="originalFailed"/>
+        </movable-view>
+      </movable-area>
+      <image wx:elif="{{photoPosition>=photoIndex-1 && photoPosition<=photoIndex+1}}" class="viewer-image" src="{{item.previewUrl}}" mode="aspectFit"/>
+    </swiper-item>
+  </swiper>
+  <view wx:if="{{photoIndex>0}}" class="photo-arrow previous" bindtap="previousPhoto" aria-label="上一张">‹</view>
+  <view wx:if="{{photoIndex<photos.length-1}}" class="photo-arrow next" bindtap="nextPhoto" aria-label="下一张">›</view>
+  <view class="viewer-caption"><text>{{place.name}}</text><text>{{photos[photoIndex].takenOn}}</text><text data-id="{{photos[photoIndex].id}}" bindtap="managePhoto">编辑 / 删除</text></view>
+  <scroll-view class="filmstrip" scroll-x scroll-into-view="photo-thumb-{{photoIndex}}" scroll-with-animation enhanced show-scrollbar="{{false}}"><view class="filmstrip-inner"><image wx:for="{{photos}}" wx:key="id" id="photo-thumb-{{index}}" class="film-photo {{photoIndex===index?'active':''}}" src="{{item.previewUrl}}" mode="aspectFill" data-index="{{index}}" bindtap="choosePhoto"/></view></scroll-view>
+</view>

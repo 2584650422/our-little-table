@@ -1,6 +1,6 @@
 # 后端配置指南
 
-这份指南用于**本机首次运行**。生产服务器的目录、Compose 和更新命令见[部署说明](deployment.md)。先跑通数据库和登录，再按需配置图片上传与微信提醒。
+这份指南用于**本机首次运行**。生产服务器的 K3s 部署和更新命令见[部署说明](deployment.md)。先跑通数据库和登录，再按需配置图片上传与微信提醒。
 
 ## 1. 建库和准备环境文件
 
@@ -13,21 +13,21 @@ cd server
 cp .env.example .env
 ```
 
-已有数据库不要重导这两个文件；按已执行记录补齐 `database/migrations/` 中尚未运行的脚本。所有实际密码只填在 `server/.env`，它被 Git 忽略。`server/.env.example` 是可提交的字段模板，不要在其中填真密钥。
+已有数据库不要重导这两个文件；旧 `little_table` 库通过 [015 迁移手册](schema-refactor.md) 恢复到新库并统一命名，历史 001–014 不重跑。所有实际密码只填在 `server/.env`，它被 Git 忽略。`server/.env.example` 是可提交的字段模板，不要在其中填真密钥。
 
-本机 `app/config.py` 调用 `load_dotenv()` 加载 `.env`，再通过 `os.getenv()` 读取。生产容器则由 `compose.production.yml` 的 `env_file: .env` 注入环境变量。代码里找不到逐项引用 `.env` 文件名，是因为业务代码读取的是环境变量名。
+本机 `app/config.py` 调用 `load_dotenv()` 加载 `.env`，再通过 `os.getenv()` 读取。生产 K3s Pod 则由 ConfigMap/Secret 注入环境变量，原始 `.env` 留在服务器。代码里找不到逐项引用 `.env` 文件名，是因为业务代码读取的是环境变量名。
 
 ## 2. 先填这些必需项
 
 | 变量 | 怎么填 |
 | --- | --- |
-| `MYSQL_HOST` / `MYSQL_PORT` | 本机数据库通常是 `127.0.0.1:3306`；容器内连接同网络的 MySQL 使用服务名 `mysql` |
-| `MYSQL_DATABASE` | 默认 `little_table`，与建库脚本一致 |
+| `MYSQL_HOST` / `MYSQL_PORT` | 本机数据库通常是 `127.0.0.1:3306`；当前生产 API Pod 使用节点地址 `10.2.0.7:53306` 访问 Docker MySQL |
+| `MYSQL_DATABASE` | 默认 `our_time`，与建库脚本一致 |
 | `MYSQL_USER` / `MYSQL_PASSWORD` | 有该库权限的账号；本机初始化可用 root，生产建议专用账号 |
 | `JWT_SECRET` | 至少 32 字节随机值，可用 `openssl rand -hex 32` 生成 |
 | `WECHAT_APP_ID` / `WECHAT_APP_SECRET` | 真正使用 `wx.login` 时填写，与小程序后台和项目 AppID 对应；AppSecret 只留后端 |
 
-容器里的 `127.0.0.1` 指容器自己，不是宿主机。`PORT` 默认 3000；`JWT_EXPIRES_IN` 默认 `7d`。本机只想测试后端时，可明确开启 `DEV_LOGIN_ENABLED=true` 使用开发登录接口；生产 Compose 强制关闭它。
+容器里的 `127.0.0.1` 指容器自己，不是宿主机。`PORT` 默认 3000；`JWT_EXPIRES_IN` 默认 `7d`。本机只想测试后端时，可明确开启 `DEV_LOGIN_ENABLED=true` 使用开发登录接口；生产 K3s 配置强制关闭它。
 
 ## 3. 启动和验证
 
@@ -46,7 +46,7 @@ make check
 make test
 ```
 
-`/health` 返回 `database: connected` 才表示数据库可用；若是 503，先查 MySQL 是否启动、账号密码和 `MYSQL_HOST`。服务日志输出到终端；生产环境用 `docker compose logs` 查看，参见[容器运维](operations.md)。改本机 `.env` 后重启 Uvicorn；改生产 `.env` 后重建 API 容器。
+`/health` 返回 `database: connected` 才表示数据库可用；若是 503，先查 MySQL 是否启动、账号密码和 `MYSQL_HOST`。服务日志输出到终端；生产环境用 `kubectl logs` 查看，参见[容器运维](operations.md)。改本机 `.env` 后重启 Uvicorn；改生产 `.env` 后运行 `k8s/sync-config.sh`。
 
 前端 API 地址在 `miniprogram/config/index.js`。微信开发者工具打开 `miniprogram/`，本地调试可临时关闭合法域名校验；真机不能用 `127.0.0.1` 访问电脑，正式版要使用微信后台登记的 HTTPS 域名。
 
@@ -68,6 +68,13 @@ make test
 | 小程序登录失败 | AppID 与 AppSecret 是否匹配、前端 API 地址和合法域名 |
 | 点菜正常但没有微信提醒 | 接收人是否授权、预计余额是否足够、模板字段、`wechat.subscribe_*` 日志 |
 | API 签发上传凭证，但照片上传失败 | 微信 request 域名、COS CORS、Bucket/Region；见[容器运维](operations.md) |
-| 改了 `.env` 仍读旧值 | 本机重启进程；生产用 `up -d --force-recreate api` |
+| 改了 `.env` 仍读旧值 | 本机重启进程；生产运行 `k8s/sync-config.sh` 并检查 API rollout |
 
 不要把 `.env`、AppSecret、数据库密码、COS 密钥、生产 token 或日志中的敏感值贴进聊天和提交记录。
+
+## 配置清理
+
+以 `APP_ENV` 为主，兼容旧 `NODE_ENV`。已从示例移除不参与运行的 `API_PUBLIC_URL` 与 `MYSQL_CONNECTION_LIMIT`；当前数据库访问每次请求按需连接，没有伪装成连接池的数量配置。COS 前缀沿用现值，不能随数据库改名而更换。
+
+
+想你了新增后端环境变量 `WECHAT_THOUGHT_TEMPLATE_ID`、`WECHAT_THOUGHT_USER_KEY`、`WECHAT_THOUGHT_MESSAGE_KEY`；实际模板与字段按当前微信后台可用类目配置。默认空值，空配置不影响站内功能。参见 [模块配置](thoughts.md)。

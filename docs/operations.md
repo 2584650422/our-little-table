@@ -1,78 +1,48 @@
-# 小饭桌容器运维
+# 我们的时光线上运维
 
-服务器上，小饭桌 API 的源码、Dockerfile、`compose.production.yml` 与私有 `.env` 同在 `/data/software/compose/little-table/server/`。公共 MySQL、Nginx、Typecho PHP 位于 `/data/software/compose/`，使用另一份 `docker-compose.yml`。两组容器共享 `compose_blog-network`；API 不向公网开放 3000 端口。
+当前线上入口是 Traefik Gateway API，业务 Nginx、Typecho PHP 和小饭桌 API 运行在 K3s `homelab` 命名空间；Docker 只运行 MySQL。资源图、证书更新和完整回退步骤见 [K3s 线上部署手册](../server/k8s/README.md)。
 
-## 同步并更新 API
+## 检查状态和日志
 
-本机已配置 SSH 别名 `lyc` 时，可在仓库根目录执行以下示例。它只同步构建所需的文件，不覆盖服务器 `.env`。如果服务器目录中有尚未纳入 Git 的手工修改，先比较后再同步。
-
-```bash
-rsync -av server/Dockerfile server/requirements.txt server/compose.production.yml lyc:/data/software/compose/little-table/server/
-rsync -av --exclude='__pycache__/' --exclude='*.pyc' server/app/ lyc:/data/software/compose/little-table/server/app/
-ssh lyc 'cd /data/software/compose/little-table/server && sudo docker compose -f compose.production.yml config --quiet && sudo docker compose -f compose.production.yml up -d --build --force-recreate api && sudo docker compose -f compose.production.yml ps'
-```
-
-如果 SSH 用户不能写上述目录，需要先传到自己的家目录，再由有权限的账号安装。`config --quiet` 可验证 Compose 语法而不打印展开后的密钥。更新前建议确认最近的数据库备份和当前镜像可用；涉及数据库迁移时，先核对已执行编号、备份与新旧 API 兼容性。
-
-部署后验证：
+在服务器上运行：
 
 ```bash
-ssh lyc 'sudo docker exec little-table-api python -c "import urllib.request; print(urllib.request.urlopen(\"http://127.0.0.1:3000/health\").read().decode())"'
+sudo kubectl get gatewayclass,gateway -A
+sudo kubectl get httproute,pod,service -n homelab
+sudo kubectl -n homelab logs deployment/our-time-api --tail=100
+sudo kubectl -n homelab logs deployment/business-nginx --tail=100
+sudo kubectl -n homelab logs deployment/typecho-php --tail=100
+sudo docker ps --format '{{.Names}} {{.Status}}'
 curl -fsS https://aaa.imlyc.cn/health
 ```
 
-`/health` 预期返回 `database: connected`。它只检查 API 和数据库，不证明微信通知或 COS 上传成功。
+预期 API 的 `/health` 返回 `database: connected`，Docker 运行列表只有 `mysql`。用日志中的 `requestId` 关联请求。微信提醒可查 `wechat.subscribe_*`；图片上传失败可查 `cos.client_upload_failed`。不要把真实 `.env`、Secret 内容或完整环境变量贴入聊天或提交到 Git。
 
-## 看状态和日志
+## 更新 API 配置
 
-在服务器上：
-
-```bash
-cd /data/software/compose/little-table/server
-sudo docker compose -f compose.production.yml ps
-sudo docker compose -f compose.production.yml logs --tail=200 api
-sudo docker compose -f compose.production.yml logs -f --since=10m api
-```
-
-API 日志在 Docker stdout/stderr 中，Compose 配置了每文件 10 MB、最多 3 个文件的轮转。用 `requestId` 关联请求；微信通知可查 `wechat.subscribe_*`，图片上传失败可查 `cos.client_upload_failed`。不要把 `.env` 或 `docker inspect` 输出的完整环境变量贴到聊天里。
-
-COS 链路是“小程序申请 STS → 直接 PUT 到 COS”。日志里的 `cos.credential_issued` 只说明凭证签发成功；若之后失败，先查微信后台的 **request 合法域名**、COS CORS 的 `PUT` 和请求头、Bucket/Region、以及客户端返回的 COS Request ID。上传不经过 Nginx 的普通 API 路由。
-
-## 改 `.env` 或 Nginx
-
-API 环境文件在 `/data/software/compose/little-table/server/.env`，权限 `600`。修改后运行：
+真实环境文件在 `/data/software/compose/our-time/server/.env`，权限 `600`。修改后同步到 K3s：
 
 ```bash
-cd /data/software/compose/little-table/server
-sudo docker compose -f compose.production.yml config --quiet
-sudo docker compose -f compose.production.yml up -d --force-recreate api
-```
-
-`restart` 只重启现有容器，不能注入改过的环境变量。公共 MySQL 的密码变量另在 `/data/software/compose/.env`，由公共 Compose 在解析 `${MYSQL_ROOT_PASSWORD}` 时读取；两份文件不要混用。
-
-Nginx 配置位于 `/data/software/compose/nginx/conf/conf.d/little-table.conf`。修改前备份目标文件，之后验证再加载：
-
-```bash
-sudo docker exec nginx nginx -t
-sudo docker exec nginx nginx -s reload
+sudo bash /data/software/compose/our-time/server/k8s/sync-config.sh \
+  /data/software/compose/our-time/server/.env 10.2.0.7 53306
+sudo kubectl -n homelab rollout status deployment/our-time-api
 curl -fsS https://aaa.imlyc.cn/health
 ```
 
-## 备份、迁移与回滚
+脚本更新 ConfigMap/Secret 并滚动重启 API。更新程序代码时，先构建、推送并核对新镜像摘要，再修改 `server/k8s/api.yaml` 并应用；数据库结构变更须另行检查兼容性和备份。旧 `compose.production.yml` 保留作回退，不负责当前线上 API。
 
-生产数据库备份保存在 `/data/software/compose/backups/`。恢复前核对备份时间、能否完整读取、数据库版本和对当前数据的影响。不要对已有生产库重导 `schema.sql` / `seed.sql`，也不要重复执行已运行的迁移。`007` 包含删列，尤其不能在仍需旧列的 API 上提前运行。
+## 更新 Nginx、PHP 或证书
 
-如果要保留更新前镜像，可在构建前给当前 `latest` 打标签：
+业务 Nginx 配置在 `server/k8s/nginx-sites.conf`。同步到服务器后，按 [K3s 手册](../server/k8s/README.md)更新 ConfigMap、滚动重启 Nginx，并运行 `nginx -t`。PHP 镜像固定摘要，更新时修改 `server/k8s/typecho-stack.yaml` 并检查首页和后台登录跳转。站点目录继续位于服务器 `/data/software/compose/nginx/html`；私有 `config.inc.php` 不进 Git。
 
-```bash
-sudo docker image tag little-table-api:latest little-table-api:rollback-YYYYMMDD-HHMMSS
-```
+服务器续期三个证书后运行 `server/k8s/sync-gateway-certs.sh`，把新证书写入 `kube-system` TLS Secret。公网证书由 Gateway 使用，业务 Nginx Pod 只接收集群内 HTTP。
 
-回滚时将下面的标签替换为实际已保存的标签：
+## 数据和回退
 
-```bash
-sudo docker image tag little-table-api:rollback-YYYYMMDD-HHMMSS little-table-api:latest
-sudo docker compose -f /data/software/compose/little-table/server/compose.production.yml up -d --no-build --force-recreate api
-```
+当前库为 `our_time`；旧库 `little_table` 保留用于 015 回滚，不能当成当前业务库继续写入。回滚前必须检查新库是否已有新增记录，详见 [015 迁移手册](schema-refactor.md)。
 
-镜像回滚只恢复应用程序；数据库结构或数据变更必须单独评估兼容性。旧 `006`、`007` 迁移已在 2026-09-27 的生产库执行；2026-09-30 的目录整理把 API 放入当前目录，并保留新的全库逻辑备份。具体可用恢复点应以服务器现存文件为准，不能只依据旧文档中的历史镜像名。
+MySQL 仍由公共 Compose 管理。生产备份保存在 `/data/software/compose/backups/`；恢复前核对备份时间、完整性和当前数据库版本。不要对已有生产库重导 `schema.sql`/`seed.sql` 或重复执行迁移，尤其是含删列操作的 `007`。整体回退命令见 [K3s 手册](../server/k8s/README.md)。
+
+COS 链路仍是“小程序申请临时凭证 → 直接 PUT 到 COS”。若 API 已签发凭证而上传失败，先检查微信 request 合法域名、COS CORS 的 `PUT` 和请求头、Bucket/Region 以及 COS Request ID。
+
+足迹照片保存时，后端还会对原图和预览图调用 COS `HeadObject` 校验元数据。服务器 `COS_SECRET_ID` 对应的 CAM 用户必须有 `name/cos:HeadObject`，资源仅需覆盖 `little-table/couples/*/travel-originals/*` 和 `little-table/couples/*/travel-previews/*`。缺少此动作时，直传可能成功，但照片记录会在元数据校验阶段失败；API 日志会显示 COS 403。无需给小程序临时上传凭证增加读取权限。

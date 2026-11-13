@@ -1,0 +1,50 @@
+<view class="life-page atlas-page">
+  <view class="life-eyebrow">把走过的路，变成我们的相册</view>
+  <view class="life-row"><view class="life-title">一起看世界</view><view class="atlas-add" role="button" bindtap="add">＋ 照片</view></view>
+  <view class="life-subtitle">{{cityCount}} 个地点 · {{photos.length}} 张回忆 · 仅我们可见</view>
+  <view class="atlas-tabs"><text class="{{view==='map'?'active':''}}" bindtap="mode" data-mode="map">地图</text><text class="{{view==='wall'?'active':''}}" bindtap="mode" data-mode="wall">照片墙</text></view>
+  <block wx:if="{{view==='map'}}">
+    <view class="atlas-toolbar">
+      <text class="atlas-toolbar-label">{{highlightProvince || '全部足迹'}}<text wx:if="{{filterProvince}}"> · {{provincePhotoCount}} 张</text></text>
+      <view class="atlas-toolbar-actions"><text wx:if="{{filterProvince}}" class="atlas-tool" bindtap="clearProvinceFilter">显示全部</text><text class="atlas-tool" bindtap="fullscreen">⤢ 全屏</text></view>
+    </view>
+    <view class="atlas-map-shell">
+      <atlas-board id="preview-board" groups="{{groups}}" focus="{{filterProvince}}" compact bind:groupselect="groupSelect"/>
+    </view>
+    <view class="atlas-map-hint">双指缩放 · 拖动查看 · 全屏探索更多</view>
+    <view wx:if="{{error}}" class="atlas-retry" bindtap="load">照片暂时加载失败 · 点击重试</view>
+    <view wx:if="{{hasMore}}" class="life-link" bindtap="loadMore">继续加载更多照片地点 →</view>
+    <view wx:if="{{filterProvince && !provincePhotoCount}}" class="atlas-region-empty">当前已加载的照片中没有这个省份；继续加载更多后再查看。</view>
+    <view wx:if="{{selected}}" class="atlas-story">
+      <view class="story-heading"><view class="story-place">{{selected.city}}</view><text class="story-date">{{selected.takenOn}}</text></view>
+      <swiper class="story-swiper" style="height:{{storyImageHeight}}rpx" current="{{storyIndex}}" bindchange="storyChange" duration="280">
+        <swiper-item wx:for="{{storyPhotos}}" wx:key="id"><image class="story-image" src="{{item.previewUrl}}" mode="aspectFit" lazy-load bindtap="preview" data-id="{{item.id}}"/></swiper-item>
+      </swiper>
+      <view class="story-meta"><text>{{storyPhotos.length > 1 ? '左右滑动 · ' + (storyIndex+1) + ' / ' + storyPhotos.length : '点照片查看原图'}}</text><text class="photo-menu" data-id="{{selected.id}}" bindtap="managePhoto" aria-label="管理这张照片">···</text></view>
+      <view wx:if="{{selected.caption}}" class="story-caption">{{selected.caption}}</view>
+    </view>
+    <view wx:elif="{{!loading && !filterProvince}}" class="atlas-empty">地图已经铺好。<text>放进第一张照片，留下我们去过的地方。</text></view>
+    <view class="atlas-source">地图轮廓：阿里云 DataV 省级地理数据</view>
+  </block>
+  <block wx:else>
+    <view wx:if="{{error}}" class="atlas-retry" bindtap="load">照片暂时加载失败 · 点击重试</view>
+    <view class="wall-intro">收藏沿途的风景，也收藏一起的日常。</view>
+    <view class="photo-columns">
+      <view wx:for="{{columns}}" wx:key="index" wx:for-item="column" class="photo-column">
+        <view wx:for="{{column}}" wx:key="id" class="photo-item">
+          <image class="life-photo" src="{{item.previewUrl}}" mode="widthFix" lazy-load data-id="{{item.id}}" bindtap="preview"/>
+          <view class="wall-copy">
+            <view class="wall-place">{{item.city}}</view>
+            <view wx:if="{{item.caption}}" class="wall-caption">{{item.caption}}</view>
+            <view class="wall-footer"><text>{{item.takenOn}}</text><text class="photo-menu" data-id="{{item.id}}" catchtap="managePhoto" aria-label="管理这张照片">···</text></view>
+          </view>
+        </view>
+      </view>
+    </view>
+    <view wx:if="{{!photos.length&&!loading&&!error}}" class="life-empty">还没有留下足迹。<view>选一张喜欢的照片，记住一起到过的地方。</view></view>
+    <view wx:if="{{loading}}" class="life-empty">正在翻看回忆…</view>
+    <view wx:elif="{{hasMore}}" class="life-link" bindtap="loadMore">继续向下翻，加载更多回忆</view>
+  </block>
+</view>
+
+<thought-inbox/>

@@ -1,12 +1,12 @@
-USE little_table;
+USE our_time;
 
-INSERT INTO starter_categories (id, name, sort_order) VALUES
+INSERT INTO category_templates (id, name, sort_order) VALUES
 (1,'家常菜',10),(2,'荤菜',20),(3,'素菜',30),(4,'汤',40),
 (5,'主食',50),(6,'早餐',60),(7,'水果',70),(8,'零食',80),
 (9,'饮料',90),(10,'甜品',100)
 ON DUPLICATE KEY UPDATE sort_order=VALUES(sort_order);
 
-INSERT INTO starter_dishes (category_id, name, description, calorie_kcal, calorie_unit, serving_note, cook_time_minutes, difficulty, spicy_level, tags, sort_order) VALUES
+INSERT INTO dish_templates (category_id, name, description, calorie_kcal, calorie_unit, serving_note, cook_time_minutes, difficulty, spicy_level, tags, sort_order) VALUES
 (1,'番茄炒蛋','酸甜柔软，最熟悉的家常味',380,'份','约两人份',15,'easy',0,'["下饭","快手"]',10),
 (2,'可乐鸡翅','甜咸入味，适合周末慢慢做',520,'份','约两人份',40,'medium',0,'["鸡肉","下饭"]',20),
 (2,'宫保鸡丁','微辣脆香，配米饭刚刚好',420,'份','约两人份',30,'medium',2,'["微辣","鸡肉","下饭"]',30),

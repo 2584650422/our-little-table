@@ -1,49 +1,37 @@
 <view class="prototype-page settings-page">
-  <subpage-header/>
-  <view class="prototype-title page-title">小饭桌设置</view>
-  <view class="page-caption">把两个人的日常，慢慢布置成喜欢的样子。</view>
-  <view wx:if="{{loading}}" class="loading">正在看看小饭桌…</view>
-  <view wx:elif="{{error}}" class="card error-state"><view>{{error}}</view><button class="btn secondary" bindtap="load">重新试试</button></view>
+  <subpage-header background="#F7F5EE"/>
+  <view class="page-title">共同空间设置</view>
+  <view class="page-caption">各自的资料，一起使用的空间。</view>
+  <view wx:if="{{loading}}" class="life-empty">正在打开空间设置…</view>
+  <view wx:elif="{{error && !couple}}" class="life-empty"><view>{{error}}</view><button class="life-button" bindtap="load">重新试试</button></view>
   <block wx:else>
-    <view class="section-heading"><view>我的资料</view><text>头像和称呼，只属于你自己</text></view>
-    <view class="prototype-card section-card">
-      <view class="avatar-row" bindtap="chooseAvatar"><view class="avatar-editor"><image wx:if="{{avatarUrl}}" class="media-avatar" src="{{avatarUrl}}" mode="aspectFill"/><view wx:else class="avatar-fallback">{{nickname[0]||'饭'}}</view></view><view class="avatar-copy"><view>我的头像</view><text>{{uploadingAvatar?(uploadStage==='cropping'?'正在裁切…':uploadStage==='compressing'?'正在压缩…':'正在上传…'):'点击更换照片'}}</text></view><text class="arrow">›</text></view>
-      <view wx:if="{{avatarUrl}}" class="remove-avatar" catchtap="removeAvatar">恢复默认头像</view>
-      <view class="prototype-divider"/>
-      <view class="field-row"><text>我的称呼</text><input maxlength="30" value="{{nickname}}" data-key="nickname" bindinput="input" placeholder="你希望我怎么叫你"/></view>
+    <view class="section-heading"><text>我的资料</text><text class="section-note">每人只修改自己的资料</text></view>
+    <view class="settings-card">
+      <view class="avatar-row" bindtap="chooseAvatar">
+        <image wx:if="{{avatarUrl}}" class="avatar-editor" src="{{avatarUrl}}" mode="aspectFill"/>
+        <view wx:else class="avatar-editor avatar-fallback">{{nickname[0]||'我'}}</view>
+        <view class="row-copy"><view>我的头像</view><text>{{uploadingAvatar?'正在处理照片…':'点击更换照片'}}</text></view><text class="arrow">›</text>
+      </view>
+      <view wx:if="{{avatarUrl && !saving && !uploadingAvatar}}" class="remove-avatar" bindtap="removeAvatar">恢复默认头像</view>
+      <view class="field-row"><text>我的昵称</text><input disabled="{{saving}}" maxlength="30" value="{{nickname}}" data-key="nickname" bindinput="input" placeholder="填写昵称"/></view>
     </view>
 
-    <view class="section-heading"><view>我们的小饭桌</view><text>名字、日子，还有坐在桌边的人</text></view>
-    <view class="prototype-card section-card">
-      <view class="background-row" bindtap="chooseBackground"><image class="background-thumb" src="{{backgroundImageUrl||'/assets/images/us-hero.jpg'}}" mode="aspectFill"/><view class="background-copy"><view>我们页背景</view><text>{{uploadingBackground?'正在处理图片…':'点击更换，建议横向照片'}}</text></view><text class="arrow">›</text></view>
-      <view wx:if="{{backgroundImageKey}}" class="remove-background" catchtap="removeBackground">恢复默认背景</view>
-      <view class="prototype-divider"/>
-      <view class="field-row"><text>饭桌名称</text><input maxlength="50" value="{{name}}" data-key="name" bindinput="input" placeholder="给饭桌起个名字"/></view>
-      <view class="prototype-divider"/>
-      <view class="field-row"><text>在一起日期</text><picker mode="date" value="{{anniversary}}" bindchange="date"><view>{{anniversary||'暂未设置'}} <text class="arrow">›</text></view></picker></view>
-      <view class="prototype-divider"/>
-      <view class="action-row" bindtap="viewMembers"><view class="action-copy"><text>饭桌成员</text><view>{{couple.members.length}} / 2 位成员</view></view><view class="member-avatars"><block wx:for="{{couple.members}}" wx:key="id"><image wx:if="{{item.avatarUrl}}" src="{{item.avatarUrl}}" mode="aspectFill"/><view wx:else>{{item.nickname[0]||'饭'}}</view></block></view><text class="arrow">›</text></view>
+    <view class="section-heading"><text>共同空间</text><text class="section-note">双方共享</text></view>
+    <view class="settings-card">
+      <view class="field-row first-row"><text>空间名称</text><input disabled="{{saving}}" maxlength="50" value="{{name}}" data-key="name" bindinput="input" placeholder="给共同空间起个名字"/></view>
+      <view class="action-row bordered" bindtap="viewMembers"><view class="row-copy"><view>空间成员与邀请</view><text>{{couple.members.length}} / 2 位成员</text></view><view class="member-avatars"><block wx:for="{{couple.members}}" wx:key="id"><image wx:if="{{item.avatarUrl}}" src="{{item.avatarUrl}}" mode="aspectFill"/><view wx:else>{{item.nickname[0]||'我'}}</view></block></view><text class="arrow">›</text></view>
     </view>
 
-    <view class="section-heading"><view>首页展示</view><text>打开小程序时，先看到你们的话</text></view>
-    <view class="prototype-card copy-card"><view class="copy-label">首页主标题</view><textarea maxlength="80" auto-height value="{{homeTitle}}" data-key="homeTitle" bindinput="input"/><view class="prototype-divider"/><view class="copy-label">首页副标题</view><textarea maxlength="120" auto-height value="{{homeSubtitle}}" data-key="homeSubtitle" bindinput="input"/></view>
-
-    <view class="section-heading"><view>日常管理</view><text>整理菜单，或去看看其他饭桌</text></view>
-    <view class="prototype-card section-card management-card">
-      <view class="action-row" bindtap="manageMenu"><view class="action-copy"><text>菜单管理</text><view>新增、编辑或下架菜品</view></view><text class="arrow">›</text></view>
-      <view class="prototype-divider"/>
-      <view class="action-row" bindtap="switchTable"><view class="action-copy"><text>切换小饭桌</text><view>查看之前加入的小饭桌</view></view><text class="arrow">›</text></view>
-    </view>
-
-    <view class="section-heading other-heading"><view>其他操作</view><text>离开或删除前，记得先看清影响</text></view>
-    <view class="prototype-card danger-card">
-      <view class="action-row danger-toggle" bindtap="toggleDanger"><view class="action-copy"><text>离开或删除小饭桌</text><view>这两项操作需要再次确认</view></view><text class="arrow {{showDanger?'rotate':''}}">›</text></view>
-      <view wx:if="{{showDanger}}" class="danger-panel">
-        <view class="prototype-divider"/>
-        <view class="danger-title">退出当前小饭桌</view><view class="danger-note">只移除你与这张饭桌的关系，饭桌和历史记录会保留。</view><button class="danger-action" bindtap="leave">退出当前小饭桌</button>
-        <view class="danger-title delete-title">永久删除小饭桌</view><view class="danger-note">仅创建者且没有其他成员时可删除。菜单、订单和照片将无法恢复。</view><button class="danger-action delete-action" bindtap="deleteCouple">永久删除小饭桌</button>
+    <view class="section-heading"><text>空间管理</text></view>
+    <view class="settings-card">
+      <view class="action-row" bindtap="switchSpace"><view class="row-copy"><view>切换共同空间</view><text>查看已加入的空间，或创建新的空间</text></view><text class="arrow">›</text></view>
+      <view class="action-row bordered" bindtap="toggleDanger"><view class="row-copy"><view>离开或删除共同空间</view><text>展开查看操作及影响</text></view><text class="arrow {{showDanger?'rotate':''}}">›</text></view>
+      <view wx:if="{{showDanger}}" class="danger-panel bordered">
+        <view class="danger-title">离开当前空间</view><view class="danger-note">只结束你与当前空间的成员关系，已有记录会保留。</view><button class="danger-action" disabled="{{saving || uploadingAvatar}}" bindtap="leave">离开当前空间</button>
+        <view class="danger-title">永久删除共同空间</view><view class="danger-note">仅创建者且没有其他成员时可删除。空间内的菜单、用餐、日历和足迹记录都将删除。</view><button class="danger-action delete-action" disabled="{{saving || uploadingAvatar || !canDelete}}" bindtap="deleteSpace">永久删除共同空间</button>
       </view>
     </view>
-    <view class="prototype-button prototype-fixed" bindtap="save">保存设置</view>
+    <view wx:if="{{error}}" class="life-error">{{error}}</view>
+    <view class="settings-footer"><button class="life-button save-settings" bindtap="save" disabled="{{saving || uploadingAvatar}}" loading="{{saving}}">{{saving?'正在保存…':'保存设置'}}</button></view>
   </block>
 </view>
