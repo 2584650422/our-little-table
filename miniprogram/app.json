@@ -21,8 +21,10 @@
     "pages/life-edit/life-edit",
     "pages/photo-edit/photo-edit",
     "pages/home-edit/home-edit",
-    "pages/atlas-explore/atlas-explore",
     "pages/thoughts/thoughts"
+  ],
+  "subpackages": [
+    { "root": "pages/atlas-explore", "pages": ["atlas-explore"] }
   ],
   "window": {
     "navigationBarTextStyle": "black",

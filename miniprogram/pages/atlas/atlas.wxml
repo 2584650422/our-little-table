@@ -1,7 +1,7 @@
 <view class="life-page atlas-page">
   <view class="life-eyebrow">把走过的路，变成我们的相册</view>
   <view class="life-row"><view class="life-title">一起看世界</view><view class="atlas-add" role="button" bindtap="add">＋ 照片</view></view>
-  <view class="life-subtitle">{{cityCount}} 个地点 · {{photos.length}} 张回忆 · 仅我们可见</view>
+  <view class="life-subtitle">{{cityCount}} 个城市 · {{photos.length}} 张回忆 · 仅我们可见</view>
   <view class="atlas-tabs"><text class="{{view==='map'?'active':''}}" bindtap="mode" data-mode="map">地图</text><text class="{{view==='wall'?'active':''}}" bindtap="mode" data-mode="wall">照片墙</text></view>
   <block wx:if="{{view==='map'}}">
     <view class="atlas-toolbar">

@@ -21,6 +21,7 @@ module.exports = {
   list: (data) => request({ url: '/api/thoughts', data }).then(stableAvatars),
   unread: () => request({ url: '/api/thoughts/unread' }).then(stableAvatars),
   day: (date) => request({ url: '/api/thoughts/day', data: { date } }).then(stableAvatars),
+  month: (month) => request({ url: '/api/thoughts/calendar', data: { month } }),
   send: (data) => request({ url: '/api/thoughts', method: 'POST', data }),
   read: (ids) => request({ url: '/api/thoughts/read', method: 'PUT', data: { ids } }),
   remove: (id) => request({ url: '/api/thoughts/' + id, method: 'DELETE' }),

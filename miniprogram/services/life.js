@@ -10,6 +10,7 @@ module.exports = {
   deleteEvent: (id) => request({ url: '/api/life/events/' + id, method: 'DELETE' }),
   photos: (beforeId) => request({ url: '/api/life/photos', data: { beforeId: beforeId || 0 } }),
   photo: (id) => request({ url: '/api/life/photos/' + id }),
+  location: (latitude, longitude) => request({ url: '/api/life/location', data: { latitude, longitude } }),
   updatePhoto: (id, data) => request({ url: '/api/life/photos/' + id, method: 'PUT', data }),
   addPhoto: (data) => request({ url: '/api/life/photos', method: 'POST', data }),
   deletePhoto: (id) => request({ url: '/api/life/photos/' + id, method: 'DELETE' }),

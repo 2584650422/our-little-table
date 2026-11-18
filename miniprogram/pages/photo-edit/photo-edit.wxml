@@ -3,42 +3,46 @@
   <view wx:if="{{!photos.length && !editingId}}" class="photo-empty" bindtap="choose">
     <view class="photo-symbol">＋</view>
     <view class="photo-empty-title">添加照片</view>
-    <view class="photo-empty-note">保留完整原图 · 一次最多 9 张</view>
+    <view class="photo-empty-note">拍照或从相册选择 · 一次最多 9 张</view>
   </view>
   <view wx:if="{{photos.length === 1}}" class="single-photo">
     <image src="{{photos[0].path}}" mode="widthFix" data-index="0" bindtap="previewPhoto"/>
     <button wx:if="{{!saving && !editingId}}" class="photo-remove" data-index="0" catchtap="removePhoto" aria-label="移除照片">×</button>
   </view>
   <view wx:else class="photo-grid">
-    <view wx:for="{{photos}}" wx:key="path" class="photo-tile">
-      <image src="{{item.path}}" mode="aspectFit" data-index="{{index}}" bindtap="previewPhoto"/>
+    <view wx:for="{{photos}}" wx:key="path" class="photo-tile {{activePhotoIndex===index?'photo-tile-active':''}}">
+      <image src="{{item.path}}" mode="aspectFit" data-index="{{index}}" bindtap="selectPhoto"/><view class="photo-number">{{index+1}}</view>
       <button wx:if="{{!saving && !editingId}}" class="photo-remove" data-index="{{index}}" catchtap="removePhoto" aria-label="移除照片">×</button>
     </view>
   </view>
   <view class="photo-meta">
     <text>JPG / PNG / WEBP · 每张最大 10MB</text>
-    <text wx:if="{{!editingId && photos.length && photos.length < 9 && !saving}}" class="photo-add" bindtap="choose">继续添加 {{photos.length}}/9</text>
+    <text wx:if="{{!editingId && photos.length && photos.length < 9 && !saving && !loading}}" class="photo-add" bindtap="choose">继续添加 {{photos.length}}/9</text>
     <text wx:elif="{{photos.length}}">已选 {{photos.length}} 张</text>
   </view>
 
-  <view class="section-heading">拍摄信息</view>
+  <view class="section-heading">拍摄信息<text wx:if="{{!editingId && photos.length > 1}}"> · 第 {{activePhotoIndex+1}} 张</text></view>
+  <view wx:if="{{!editingId && photos.length}}" class="metadata-hint">{{photos[activePhotoIndex].metadataHint}} <text class="metadata-report-link" bindtap="copyMetadataReport">复制读取诊断</text></view>
   <view class="info-card">
     <view class="info-row" bindtap="chooseLocation">
       <text class="row-label">拍摄地点</text>
       <text class="row-value {{city ? '' : 'placeholder'}}">{{city || '选择地点'}}</text>
       <text class="chevron">›</text>
     </view>
-    <picker mode="date" value="{{takenOn}}" end="{{today}}" start="1901-01-01" disabled="{{saving}}" data-field="takenOn" bindchange="field">
-      <view class="info-row date-row"><text class="row-label">拍摄日期</text><text class="row-value">{{takenOn}}</text><text class="chevron">›</text></view>
+    <view wx:if="{{provinceName || cityName}}" class="region-meta">识别地区：{{provinceName}}{{cityName && cityName!==provinceName?' · '+cityName:''}}</view>
+    <picker mode="date" value="{{takenOn || today}}" end="{{today}}" start="1901-01-01" disabled="{{saving}}" data-field="takenOn" bindchange="field">
+      <view class="info-row date-row"><text class="row-label">拍摄日期</text><text class="row-value {{takenOn?'':'placeholder'}}">{{takenOn || '选择拍摄日期'}}</text><text class="chevron">›</text></view>
     </picker>
   </view>
-  <view wx:if="{{photos.length > 1}}" class="batch-note">这组照片共用地点、日期和随手记；不同地点请分批添加。</view>
+  <view wx:if="{{photos.length > 1}}" class="batch-note">每张照片独立保存地点、日期和随手记，点击缩略图逐张确认。</view>
+  <view wx:if="{{photos.length > 1}}" class="photo-current-preview" data-index="{{activePhotoIndex}}" bindtap="previewPhoto">预览当前照片 ›</view>
   <view class="section-heading note-heading"><text>随手记</text><text class="optional">可选</text></view>
   <textarea class="note-input" value="{{caption}}" maxlength="200" disabled="{{saving}}" placeholder="记下这一天的小事…" data-field="caption" bindinput="field"/>
   <view wx:if="{{error}}" class="life-error">{{error}}</view>
-  <view wx:if="{{error}}" class="permission-link" bindtap="locationAccess">查看位置授权设置 ›</view>
+  <view wx:if="{{error && pickerError}}" class="permission-link" bindtap="copyPickerError">复制选图错误 ›</view>
+  <view wx:elif="{{error}}" class="permission-link" bindtap="locationAccess">查看位置授权设置 ›</view>
   <view class="save-footer">
     <view class="save-hint">{{saving ? '正在保存，请保持页面打开' : editingId ? (hasChanges ? '修改已就绪，可以保存。' : '原有信息都保留着，修改后即可保存。') : '选好照片和地点，就可以保存。'}}</view>
-    <button class="save-action" bindtap="save" disabled="{{loading || saving || !photos.length || !city || (editingId && !hasChanges)}}" loading="{{saving}}">{{editingId ? '保存修改' : stage || (photos.length > 1 ? '保存 ' + photos.length + ' 张到足迹' : '保存到足迹')}}</button>
+    <button class="save-action" bindtap="save" disabled="{{loading || saving || !photos.length || (editingId && (!city || !hasChanges))}}" loading="{{saving}}">{{editingId ? '保存修改' : stage || (photos.length > 1 ? '保存 ' + photos.length + ' 张到足迹' : '保存到足迹')}}</button>
   </view>
 </view>

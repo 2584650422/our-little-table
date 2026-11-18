@@ -21,6 +21,7 @@ Component({
   properties: {
     groups: { type: Array, value: [] },
     focus: { type: String, value: '' },
+    cityMap: { type: Object, value: null },
     zoomed: { type: Boolean, value: false },
     compact: { type: Boolean, value: false },
     album: { type: Boolean, value: false },
@@ -32,6 +33,7 @@ Component({
     cards: [],
     lines: [],
     markers: [],
+    markerScale: 1,
     cityLabels: [],
     page: 0,
     pages: 1,
@@ -44,7 +46,7 @@ Component({
     ready: false,
   },
   observers: {
-    'groups, focus, album, zoomed, points': function () {
+    'groups, focus, cityMap, album, zoomed, points': function () {
       if (this._ready) this.refresh()
     },
   },
@@ -83,7 +85,7 @@ Component({
           if (!this._ready || epoch !== this._epoch) return
           const key =
             (this.properties.zoomed ? this.properties.focus : 'country') +
-            (this.properties.album ? ':album' : '')
+            (this.properties.album ? ':album:' + (this.properties.cityMap?.image || '') : '')
           if (this._focusKey !== key) {
             if (this._focusKey)
               this._views[this._focusKey] = {
@@ -107,11 +109,13 @@ Component({
       const h = this._rect.height
       const compact = this.properties.compact
       const provinceView = this.properties.zoomed && this.properties.focus && !compact
-      const box = provinceView
-        ? bounds(this.properties.focus)
-        : { x: 0, y: 0, width: 600, height: 465 }
+      const cityFrame = this.properties.album && this.properties.cityMap?.frame
+      const box =
+        provinceView && !cityFrame
+          ? bounds(this.properties.focus)
+          : { x: 0, y: 0, width: 600, height: 465 }
       const groups = this.properties.groups || []
-      const capacity = compact ? 4 : 6
+      const capacity = provinceView ? Math.max(1, groups.length) : compact ? 4 : 6
       const pages = Math.max(1, Math.ceil(groups.length / capacity))
       const page = Math.min(this.data.page, pages - 1)
       const visible = groups.slice(page * capacity, (page + 1) * capacity)
@@ -132,23 +136,26 @@ Component({
         mh = frame.height,
         fx = frame.x,
         fy = frame.y
-      const zoom =
-        this.properties.zoomed && this.properties.focus && !compact
+      const zoom = cityFrame
+        ? cityFrame[2]
+        : this.properties.zoomed && this.properties.focus && !compact
           ? Math.min(40, Math.min(540 / Math.max(box.width, 1), 405 / Math.max(box.height, 1)))
           : 1
-      const tx = 300 - (box.x + box.width / 2) * zoom
-      const ty = 232.5 - (box.y + box.height / 2) * zoom
+      const tx = 300 - (cityFrame ? cityFrame[0] : box.x + box.width / 2) * zoom
+      const ty = 232.5 - (cityFrame ? cityFrame[1] : box.y + box.height / 2) * zoom
       const cards = [],
         lineCandidates = [],
         markers = []
-      for (const pointPhoto of this.properties.points || []) {
+      // The native movable view moves the markers with the map, even between JS events.
+      const markerPhotos = new Map(visible.map((group) => [group.id, group]))
+      for (const photo of this.properties.points || []) markerPhotos.set(photo.id, photo)
+      for (const pointPhoto of markerPhotos.values()) {
         const point = map.position(pointPhoto.latitude, pointPhoto.longitude)
         if (!point) continue
-        const px = fx + (point.x * zoom + tx) * scale
-        const py = fy + (point.y * zoom + ty) * scale
+        const px = (point.x * zoom + tx) * scale
+        const py = (point.y * zoom + ty) * scale
         markers.push({
           id: pointPhoto.id,
-          label: pointPhoto.city || pointPhoto.name || '',
           style: `left:${px}px;top:${py}px;`,
         })
       }
@@ -209,33 +216,33 @@ Component({
           if (!lines.some((line) => segmentsCross(line, candidate))) lines.push(candidate)
         })
       const province = map.provinces.find((item) => item.name === this.properties.focus)
-      const cityLabels =
-        this.properties.zoomed && province
-          ? layoutCityLabels(cityMaps[province.code] || [], {
-              zoom,
-              tx,
-              ty,
-              scale,
-              width: mw,
-              height: mh,
-              gestureScale: rendered ? rendered.width / w : gesture.scale,
-            })
+      const districtNames = this.properties.cityMap?.labels || []
+      const placeNames = cityFrame
+        ? (this.properties.points || []).slice(0, 3).flatMap((place) => {
+            const point = map.position(place.latitude, place.longitude)
+            return point ? [{ name: place.name, point: [point.x, point.y], isPlace: true }] : []
+          })
+        : []
+      const names = cityFrame
+        ? [...placeNames, ...districtNames]
+        : this.properties.zoomed && province
+          ? cityMaps[province.code] || []
           : []
-      for (const marker of markers) {
-        const match = /left:([\d.-]+)px;top:([\d.-]+)px/.exec(marker.style)
-        if (match) {
-          const point = project(Number(match[1]), Number(match[2]))
-          marker.style = `left:${point.x}px;top:${point.y}px;`
-        }
-      }
+      const cityLabels = layoutCityLabels(names, {
+        zoom,
+        tx,
+        ty,
+        scale,
+        width: mw,
+        height: mh,
+        gestureScale: rendered ? rendered.width / w : gesture.scale,
+      })
       this.setData({
         cityLabels,
         cards,
         lines,
-        markers: markers.filter((marker) => {
-          const match = /left:([\d.-]+)px;top:([\d.-]+)px/.exec(marker.style)
-          return match && inViewport(Number(match[1]), Number(match[2]))
-        }),
+        markers,
+        markerScale: 1 / (rendered ? rendered.width / w : gesture.scale || 1),
         clipStyle: `left:${viewport.x}px;top:${viewport.y}px;width:${viewport.width}px;height:${viewport.height}px;`,
         areaStyle: `left:${-viewport.x}px;top:${-viewport.y}px;width:${w}px;height:${h}px;`,
         pages,
@@ -248,10 +255,13 @@ Component({
     },
     draw(focus) {
       const province = map.provinces.find((item) => item.name === focus)
+      const cityOutline = this.properties.album && this.properties.cityMap?.image
       this.setData({
-        highlight: province
-          ? `/assets/atlas-maps/${province.code}${!this.properties.zoomed || this.properties.compact ? '-compact' : cityMaps[province.code] ? '-cities' : ''}.png`
-          : '',
+        highlight: cityOutline
+          ? cityOutline
+          : province
+            ? `/assets/atlas-maps/${province.code}${!this.properties.zoomed || this.properties.compact ? '-compact' : cityMaps[province.code] ? '-cities' : ''}.png`
+            : '',
       })
     },
     groupTap(event) {
@@ -291,6 +301,7 @@ Component({
     },
     scaleChange(event) {
       this._gesture = { ...(this._gesture || { x: 0, y: 0 }), scale: event.detail.scale }
+      this.setData({ markerScale: 1 / (event.detail.scale || 1) })
       this.scheduleLayout()
     },
     moveChange(event) {
@@ -304,12 +315,12 @@ Component({
         Math.min(3, current.scale + Number(event.currentTarget.dataset.delta)),
       )
       this._gesture = { ...current, scale }
-      this.setData({ scale })
+      this.setData({ scale, markerScale: 1 / scale })
       this.scheduleLayout()
     },
     reset() {
       this._gesture = { scale: 1, x: 0, y: 0 }
-      this.setData(this._gesture)
+      this.setData({ ...this._gesture, markerScale: 1 })
       this.scheduleLayout()
     },
     previous() {

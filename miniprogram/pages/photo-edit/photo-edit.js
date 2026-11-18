@@ -2,6 +2,7 @@ const api = require('../../services/life')
 const life = require('../../utils/life')
 const upload = require('../../services/upload')
 const { request } = require('../../services/api')
+const { readMetadata } = require('../../utils/photo-metadata')
 
 function callApi(name, options = {}) {
   return new Promise((resolve, reject) => wx[name]({ ...options, success: resolve, fail: reject }))
@@ -22,12 +23,15 @@ async function openLocationSettings() {
 Page({
   data: {
     photos: [],
+    activePhotoIndex: 0,
+    provinceName: '',
+    cityName: '',
     editingId: null,
     loading: false,
     hasChanges: false,
     city: '',
     caption: '',
-    takenOn: life.date(),
+    takenOn: '',
     today: life.date(),
     latitude: null,
     longitude: null,
@@ -35,6 +39,7 @@ Page({
     saving: false,
     stage: '',
     error: '',
+    pickerError: null,
   },
   async onLoad(options = {}) {
     if (!options.id) return
@@ -56,6 +61,8 @@ Page({
     this._photoLoaded = true
     const values = {
       city: photo.city || '',
+      provinceName: photo.provinceName || '',
+      cityName: photo.cityName || '',
       caption: photo.caption || '',
       takenOn: photo.takenOn || life.date(),
       latitude: photo.latitude ?? null,
@@ -96,12 +103,37 @@ Page({
       this.setData({ locationPermissionText: '查看位置权限设置' })
     }
   },
+  selectPhoto(e) {
+    if (this.data.saving || this.data.loading) return
+    this.showPhoto(Number(e.currentTarget.dataset.index))
+  },
+  showPhoto(index) {
+    const photo = this.data.photos[index]
+    if (!photo || this.data.editingId) return
+    this.setData({
+      activePhotoIndex: index,
+      city: photo.city || '',
+      takenOn: photo.takenOn || '',
+      caption: photo.caption || '',
+      latitude: photo.latitude ?? null,
+      longitude: photo.longitude ?? null,
+      provinceName: photo.provinceName || '',
+      cityName: photo.cityName || '',
+    })
+  },
+  updateActive(values) {
+    if (!this.data.editingId) {
+      const photos = this.data.photos.map((photo, index) =>
+        index === this.data.activePhotoIndex ? { ...photo, ...values } : photo,
+      )
+      this.setData({ photos })
+    }
+    this.setData(values)
+    this.refreshChanges(values)
+  },
   field(e) {
-    if (this.data.saving) return
-    const field = e.currentTarget.dataset.field
-    const value = e.detail.value
-    this.setData({ [field]: value })
-    this.refreshChanges({ [field]: value })
+    if (this.data.saving || this.data.loading) return
+    this.updateActive({ [e.currentTarget.dataset.field]: e.detail.value })
   },
   async choose() {
     if (
@@ -111,56 +143,169 @@ Page({
       this.data.photos.length >= 9
     )
       return
+    const count = 9 - this.data.photos.length
+    this.setData({ loading: true, error: '', pickerError: null })
+    let selecting = true
     try {
       const result = await callApi('chooseMedia', {
-        count: 9 - this.data.photos.length,
+        count,
         mediaType: ['image'],
         sizeType: ['original'],
         sourceType: ['album', 'camera'],
       })
+      selecting = false
       const additions = []
-      for (const file of result.tempFiles) {
+      for (const file of (result.tempFiles || []).slice(0, count)) {
+        const path = file.tempFilePath
+        if (!path) throw new Error('微信没有返回照片文件，请重新选择')
         if (file.size > 10 * 1024 * 1024) throw new Error('单张照片不能超过 10MB，请重新选择')
-        const info = await callApi('getImageInfo', { src: file.tempFilePath })
+        const info = await callApi('getImageInfo', { src: path }).catch(() => {
+          throw new Error('无法读取图片，请选择 JPG、PNG 或 WEBP 文件')
+        })
         if (!['jpg', 'jpeg', 'png', 'webp'].includes(String(info.type).toLowerCase()))
           throw new Error('请选择 JPG、PNG 或 WEBP；HEIC 请先导出为 JPG')
-        additions.push({ path: file.tempFilePath, width: info.width, height: info.height })
+        const metadata = await readMetadata(path)
+        const { latitude, longitude } = metadata
+        const hasGps = latitude != null && longitude != null
+        const takenOn =
+          metadata.takenOn &&
+          metadata.takenOn <= this.data.today &&
+          metadata.takenOn >= '1901-01-01'
+            ? metadata.takenOn
+            : ''
+        let region = {}
+        if (hasGps) {
+          try {
+            region = await api.location(latitude, longitude)
+          } catch (_) {}
+        }
+        const size = metadata.bytes || file.size
+        const fileSize = size > 0 ? ` · ${(size / 1048576).toFixed(2)} MiB` : ''
+        const metadataHint = metadata.readFailed
+          ? '无法读取所选文件，请重新选择'
+          : `拍摄日期${takenOn ? '已读取' : '未读到'} · GPS${hasGps ? '已读取' : '未读到'}`
+        const diagnostic = metadata.diagnostic || {}
+        const metadataReport = {
+          source: result.sourceType || 'album',
+          api: 'chooseMedia',
+          format: diagnostic.format || '无法从文件头识别',
+          pickerFormat: info.type,
+          pickerBytes: file.size ?? null,
+          readBytes: metadata.bytes ?? null,
+          fileRead: metadata.readFailed ? '失败' : '成功',
+          exif:
+            metadata.readFailed || !diagnostic.format ? '未知' : diagnostic.exif ? '有' : '未找到',
+          rootDirectory: diagnostic.rootDirectory?.status ?? null,
+          exifDirectory: diagnostic.exifDirectory?.status ?? null,
+          gpsDirectory: diagnostic.gpsDirectory?.status ?? null,
+          dateTag: diagnostic.dateTag ?? null,
+          gpsCoordinateTags: diagnostic.gpsCoordinateTags ?? null,
+          dateField: diagnostic.dateField ?? null,
+          gpsFields: diagnostic.gpsFields ?? null,
+          dateParsed: Boolean(metadata.takenOn),
+          dateFilled: Boolean(takenOn),
+          gpsParsed: hasGps,
+        }
+        additions.push({
+          path,
+          width: info.width,
+          height: info.height,
+          ...region,
+          caption: '',
+          latitude,
+          longitude,
+          takenOn,
+          city: hasGps ? region.cityName || '照片拍摄位置' : '',
+          metadataHint: metadataHint + fileSize,
+          metadataReport,
+        })
       }
+      if (!additions.length) return
+      const index = this.data.photos.length
       this.setData({ photos: [...this.data.photos, ...additions], error: '' })
+      this.showPhoto(index)
     } catch (e) {
-      if (!String(e.errMsg).includes('cancel')) this.setData({ error: e.message || '无法读取照片' })
+      if (selecting) {
+        const errMsg = String(e?.errMsg || e?.message || '')
+        if (/\bcancel(?:led|ed)?\b/i.test(errMsg)) return
+        const errCode = e?.errCode ?? e?.errno ?? null
+        this.setData({
+          error: '微信选图失败，请重试',
+          pickerError: { api: 'chooseMedia', count, errCode, errMsg: errMsg.slice(0, 300) },
+        })
+      } else {
+        this.setData({ error: e.message || '无法读取照片' })
+      }
+    } finally {
+      this.setData({ loading: false })
     }
   },
-  removePhoto(e) {
-    if (this.data.saving) return
-    this.setData({
-      photos: this.data.photos.filter(
-        (_, index) => index !== Number(e.currentTarget.dataset.index),
+  copyPickerError() {
+    const report = this.data.pickerError
+    if (!report) return
+    const appInfo = wx.getAppBaseInfo?.() || {}
+    wx.setClipboardData({
+      data: JSON.stringify(
+        {
+          platform: wx.getDeviceInfo?.()?.platform || 'unknown',
+          wechatVersion: appInfo.version || '',
+          sdkVersion: appInfo.SDKVersion || '',
+          ...report,
+        },
+        null,
+        2,
       ),
     })
+  },
+  copyMetadataReport() {
+    const report = this.data.photos[this.data.activePhotoIndex]?.metadataReport
+    if (!report) return
+    const device = wx.getDeviceInfo?.() || {}
+    wx.setClipboardData({
+      data: JSON.stringify({ platform: device.platform || 'unknown', ...report }, null, 2),
+    })
+  },
+  removePhoto(e) {
+    if (this.data.saving || this.data.loading) return
+    const index = Number(e.currentTarget.dataset.index)
+    const photos = this.data.photos.filter((_, i) => i !== index)
+    this.setData({ photos })
+    this.showPhoto(
+      Math.max(
+        0,
+        Math.min(
+          this.data.activePhotoIndex - (index < this.data.activePhotoIndex ? 1 : 0),
+          photos.length - 1,
+        ),
+      ),
+    )
   },
   previewPhoto(e) {
     const urls = this.data.photos.map((photo) => photo.path)
     wx.previewImage({ current: urls[Number(e.currentTarget.dataset.index)], urls })
   },
   async chooseLocation() {
-    if (this.data.saving) return
+    if (this.data.saving || this.data.loading) return
+    this.setData({ loading: true, error: '', pickerError: null })
     try {
       const place = await callApi('chooseLocation')
-      this.setData({
+      let region = {}
+      try {
+        region = await api.location(place.latitude, place.longitude)
+      } catch (_) {}
+      this.updateActive({
         city: place.name || place.address,
         latitude: place.latitude,
         longitude: place.longitude,
+        provinceName: region.provinceName || '',
+        cityName: region.cityName || '',
         error: '',
-      })
-      this.refreshChanges({
-        city: place.name || place.address,
-        latitude: place.latitude,
-        longitude: place.longitude,
       })
       this.refreshLocationPermission()
     } catch (e) {
       this.showLocationError(e, '地点选择失败')
+    } finally {
+      this.setData({ loading: false })
     }
   },
   showLocationError(e, fallback) {
@@ -197,12 +342,20 @@ Page({
       this.setData({ error: '请先选择照片' })
       return
     }
-    if (
-      !this.data.city ||
-      (!this.data.editingId && (this.data.latitude === null || this.data.longitude === null))
-    ) {
-      this.setData({ error: '请先在地图中搜索并选择拍摄地点' })
+    if (this.data.editingId && (!this.data.city || !this.data.takenOn)) {
+      this.setData({ error: '请补充拍摄地点和日期' })
       return
+    }
+    if (!this.data.editingId) {
+      const missing = this.data.photos.findIndex(
+        (photo) =>
+          !photo.city || !photo.takenOn || photo.latitude == null || photo.longitude == null,
+      )
+      if (missing >= 0) {
+        this.showPhoto(missing)
+        this.setData({ error: `第 ${missing + 1} 张照片的拍摄日期或地点尚未完善，请补充后保存` })
+        return
+      }
     }
     this.setData({ saving: true, error: '' })
     if (this.data.editingId) {
@@ -235,11 +388,11 @@ Page({
           )
           await api.addPhoto({
             ...images,
-            city: this.data.city,
-            caption: this.data.caption,
-            takenOn: this.data.takenOn,
-            latitude: this.data.latitude,
-            longitude: this.data.longitude,
+            city: photo.city,
+            caption: photo.caption || '',
+            takenOn: photo.takenOn,
+            latitude: photo.latitude,
+            longitude: photo.longitude,
           })
         } catch (e) {
           if (images)
@@ -254,6 +407,7 @@ Page({
         }
         saved++
         this.setData({ photos: this.data.photos.slice(1) })
+        this.showPhoto(0)
       }
       wx.navigateBack()
     } catch (e) {

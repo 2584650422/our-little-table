@@ -5,6 +5,7 @@ from datetime import date, datetime, timedelta, timezone
 from fastapi import Depends, Request
 from .db import execute, fetch_all, fetch_one
 from . import storage
+from .locations import resolve as resolve_location
 
 
 def local_today():
@@ -106,6 +107,7 @@ def register(app, coupled_user, success, AppError, couple_public_id, cleanup_ima
         row["latitude"] = float(row["latitude"]) if row["latitude"] is not None else None
         row["longitude"] = float(row["longitude"]) if row["longitude"] is not None else None
         row["takenOn"] = str(row["takenOn"])
+        row.update(resolve_location(row["latitude"], row["longitude"]))
         return row
 
     photo_select = "SELECT id,original_key AS originalKey,preview_key AS previewKey,width,height,city,latitude,longitude,taken_on AS takenOn,caption,original_bytes AS originalBytes,preview_bytes AS previewBytes FROM photos"
@@ -144,7 +146,9 @@ def register(app, coupled_user, success, AppError, couple_public_id, cleanup_ima
                 }
             )
         upcoming = sorted((e for e in upcoming if e["days"] >= 0), key=lambda e: e["nextDate"])
-        recent = fetch_one(photo_select + " WHERE space_id=%s ORDER BY id DESC LIMIT 1", (cid,))
+        recent = fetch_one(
+            photo_select + " WHERE space_id=%s ORDER BY taken_on DESC,id DESC LIMIT 1", (cid,)
+        )
         return success(
             {
                 "name": couple["name"],
@@ -339,11 +343,28 @@ def register(app, coupled_user, success, AppError, couple_public_id, cleanup_ima
         )
         return success()
 
+    @app.get("/api/life/location")
+    def location(latitude: float, longitude: float, user=Depends(coupled_user)):
+        if not -90 <= latitude <= 90 or not -180 <= longitude <= 180:
+            raise AppError("地图坐标无效")
+        return success(resolve_location(latitude, longitude))
+
     @app.get("/api/life/photos")
     def photos(beforeId: int = 0, user=Depends(coupled_user)):
+        where = " WHERE space_id=%s"
+        params = [user["coupleId"]]
+        if beforeId:
+            anchor = fetch_one(
+                "SELECT taken_on AS takenOn FROM photos WHERE id=%s AND space_id=%s",
+                (beforeId, user["coupleId"]),
+            )
+            if not anchor:
+                raise AppError("照片列表已变化，请刷新后再试", 409)
+            where += " AND (taken_on<%s OR (taken_on=%s AND id<%s))"
+            params.extend([anchor["takenOn"], anchor["takenOn"], beforeId])
         rows = fetch_all(
-            photo_select + " WHERE space_id=%s AND (%s=0 OR id<%s) ORDER BY id DESC LIMIT 51",
-            (user["coupleId"], beforeId, beforeId),
+            photo_select + where + " ORDER BY taken_on DESC,id DESC LIMIT 51",
+            tuple(params),
         )
         return success({"items": [photo_row(row) for row in rows[:50]], "hasMore": len(rows) > 50})
 

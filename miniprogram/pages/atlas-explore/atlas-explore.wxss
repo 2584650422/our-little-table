@@ -122,51 +122,6 @@ page {
   font-weight: 400;
   color: #798279;
 }
-.place-swiper {
-  width: 100%;
-  height: 0;
-  flex: 1;
-  min-height: 0;
-  padding-top: 8px;
-  box-sizing: border-box;
-}
-.photo {
-  height: calc(100% - 8px);
-  padding: 5px 5px 0;
-  background: #fffef9;
-  border-radius: 4px;
-  box-shadow: 0 3px 8px #283b3420;
-  animation: unfold 360ms ease both;
-  box-sizing: border-box;
-}
-.photo image {
-  display: block;
-  width: 100%;
-  height: calc(100% - 28px);
-  background: #eef0e8;
-}
-.photo-date {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 10px;
-  line-height: 24px;
-  color: #798279;
-  padding: 0 3px;
-}
-.photo-more {
-  color: #42664f;
-}
-.place-pager {
-  height: 20px;
-  flex: none;
-  text-align: center;
-  color: #798279;
-  font-size: 10px;
-}
-.photo:active {
-  opacity: 0.8;
-}
 .footer {
   height: 25px;
   flex: none;
@@ -308,17 +263,6 @@ page {
   font-size: 12px;
 }
 
-.photo-date {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 4px;
-}
-.photo-more {
-  color: #42664f;
-  padding: 4px;
-}
-
 /* Keep the back icon geometrically aligned with the title, independent of font glyphs. */
 .toolbar {
   gap: 10px;
@@ -344,40 +288,64 @@ page {
 .crumb {
   line-height: 32px;
 }
-.place-slide {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.city-place-list {
+  flex: 1;
+  height: 0;
+  min-height: 0;
 }
-.photo {
-  height: auto;
-  max-width: 100%;
-  padding: 5px 5px 0;
+.city-place-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 7px 2px 2px;
 }
-.photo image {
-  background: transparent;
+.city-place-card {
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid #e1e7db;
+  border-radius: 11px;
+  background: #f5f5ed;
 }
-.place-progress {
-  height: 22px;
-  flex: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.place-progress-track {
+.city-place-stack {
   position: relative;
-  width: 120px;
-  max-width: 55%;
-  height: 3px;
-  border-radius: 3px;
-  background: #e3e8dc;
-  overflow: hidden;
+  margin: 3px 7px 5px 2px;
 }
-.place-progress-thumb {
+.city-place-stack::before {
+  content: '';
   position: absolute;
-  top: 0;
-  height: 100%;
-  border-radius: 3px;
+  inset: -3px -4px 3px 4px;
+  border-radius: 5px;
+  background: #dce6d6;
+}
+.city-place-cover {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 65px;
+  box-sizing: border-box;
+  border: 4px solid #fffef9;
+  border-radius: 5px;
+  background: #e7ecdd;
+}
+.city-place-count {
+  position: absolute;
+  right: -4px;
+  bottom: -1px;
+  padding: 2px 6px;
+  border-radius: 10px;
   background: #42664f;
-  transition: left 260ms ease;
+  color: #fffef9;
+  font-size: 10px;
+}
+.city-place-name {
+  font-size: 12px;
+  color: #42664f;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.city-place-date {
+  margin-top: 3px;
+  font-size: 10px;
+  color: #68796d;
 }

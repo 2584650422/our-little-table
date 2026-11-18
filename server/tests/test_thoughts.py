@@ -49,6 +49,17 @@ class ThoughtTests(unittest.TestCase):
         self.assertEqual(args[-1], datetime(2026, 11, 13))
         self.assertEqual(self.client.get("/api/thoughts/day?date=bad").status_code, 400)
 
+    def test_monthly_markers_only_count_visible_current_space_messages_without_reading(self):
+        with patch.object(thoughts, "fetch_all", return_value=[{"date": "2026-11-12", "count": 3}]) as fetch, patch.object(thoughts, "execute") as write:
+            response = self.client.get("/api/thoughts/calendar?month=2026-11")
+        self.assertEqual(response.json()["data"], {"dates": {"2026-11-12": 3}})
+        sql, args = fetch.call_args.args
+        self.assertIn("m.space_id=%s", sql)
+        self.assertIn("root.deleted_at IS NULL", sql)
+        self.assertEqual(args, (7, 1, 1, datetime(2026, 11, 1), datetime(2026, 12, 1)))
+        write.assert_not_called()
+        self.assertEqual(self.client.get("/api/thoughts/calendar?month=bad").status_code, 400)
+
     def test_read_can_only_touch_current_recipient_and_space(self):
         with patch.object(thoughts, "execute") as execute:
             self.assertEqual(

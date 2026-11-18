@@ -191,3 +191,42 @@
   background: #a7b7a1;
   color: #fffef9;
 }
+
+.photo-tile-active {
+  outline: 4rpx solid #42664f;
+  outline-offset: -4rpx;
+}
+.photo-number {
+  position: absolute;
+  left: 10rpx;
+  bottom: 10rpx;
+  padding: 2rpx 12rpx;
+  border-radius: 12rpx;
+  background: #fffef9e8;
+  color: #42664f;
+  font-size: 22rpx;
+}
+.metadata-hint {
+  font-size: 23rpx;
+  line-height: 1.7;
+  color: #879286;
+  margin: -8rpx 4rpx 18rpx;
+}
+.region-meta {
+  font-size: 23rpx;
+  line-height: 1.6;
+  color: #879286;
+  padding: 0 26rpx 18rpx;
+}
+.photo-current-preview {
+  color: #42664f;
+  font-size: 24rpx;
+  text-align: right;
+  padding: 12rpx 0;
+}
+
+.metadata-report-link {
+  color: #42664f;
+  display: inline-block;
+  padding: 8rpx 4rpx;
+}

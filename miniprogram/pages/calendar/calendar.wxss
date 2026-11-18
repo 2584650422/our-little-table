@@ -548,3 +548,7 @@
   color: #879286;
   margin-top: 6rpx;
 }
+
+.interaction-dot { background: #9886b5; }
+
+.calendar-page .selected .interaction-dot { background: #d1c1e5; }

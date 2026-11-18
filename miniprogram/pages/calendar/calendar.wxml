@@ -12,10 +12,10 @@
     <view class="calendar-grid"><text class="weekday" wx:for="{{week}}" wx:key="*this">{{item}}</text></view>
     <view class="calendar-grid">
       <view wx:for="{{cells}}" wx:key="key" data-date="{{item.date}}" bindtap="select" class="day {{item.selected?'selected':''}}">
-        <text class="day-number">{{item.day}}</text><text wx:if="{{item.date}}" class="day-lunar {{item.lunarMonthStart?'lunar-month-start':''}}">{{item.lunar}}</text><view class="day-markers"><view wx:if="{{item.marked}}" class="event-dot important-dot"/><view wx:if="{{item.diary}}" class="event-dot diary-dot"/></view>
+        <text class="day-number">{{item.day}}</text><text wx:if="{{item.date}}" class="day-lunar {{item.lunarMonthStart?'lunar-month-start':''}}">{{item.lunar}}</text><view class="day-markers"><view wx:if="{{item.marked}}" class="event-dot important-dot"/><view wx:if="{{item.diary}}" class="event-dot diary-dot"/><view wx:if="{{item.interaction}}" class="event-dot interaction-dot"/></view>
       </view>
     </view>
-    <view class="calendar-legend"><text><text class="legend-dot diary-dot"/>当天记录</text><text><text class="legend-dot important-dot"/>重要日子</text></view>
+    <view class="calendar-legend"><text><text class="legend-dot diary-dot"/>当天记录</text><text><text class="legend-dot important-dot"/>重要日子</text><text><text class="legend-dot interaction-dot"/>互动</text></view>
   </view>
   <view id="day-records" class="day-records">
   <view class="selected-date-heading"><view class="selected-date-copy"><view class="selected-date-title">{{selectedTitle || selected}}</view><view class="selected-lunar">{{selectedLunar}}</view></view><text class="life-link" bindtap="addDiary">写记录 →</text></view>

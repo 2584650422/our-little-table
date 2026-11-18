@@ -21,6 +21,7 @@ Page({
   },
   onShow() {
     this._visible = true
+    this.loadThoughtMonth()
     this.loadThoughtDay()
     this._events = this._events || []
     this.draw()
@@ -58,6 +59,7 @@ Page({
         selected: dt === this.data.selected,
         marked: this._events.some((e) => e.nextDate === dt && e.kind !== 'diary'),
         diary: this._events.some((e) => e.nextDate === dt && e.kind === 'diary'),
+        interaction: !!this._thoughtMonthCounts?.[dt],
       })
     }
     const selectedDate = new Date(
@@ -86,9 +88,11 @@ Page({
       togetherLabel: life.togetherLabel(this.data.summary.anniversary, month + '-01'),
     })
     this._events = []
+    this._thoughtMonthCounts = {}
     this.draw()
     this.load()
     this.loadThoughtDay()
+    this.loadThoughtMonth()
   },
   select(e) {
     if (!e.currentTarget.dataset.date) return
@@ -117,6 +121,20 @@ Page({
         this.setData({ thoughtDay: this.groupThoughtDay(result) })
     } catch (_) {
       if (this._visible && version === this._thoughtVersion) this.setData({ thoughtError: true })
+    }
+  },
+  async loadThoughtMonth() {
+    const version = (this._thoughtMonthVersion = (this._thoughtMonthVersion || 0) + 1)
+    const month = this.data.month
+    try {
+      await getApp().loginPromise
+      const result = await thoughts.month(month)
+      if (this._visible && version === this._thoughtMonthVersion && month === this.data.month) {
+        this._thoughtMonthCounts = result.dates || {}
+        this.draw()
+      }
+    } catch (_) {
+      // Day details remain available even if the monthly marker request fails.
     }
   },
   groupThoughtDay(result) {

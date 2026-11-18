@@ -24,7 +24,7 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
         - name: api
-          image: crpi-6okhrwjmx6tg1zpc.cn-beijing.personal.cr.aliyuncs.com/docker-images-lyc/our-time-api@sha256:a997c8752b2848e64b69ca0bd4270ced5d89b6cf6e88f36ffdb8d9abf071859e
+          image: crpi-6okhrwjmx6tg1zpc.cn-beijing.personal.cr.aliyuncs.com/docker-images-lyc/our-time-api@sha256:6261d6757fd8fd277b8e7cbe6628418a7e4c104fed9dd3e567fb693115bf9b26
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

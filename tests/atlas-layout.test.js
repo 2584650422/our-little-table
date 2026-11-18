@@ -60,9 +60,14 @@ test('zoom and pan move connector anchors without scaling cards or sending them 
   c.layout()
   const first = c.data.lines[0].ax
   const cardStyle = c.data.cards[0].style
+  const markerStyle = c.data.markers[0].style
+  const template = fs.readFileSync(filename.replace(/\.js$/, '.wxml'), 'utf8')
+  assert.match(template, /<movable-view[\s\S]*wx:for="\{\{markers\}\}"[\s\S]*<\/movable-view>/)
   c._gesture = { scale: 2, x: -40, y: 0 }
   c.layout()
   assert.notEqual(c.data.lines[0].ax, first)
+  assert.equal(c.data.markers[0].style, markerStyle)
+  assert.equal(c.data.markerScale, 0.5)
   assert.equal(c.data.cards[0].style, cardStyle)
   assert.match(c.data.cards[0].style, /width:56px/)
   c._gesture = { scale: 3, x: -120, y: -20 }
@@ -161,9 +166,9 @@ test('city names stay in map-local coordinates and share the native movable laye
   )
   const wxml = fs.readFileSync('miniprogram/components/atlas-board/atlas-board.wxml', 'utf8')
   const stage = wxml.slice(wxml.indexOf('<movable-view'), wxml.indexOf('</movable-view>'))
-  assert.match(stage, /class="city-label"/)
+  assert.match(stage, /class="city-label\b/)
   const overlay = wxml.slice(wxml.indexOf('<view class="photos'))
-  assert.doesNotMatch(overlay, /class="city-label"/)
+  assert.doesNotMatch(overlay, /class="city-label\b/)
 })
 
 test('province viewport never introduces photo-dependent inner rectangular clipping', () => {
@@ -180,4 +185,26 @@ test('province viewport never introduces photo-dependent inner rectangular clipp
       assert.deepEqual(frame.viewport, { x: 0, y: 0, width: 820, height: 320 })
     }
   }
+})
+
+test('省份城市超过六个时仍在同一页显示所有照片堆', () => {
+  let definition
+  const filename = path.resolve('miniprogram/components/atlas-board/atlas-board.js')
+  vm.runInNewContext(fs.readFileSync(filename, 'utf8'), {
+    Component: d => { definition = d }, require: require('node:module').createRequire(filename),
+  })
+  const groups = Array.from({ length: 12 }, (_, i) => ({
+    id: `city:${i}`, name: `城市${i}`, latitude: 30 + i * 0.05,
+    longitude: 104 + i * 0.05, photos: [], count: 1,
+  }))
+  const c = {
+    ...definition.methods,
+    properties: { groups, points: [], compact: false, zoomed: true, focus: '四川省' },
+    data: { page: 1 }, _rect: { width: 820, height: 320 },
+    setData(values) { Object.assign(this.data, values) },
+  }
+  c.layout()
+  assert.equal(c.data.pages, 1)
+  assert.equal(c.data.page, 0)
+  assert.equal(c.data.cards.length, 12)
 })

@@ -37,3 +37,14 @@ test('当天记录显示真实创建时间到分钟，补写旧日期时不使�
  assert.equal(life.event(base).createdAtLabel,'')
  assert.equal(life.event({...base,createdAt:'invalid'}).createdAtLabel,'')
 })
+
+test('互动紫色标记与当天记录、重要日子可同时出现，原记录查看方式保持不变',()=>{
+ const p=page('../miniprogram/pages/calendar/calendar')
+ p.data.month='2026-11';p.data.selected='2026-11-18'
+ p._events=[{id:1,nextDate:'2026-11-18',kind:'diary'},{id:2,nextDate:'2026-11-18',kind:'birthday'}]
+ p._thoughtMonthCounts={'2026-11-18':3};p.draw()
+ const cell=p.data.cells.find(d=>d.day===18)
+ assert.equal(cell.diary,true);assert.equal(cell.marked,true);assert.equal(cell.interaction,true)
+ assert.equal(p.data.dayEvents.length,2)
+ assert.equal(p.data.cells.find(d=>d.day===17).interaction,false)
+})

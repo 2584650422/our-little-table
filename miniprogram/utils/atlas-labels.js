@@ -6,7 +6,7 @@ function layoutCityLabels(cities, options) {
   const lineHeight = 10 / level
   const gap = 2 / level
   const placed = []
-  return cities.map((city) => {
+  return cities.map((city, index) => {
     const chars = Array.from(city.name)
     const lines = []
     const wrap = chars.length > 6 ? Math.ceil(chars.length / 2) : chars.length
@@ -20,7 +20,8 @@ function layoutCityLabels(cities, options) {
     const anchorY = (city.point[1] * zoom + ty) * scale
     let best,
       bestCost = Infinity
-    for (const distance of [0, 10, 18, 26, 36]) {
+    const distances = city.isPlace ? [14, 22, 32, 44] : [0, 10, 18, 26, 36]
+    for (const distance of distances) {
       for (const [dx, dy] of [
         [0, 0],
         [0, -1],
@@ -32,6 +33,7 @@ function layoutCityLabels(cities, options) {
         [-1, 1],
         [1, 1],
       ]) {
+        if (city.isPlace && dx === 0 && dy === 0) continue
         const x = Math.max(
           labelWidth / 2 + gap,
           Math.min(width - labelWidth / 2 - gap, anchorX + (dx * distance) / level),
@@ -58,7 +60,9 @@ function layoutCityLabels(cities, options) {
     const dx = best.x - anchorX,
       dy = best.y - anchorY
     return {
+      id: index,
       name: city.name,
+      isPlace: city.isPlace,
       text: lines.join('\n'),
       ...best,
       style: `left:${best.x}px;top:${best.y}px;width:${labelWidth}px;font-size:${font}px;line-height:${lineHeight}px;`,

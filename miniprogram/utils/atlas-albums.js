@@ -1,5 +1,12 @@
 const map = require('./atlas-map')
 
+function sortPhotos(photos) {
+  return [...photos].sort(
+    (a, b) =>
+      String(b.takenOn || '').localeCompare(String(a.takenOn || '')) || Number(b.id) - Number(a.id),
+  )
+}
+
 // Same POI name plus nearby coordinates; never merge identically named distant places.
 function nearby(a, b) {
   const radians = Math.PI / 180
@@ -10,10 +17,10 @@ function nearby(a, b) {
 }
 function albums(photos) {
   const places = []
-  for (const photo of photos) {
+  for (const photo of sortPhotos(photos)) {
     if (!map.position(photo.latitude, photo.longitude)) continue
     const name = (photo.city || '未命名地点').trim()
-    const province = map.provinceForPhoto(photo) || '其他地点'
+    const province = photo.provinceName || map.provinceForPhoto(photo) || '其他地点'
     let place = places.find(
       (item) => item.name === name && item.province === province && nearby(item, photo),
     )
@@ -54,7 +61,34 @@ function albums(photos) {
     region.photos.push(...place.photos)
     region.count += place.count
   }
-  return { places, regions }
+  const cities = []
+  for (const region of regions) {
+    region.photos = sortPhotos(region.photos)
+    region.cities = []
+    for (const photo of region.photos) {
+      const name = photo.cityName || '待识别城市'
+      const id = `city:${photo.cityCode || region.name + ':' + name}`
+      let city = region.cities.find((item) => item.id === id)
+      if (!city) {
+        city = {
+          id,
+          name,
+          cityCode: photo.cityCode || '',
+          province: region.name,
+          previewUrl: photo.previewUrl,
+          latitude: photo.cityLatitude ?? photo.latitude,
+          longitude: photo.cityLongitude ?? photo.longitude,
+          photos: [],
+          count: 0,
+        }
+        region.cities.push(city)
+        cities.push(city)
+      }
+      city.photos.push(photo)
+      city.count++
+    }
+  }
+  return { places, regions, cities }
 }
 function bounds(name) {
   const province = map.provinces.find((item) => item.name === name)
@@ -70,4 +104,4 @@ function bounds(name) {
   }
   return rings.map(box).sort((a, b) => b.width * b.height - a.width * a.height)[0]
 }
-module.exports = { albums, bounds }
+module.exports = { albums, bounds, sortPhotos }

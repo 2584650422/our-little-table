@@ -10,7 +10,8 @@ function page() {
       definition = value
     },
     require: (name) =>
-      name.includes('atlas-albums') ? require('../miniprogram/utils/atlas-albums') : {},
+      name.includes('atlas-albums') ? require('../miniprogram/utils/atlas-albums')
+        : name === './district-maps' ? require('../miniprogram/pages/atlas-explore/district-maps') : {},
     wx: {},
     clearTimeout,
   }
@@ -29,64 +30,57 @@ function page() {
     },
   }
 }
-test('province -> single place -> original -> back preserves the selected place and province', () => {
+test('province -> city -> original -> back retains city and contains all of its places', () => {
   const p = page()
   p._photos = [
-    { id: 3, city: '草原', latitude: 40.7, longitude: 111.8 },
-    { id: 2, city: '草原', latitude: 40.7, longitude: 111.8 },
-    { id: 1, city: '另一个地方', latitude: 40.8, longitude: 111.9 },
+    { id: 3, city: '草原', cityName: '呼和浩特市', cityCode: '150100', latitude: 40.7, longitude: 111.8 },
+    { id: 2, city: '草原', cityName: '呼和浩特市', cityCode: '150100', latitude: 40.7, longitude: 111.8 },
+    { id: 1, city: '公园', cityName: '呼和浩特市', cityCode: '150100', latitude: 40.8, longitude: 111.9 },
   ]
   p.rebuild()
   assert.equal(p.data.groups.length, 1)
   p.openProvince(p.data.groups[0].name)
-  assert.equal(p.data.groups.length, 2)
-  p.groupSelect({ detail: { id: 3 } })
-  assert.equal(p.data.level, 'place')
-  assert.deepEqual(
-    p.data.photos.map((item) => item.id),
-    [3, 2],
-  )
-  p.preview({ currentTarget: { dataset: { id: 2 } } })
+  assert.equal(p.data.groups.length, 1)
+  assert.equal(p.data.groups[0].name, '呼和浩特市')
+  p.groupSelect({ detail: { id: p.data.groups[0].id } })
+  assert.equal(p.data.level, 'city')
+  assert.deepEqual(p.data.photos.map(item => item.id), [3, 2, 1])
+  assert.equal(p.data.cityPoints.length, 2)
+  p.openPlaceStack({ currentTarget: { dataset: { id: '3' } } })
   assert.equal(p.data.viewerOpen, true)
-  assert.equal(p.data.photoIndex, 1)
+  assert.equal(p.data.photoIndex, 0)
   p.photoZoom({ detail: { scale: 2 } })
-  assert.equal(p.data.photoZoomed, true)
   p.previousPhoto()
   assert.equal(p.data.photoIndex, 0)
   assert.equal(p.data.photoZoomed, false)
-  p.nextPhoto()
+  p.nextPhoto(); p.nextPhoto(); p.nextPhoto()
   assert.equal(p.data.photoIndex, 1)
-  p.nextPhoto()
-  assert.equal(p.data.photoIndex, 1)
-  p.choosePhoto({ currentTarget: { dataset: { index: 0 } } })
-  assert.equal(p.data.photoIndex, 0)
   p.back()
   assert.equal(p.data.viewerOpen, false)
-  assert.equal(p.data.place.id, '3')
+  assert.equal(p.data.place.id, 'city:150100')
   p.back()
   assert.equal(p.data.level, 'province')
-  assert.equal(p.data.groups.length, 2)
+  assert.equal(p.data.groups.length, 1)
   p.back()
   assert.equal(p.data.level, 'country')
-  assert.equal(p.data.groups.length, 1)
 })
 
-test('national selection exposes only that province places, and refresh preserves the selection', () => {
+test('province groups cities instead of POIs and retains the province on refresh', () => {
   const p = page()
   p._photos = [
-    { id: 3, city: '地点一', latitude: 40.7, longitude: 111.8 },
-    { id: 2, city: '地点二', latitude: 40.8, longitude: 111.9 },
-    { id: 1, city: '北京', latitude: 39.9, longitude: 116.4 },
+    { id: 3, city: '地点一', cityName: '呼和浩特市', cityCode: '150100', latitude: 40.7, longitude: 111.8 },
+    { id: 2, city: '地点二', cityName: '包头市', cityCode: '150200', latitude: 40.6, longitude: 109.8 },
+    { id: 1, city: '景区', cityName: '北京市', cityCode: '110000', latitude: 39.9, longitude: 116.4 },
   ]
   p.rebuild()
-  const region = p.data.groups.find((item) => item.name === '内蒙古自治区')
+  const region = p.data.groups.find(item => item.name === '内蒙古自治区')
   p.groupSelect({ detail: { id: region.id } })
   assert.equal(p.data.level, 'province')
-  assert.equal(p.data.groups.length, 2)
+  assert.deepEqual(p.data.groups.map(g => g.name), ['呼和浩特市', '包头市'])
   p.rebuild()
   assert.equal(p.data.groups.length, 2)
   p.groupSelect({ detail: { id: p.data.groups[0].id } })
-  assert.equal(p.data.level, 'place')
+  assert.equal(p.data.level, 'city')
   p.back()
   const previous = p.data.province
   p.provinceSelect({ detail: { province: '北京市' } })
@@ -130,33 +124,21 @@ test('national highlight is in national coordinates and split panel opening and 
   assert.equal(c.data.highlight, '/assets/atlas-maps/110000-cities.png')
   const frame = c.data.frameStyle
   c.properties.album = true
+  c.properties.cityMap = {
+    ...require('../miniprogram/pages/atlas-explore/district-maps')['110000'],
+    image: '/pages/atlas-explore/district-maps/110000.png',
+  }
   c.layout()
+  c.draw('北京市')
+  assert.equal(c.data.highlight, '/pages/atlas-explore/district-maps/110000.png')
+  assert.ok(c.data.cityLabels.some((label) => label.name === '海淀区'))
   assert.notEqual(c.data.frameStyle, frame)
   c.properties.album = false
   c.layout()
+  c.draw('北京市')
+  assert.equal(c.data.highlight, '/assets/atlas-maps/110000-cities.png')
   assert.equal(c.data.frameStyle, frame)
   assert.ok(c.data.cityLabels.length > 0)
-})
-
-test('place photos fit landscape and portrait frames without cropping or side filler', () => {
-  const p = page()
-  p._photoBounds = { width: 420, height: 250 }
-  for (const [width, height] of [
-    [3840, 2160],
-    [4000, 3000],
-    [2000, 3000],
-  ]) {
-    p.data.photos = [{ width, height }]
-    p.data.placePhotoIndex = 0
-    p.fitPlacePhoto()
-    assert.ok(Math.abs(p.data.photoFrameWidth / p.data.photoFrameHeight - width / height) < 0.00001)
-    assert.ok(p.data.photoFrameWidth <= 410)
-    assert.ok(p.data.photoFrameHeight <= 212)
-    assert.ok(
-      Math.abs(p.data.photoFrameWidth - 410) < 0.001 ||
-        Math.abs(p.data.photoFrameHeight - 212) < 0.001,
-    )
-  }
 })
 
 test('failed original hides its broken layer and restores the preview fallback', () => {

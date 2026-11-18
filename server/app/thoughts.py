@@ -95,6 +95,22 @@ def register(app, coupled_user, success, AppError, send_subscribe):
         )
         return success({"items": [public(r) for r in rows]})
 
+    @app.get("/api/thoughts/calendar")
+    def calendar_counts(month: str, user: dict = Depends(coupled_user)):
+        try:
+            start = datetime.strptime(month + "-01", "%Y-%m-%d")
+            if not 1902 <= start.year <= 2097:
+                raise ValueError()
+        except (ValueError, TypeError):
+            raise AppError("月份无效")
+        end = (start.replace(day=28) + timedelta(days=4)).replace(day=1)
+        rows = fetch_all(
+            "SELECT DATE(m.created_at) AS date,COUNT(*) AS count" + BASE
+            + " AND m.created_at>=%s AND m.created_at<%s GROUP BY DATE(m.created_at)",
+            (*args(user), start, end),
+        )
+        return success({"dates": {str(row["date"]): row["count"] for row in rows}})
+
     @app.get("/api/thoughts/day")
     def day(date: str, user: dict = Depends(coupled_user)):
         try:

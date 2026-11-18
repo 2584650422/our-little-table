@@ -64,7 +64,7 @@
 }
 .thread {
   position: absolute;
-  height: 1px;
+  height: 0.5px;
   background: #b56359;
   transform-origin: left center;
   pointer-events: none;
@@ -77,34 +77,12 @@
   pointer-events: none;
 }
 .marker-dot {
-  width: 6px;
-  height: 6px;
-  border: 1.5px solid #fffef9;
-  border-radius: 50%;
-  background: #b45349;
-  box-shadow: 0 1px 5px #283b3455;
-}
-.marker-label {
-  position: absolute;
-  left: 12px;
-  top: -5px;
-  white-space: nowrap;
-  padding: 2px 5px;
-  border-radius: 8px;
-  background: #fffef9e8;
-  color: #42664f;
-  font-size: 9px;
-}
-.pin {
-  position: absolute;
   width: 4px;
   height: 4px;
-  left: -2px;
-  top: -2px;
-  background: #b45349;
   border: 1px solid #fffef9;
   border-radius: 50%;
-  box-shadow: 0 1px 3px #9c5f5155;
+  background: #b45349;
+  box-shadow: 0 1px 2px #283b3433;
 }
 .stack {
   position: absolute;
@@ -302,4 +280,11 @@
 }
 .area {
   position: absolute;
+}
+
+.place-label {
+  z-index: 2;
+  color: #75483c;
+  background: #fffef9ec;
+  border-radius: 4px;
 }

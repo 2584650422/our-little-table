@@ -25,3 +25,16 @@ test('a province focus bounds contains known visited coordinates', () => {
   assert.ok(point.y>=box.y && point.y<=box.y+box.height)
   assert.ok(box.width>0 && box.height>0)
 })
+
+
+test('照片按记录日期倒序，同一天按ID倒序，地点封面使用最新记录', () => {
+  const { albums, sortPhotos } = require('../miniprogram/utils/atlas-albums')
+  const photos = [
+    { id: 99, takenOn: '2020-01-01', city: '成都', latitude: 30.67, longitude: 104.06 },
+    { id: 2, takenOn: '2026-11-18', city: '成都', latitude: 30.67, longitude: 104.06 },
+    { id: 3, takenOn: '2026-11-18', city: '成都', latitude: 30.67, longitude: 104.06 },
+  ]
+  assert.deepEqual(sortPhotos(photos).map(p => p.id), [3, 2, 99])
+  assert.equal(photos[0].id, 99)
+  assert.deepEqual(albums(photos).places[0].photos.map(p => p.id), [3, 2, 99])
+})

@@ -1,6 +1,14 @@
 const api = require('../../services/life')
 const life = require('../../utils/life')
 const { albums } = require('../../utils/atlas-albums')
+const districtMaps = require('./district-maps')
+
+function cityMapFor(city) {
+  const outline = districtMaps[city?.cityCode]
+  if (!outline) return null
+  return { ...outline, image: `/pages/atlas-explore/district-maps/${city.cityCode}.png` }
+}
+
 Page({
   data: {
     level: 'country',
@@ -9,6 +17,8 @@ Page({
     groups: [],
     regions: [],
     photos: [],
+    cityPoints: [],
+    cityMap: null,
     loading: true,
     error: '',
     topInset: 8,
@@ -17,9 +27,6 @@ Page({
     hasMore: false,
     viewerOpen: false,
     photoIndex: 0,
-    placePhotoIndex: 0,
-    photoFrameWidth: 320,
-    photoFrameHeight: 180,
     photoScale: 1,
     photoZoomed: false,
     loadedPhotos: {},
@@ -81,7 +88,6 @@ Page({
   onReady() {
     this.updateInsets()
     this.selectComponent('#explore-board')?.resize()
-    this.measurePlacePhoto()
   },
   updateInsets() {
     const info = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync()
@@ -99,7 +105,6 @@ Page({
   onResize() {
     this.updateInsets()
     this.selectComponent('#explore-board')?.resize()
-    this.measurePlacePhoto()
   },
   onUnload() {
     this._gone = true
@@ -143,66 +148,65 @@ Page({
         this.data.province = region.name
         this.data.level = 'province'
       }
-      const place = this._albums.places.find((item) => item.id === options.place)
+      const place = this._albums.cities.find((item) => item.id === options.place)
       if (place) {
         this.data.province = place.province
-        this.data.level = 'place'
+        this.data.level = 'city'
         this.data.place = place
       }
     }
     const region = this._albums.regions.find((item) => item.name === this.data.province)
-    const place = this._albums.places.find((item) => item.id === this.data.place?.id)
+    const place = this._albums.cities.find((item) => item.id === this.data.place?.id)
     let level = this.data.level
-    if (level === 'place' && !place) level = region ? 'province' : 'country'
-    this.setData(
-      {
-        level,
-        province: place?.province || this.data.province,
-        regions: this._albums.regions,
-        groups:
-          level === 'country'
-            ? this._albums.regions
-            : level === 'province'
-              ? region?.places || []
-              : [],
-        place: place || null,
-        photos: place?.photos || [],
-        placePhotoIndex: Math.min(
-          this.data.placePhotoIndex,
-          Math.max(0, (place?.photos.length || 0) - 1),
-        ),
-      },
-      () => this.measurePlacePhoto(),
-    )
+    if (level === 'city' && !place) level = region ? 'province' : 'country'
+    this.setData({
+      level,
+      province: place?.province || this.data.province,
+      regions: this._albums.regions,
+      groups:
+        level === 'country'
+          ? this._albums.regions
+          : level === 'province'
+            ? region?.cities || []
+            : [],
+      place: place || null,
+      photos: place?.photos || [],
+      cityPoints: albums(place?.photos || []).places,
+      cityMap: cityMapFor(place),
+    })
   },
   provinceSelect(event) {
     if (this.data.level === 'country') this.openProvince(event.detail.province)
   },
   groupSelect(event) {
     if (this.data.level === 'country') return this.openProvince(event.detail.id)
-    const place = this._albums.places.find((item) => String(item.id) === String(event.detail.id))
+    const place = this._albums.cities.find((item) => String(item.id) === String(event.detail.id))
     if (this.data.level !== 'province' || !place || place.province !== this.data.province) return
-    this.setData(
-      { level: 'place', place, photos: place.photos, groups: [], placePhotoIndex: 0 },
-      () => this.measurePlacePhoto(),
-    )
+    this.setData({
+      level: 'city',
+      place,
+      photos: place.photos,
+      cityPoints: albums(place.photos).places,
+      cityMap: cityMapFor(place),
+      groups: [],
+    })
   },
   openProvince(province) {
-    if (this.data.level === 'place') return
+    if (this.data.level === 'city') return
     const region = this._albums.regions.find((item) => item.name === province)
     this.setData({
       level: 'province',
       province,
-      groups: region?.places || [],
+      groups: region?.cities || [],
       place: null,
       photos: [],
     })
   },
   back() {
     if (this.data.viewerOpen) return this.closePhoto()
-    if (this.data.level === 'place') {
+    if (this.data.level === 'city') {
       const region = this._albums.regions.find((item) => item.name === this.data.province)
-      this.setData({ level: 'province', place: null, photos: [], groups: region?.places || [] })
+      this.setData({ level: 'province', place: null, photos: [], groups: region?.cities || [] })
     } else if (this.data.level === 'province') this.country()
     else wx.navigateBack()
   },
@@ -218,41 +222,24 @@ Page({
   close() {
     wx.navigateBack()
   },
-  preview(event) {
-    const photoIndex = this.data.photos.findIndex(
+  openPlaceStack(event) {
+    const stack = this.data.cityPoints.find(
       (item) => String(item.id) === String(event.currentTarget.dataset.id),
     )
-    if (photoIndex >= 0)
-      this.setData({ viewerOpen: true, photoIndex, photoScale: 1, photoZoomed: false })
+    if (!stack?.photos.length) return
+    this.setData({
+      photos: stack.photos,
+      viewerOpen: true,
+      photoIndex: 0,
+      photoScale: 1,
+      photoZoomed: false,
+    })
   },
   closePhoto() {
     this.setData({ viewerOpen: false })
   },
   photoChange(event) {
     this.setData({ photoIndex: event.detail.current, photoScale: 1, photoZoomed: false })
-  },
-  measurePlacePhoto() {
-    if (this.data.level !== 'place' || !this.createSelectorQuery) return
-    this.createSelectorQuery()
-      .select('.place-swiper')
-      .boundingClientRect()
-      .exec((rects) => {
-        if (!rects[0]?.width || !rects[0]?.height) return
-        this._photoBounds = rects[0]
-        this.fitPlacePhoto()
-      })
-  },
-  fitPlacePhoto() {
-    const photo = this.data.photos[this.data.placePhotoIndex]
-    if (!photo || !this._photoBounds) return
-    const ratio = photo.width > 0 && photo.height > 0 ? photo.width / photo.height : 16 / 9
-    const availableWidth = Math.max(1, this._photoBounds.width - 10)
-    const availableHeight = Math.max(1, this._photoBounds.height - 38)
-    const photoFrameWidth = Math.min(availableWidth, availableHeight * ratio)
-    this.setData({ photoFrameWidth, photoFrameHeight: photoFrameWidth / ratio })
-  },
-  placePhotoChange(event) {
-    this.setData({ placePhotoIndex: event.detail.current }, () => this.fitPlacePhoto())
   },
   choosePhoto(event) {
     this.setData({

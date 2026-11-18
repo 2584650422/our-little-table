@@ -1,6 +1,6 @@
 const api = require('../../services/life')
 const life = require('../../utils/life')
-const { albums } = require('../../utils/atlas-albums')
+const { albums, sortPhotos } = require('../../utils/atlas-albums')
 
 Page({
   data: {
@@ -48,7 +48,7 @@ Page({
       }
       const old = append ? this.data.photos : []
       const result = await api.photos(append && old.length ? old[old.length - 1].id : 0)
-      const photos = [...old, ...result.items]
+      const photos = sortPhotos([...old, ...result.items])
       const columns = [[], []],
         heights = [0, 0]
       photos.forEach((photo) => {
@@ -58,9 +58,9 @@ Page({
       })
       const grouped = albums(photos)
       this._albums = grouped
-      const pins = grouped.places.flatMap((place) =>
+      const pins = sortPhotos(grouped.places.flatMap((place) =>
         place.photos.map((photo) => ({ ...photo, province: place.province })),
-      )
+      ))
       const selected = this.data.filterProvince
         ? pins.find(
             (photo) =>
@@ -94,7 +94,7 @@ Page({
         provincePhotoCount,
         hasMore: result.hasMore,
         loading: false,
-        cityCount: grouped.places.length,
+        cityCount: grouped.cities.length,
       })
     } catch (error) {
       this.setData({ loading: false, error: error.message })

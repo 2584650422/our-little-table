@@ -36,12 +36,18 @@ class LifeTests(unittest.TestCase):
         self.client = TestClient(self.app)
 
     def test_photo_list_is_scoped_paginated_and_coordinates_serialized(self):
-        with patch.object(life, "fetch_all", return_value=[]) as fetch:
+        with (
+            patch.object(life, "fetch_all", return_value=[]) as fetch,
+            patch.object(life, "fetch_one", return_value={"takenOn": date(2026, 11, 1)}) as anchor,
+        ):
             result = self.client.get("/api/life/photos?beforeId=44")
         self.assertEqual(result.status_code, 200)
         sql, params = fetch.call_args.args
         self.assertIn("space_id=%s", sql)
-        self.assertEqual(params, (7, 44, 44))
+        self.assertEqual(params, (7, date(2026, 11, 1), date(2026, 11, 1), 44))
+        self.assertEqual(anchor.call_args.args[1], (44, 7))
+        self.assertIn("ORDER BY taken_on DESC,id DESC", sql)
+        self.assertIn("taken_on<%s OR (taken_on=%s AND id<%s)", sql)
         self.assertEqual(result.json()["data"], {"items": [], "hasMore": False})
 
     def test_month_contains_both_anniversary_and_hundred_day(self):

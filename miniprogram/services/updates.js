@@ -1,5 +1,5 @@
 // 每次上传前更新包标识，用于区分正式版、体验版和本地预览的实际代码。
-const BUILD_ID = '2026.11.06.5'
+const BUILD_ID = '2026.11.18.8'
 const labels = {
   checking: '等待微信检查更新',
   current: '本次检查暂未发现新版',
